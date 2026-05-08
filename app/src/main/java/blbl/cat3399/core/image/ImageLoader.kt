@@ -12,6 +12,7 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.signature.ObjectKey
 import java.util.LinkedHashSet
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
@@ -32,7 +33,7 @@ object ImageLoader {
     // Glide owns request reuse, cancellation, memory cache, and disk cache for cover thumbnails.
     private val requestOptions =
         RequestOptions()
-            .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
             .dontTransform()
 
     fun loadInto(view: ImageView, url: String?) {
@@ -43,9 +44,11 @@ object ImageLoader {
         pendingLoads.removeAll { it.view == view }
         view.animate().cancel()
         view.alpha = 1f
-        Glide.with(view).clear(view)
-        view.setImageDrawable(placeholder)
-        if (normalized == null) return
+        if (normalized == null) {
+            Glide.with(view).clear(view)
+            view.setImageDrawable(placeholder)
+            return
+        }
 
         enqueueLoad(view, normalized)
     }
@@ -84,6 +87,7 @@ object ImageLoader {
             Glide.with(view)
                 .load(glideUrl(normalized))
                 .apply(requestOptions)
+                .signature(ObjectKey(normalized))
                 .placeholder(placeholder)
                 .error(placeholder)
         if (animatedUrls.add(normalized)) {
