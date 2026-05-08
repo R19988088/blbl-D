@@ -90,6 +90,22 @@ object SettingsText {
         return labels.take(2).joinToString(separator = " / ") + " 等${labels.size}项"
     }
 
+
+    fun mainVisiblePagesText(keys: List<String>): String {
+        val selected = keys.takeIf { it.isNotEmpty() } ?: AppPrefs.DEFAULT_MAIN_VISIBLE_PAGES
+        val labels = selected.mapNotNull {
+            when (it) {
+                AppPrefs.MAIN_VISIBLE_PAGE_HOME -> "??"
+                AppPrefs.MAIN_VISIBLE_PAGE_CATEGORY -> "??"
+                AppPrefs.MAIN_VISIBLE_PAGE_DYNAMIC -> "??"
+                AppPrefs.MAIN_VISIBLE_PAGE_LIVE -> "??"
+                AppPrefs.MAIN_VISIBLE_PAGE_MY -> "??"
+                else -> null
+            }
+        }
+        return if (labels.isEmpty()) "???" else labels.joinToString(" / ")
+    }
+
     fun mainHomeVisibleTabsText(context: Context, selectedKeys: List<String>): String {
         return visibleTabsText(
             options = HomeTabs.all.map { it.key to context.getString(it.titleRes) },

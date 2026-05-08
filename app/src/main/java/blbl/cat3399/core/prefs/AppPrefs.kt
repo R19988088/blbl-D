@@ -106,6 +106,10 @@ class AppPrefs(context: Context) {
         get() = loadStringList(KEY_MAIN_MY_VISIBLE_TABS)
         set(value) = saveStringList(KEY_MAIN_MY_VISIBLE_TABS, normalizeStringList(value))
 
+    var mainVisiblePages: List<String>
+        get() = loadStringList(KEY_MAIN_VISIBLE_PAGES).takeIf { it.isNotEmpty() } ?: DEFAULT_MAIN_VISIBLE_PAGES
+        set(value) = saveStringList(KEY_MAIN_VISIBLE_PAGES, normalizeStringList(value).ifEmpty { DEFAULT_MAIN_VISIBLE_PAGES })
+
     var followingListOrder: String
         get() {
             val raw = prefs.getString(KEY_FOLLOWING_LIST_ORDER, FOLLOWING_LIST_ORDER_FOLLOW_TIME) ?: FOLLOWING_LIST_ORDER_FOLLOW_TIME
@@ -532,7 +536,7 @@ class AppPrefs(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_PLAYER_AUTO_RESUME_ENABLED, value).apply()
 
     var playerAutoSkipSegmentsEnabled: Boolean
-        get() = prefs.getBoolean(KEY_PLAYER_AUTO_SKIP_SEGMENTS_ENABLED, false)
+        get() = prefs.getBoolean(KEY_PLAYER_AUTO_SKIP_SEGMENTS_ENABLED, true)
         set(value) = prefs.edit().putBoolean(KEY_PLAYER_AUTO_SKIP_SEGMENTS_ENABLED, value).apply()
 
     var playerAutoSkipServerBaseUrl: String
@@ -571,8 +575,8 @@ class AppPrefs(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_PLAYER_OPEN_DETAIL_BEFORE_PLAY, value).apply()
 
     var fullscreenEnabled: Boolean
-        get() = prefs.getBoolean(KEY_FULLSCREEN, true)
-        set(value) = prefs.edit().putBoolean(KEY_FULLSCREEN, value).apply()
+        get() = true
+        set(value) = prefs.edit().putBoolean(KEY_FULLSCREEN, true).apply()
 
     var avoidDisplayCutout: Boolean
         get() = prefs.getBoolean(KEY_AVOID_DISPLAY_CUTOUT, true)
@@ -993,7 +997,7 @@ class AppPrefs(context: Context) {
         const val UI_SCALE_FACTOR_MIN = 0.70f
         const val UI_SCALE_FACTOR_MAX = 1.40f
         const val UI_SCALE_FACTOR_STEP = 0.05f
-        const val UI_SCALE_FACTOR_DEFAULT = 1.00f
+        const val UI_SCALE_FACTOR_DEFAULT = 1.20f
 
         const val THEME_PRESET_DEFAULT = "default"
         const val THEME_PRESET_TV_PINK = "tv_pink"
@@ -1035,6 +1039,7 @@ class AppPrefs(context: Context) {
         private const val KEY_MAIN_CATEGORY_VISIBLE_TABS = "main_category_visible_tabs"
         private const val KEY_MAIN_LIVE_VISIBLE_TABS = "main_live_visible_tabs"
         private const val KEY_MAIN_MY_VISIBLE_TABS = "main_my_visible_tabs"
+        private const val KEY_MAIN_VISIBLE_PAGES = "main_visible_pages"
         private const val KEY_FOLLOWING_LIST_ORDER = "following_list_order"
         private const val KEY_DYNAMIC_FOLLOWING_RECENT_UPDATE_DOT_ENABLED = "dynamic_following_recent_update_dot_enabled"
         private const val KEY_AUTO_UPDATE_CHECK_ENABLED = "auto_update_check_enabled"
@@ -1207,6 +1212,21 @@ class AppPrefs(context: Context) {
 
         const val PLAYER_STYLE_FULLSCREEN = "fullscreen"
         const val PLAYER_STYLE_HD = "hd"
+
+        const val MAIN_VISIBLE_PAGE_HOME = "home"
+        const val MAIN_VISIBLE_PAGE_CATEGORY = "category"
+        const val MAIN_VISIBLE_PAGE_DYNAMIC = "dynamic"
+        const val MAIN_VISIBLE_PAGE_LIVE = "live"
+        const val MAIN_VISIBLE_PAGE_MY = "my"
+
+        val DEFAULT_MAIN_VISIBLE_PAGES: List<String> =
+            listOf(
+                MAIN_VISIBLE_PAGE_HOME,
+                MAIN_VISIBLE_PAGE_CATEGORY,
+                MAIN_VISIBLE_PAGE_DYNAMIC,
+                MAIN_VISIBLE_PAGE_LIVE,
+                MAIN_VISIBLE_PAGE_MY,
+            )
 
         const val PLAYER_AUDIO_BALANCE_OFF = "off"
         const val PLAYER_AUDIO_BALANCE_LOW = "low"

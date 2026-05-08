@@ -209,7 +209,6 @@ class SettingsRenderer(
                     ),
                     SettingEntry(SettingId.PgcGridSpanCount, "番剧/电视剧每行卡片数量", SettingsText.gridSpanText(prefs.pgcGridSpanCount), null),
                     SettingEntry(SettingId.UiScaleFactor, "界面大小", SettingsText.uiScaleFactorText(prefs.uiScaleFactor), null),
-                    SettingEntry(SettingId.FullscreenEnabled, "以全屏模式运行", if (prefs.fullscreenEnabled) "开" else "关", null),
                     SettingEntry(SettingId.AvoidDisplayCutout, "避开挖孔/圆角区域", if (prefs.avoidDisplayCutout) "开" else "关", null),
                     SettingEntry(SettingId.TabSwitchFollowsFocus, "tab跟随焦点切换", if (prefs.tabSwitchFollowsFocus) "开" else "关", null),
                     SettingEntry(
@@ -235,6 +234,13 @@ class SettingsRenderer(
                         SettingId.CustomPageContent,
                         "自定义页内容",
                         SettingsText.customPageContentText(prefs.customPageConfig),
+                        null,
+                    ),
+
+                    SettingEntry(
+                        SettingId.MainVisiblePages,
+                        "????",
+                        SettingsText.mainVisiblePagesText(prefs.mainVisiblePages),
                         null,
                     ),
                     SettingEntry(

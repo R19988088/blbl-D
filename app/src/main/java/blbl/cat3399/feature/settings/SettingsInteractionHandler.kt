@@ -913,6 +913,23 @@ class SettingsInteractionHandler(
                 ) { prefs.mainMyVisibleTabs = it }
             }
 
+
+            SettingId.MainVisiblePages -> {
+                showVisibleTabsDialog(
+                    sectionIndex = state.currentSectionIndex,
+                    focusId = entry.id,
+                    title = "????",
+                    options = listOf(
+                        AppPrefs.MAIN_VISIBLE_PAGE_HOME to "??",
+                        AppPrefs.MAIN_VISIBLE_PAGE_CATEGORY to "??",
+                        AppPrefs.MAIN_VISIBLE_PAGE_DYNAMIC to "??",
+                        AppPrefs.MAIN_VISIBLE_PAGE_LIVE to "??",
+                        AppPrefs.MAIN_VISIBLE_PAGE_MY to "??",
+                    ),
+                    selectedKeys = prefs.mainVisiblePages,
+                ) { prefs.mainVisiblePages = it }
+            }
+
             SettingId.UiScaleFactor -> {
                 val factors = (70..140 step 5).map { it / 100f }
                 val items = factors.map { SettingsText.uiScaleFactorText(it) }

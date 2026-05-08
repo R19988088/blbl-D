@@ -23,6 +23,7 @@ enum class SettingId(
     StartupPage("startup_page"),
     CustomPageEnabled("custom_page_enabled"),
     CustomPageContent("custom_page_content"),
+    MainVisiblePages("main_visible_pages"),
     GridSpanCount("grid_span_count"),
     DynamicGridSpanCount("dynamic_grid_span_count"),
     PgcGridSpanCount("pgc_grid_span_count"),
