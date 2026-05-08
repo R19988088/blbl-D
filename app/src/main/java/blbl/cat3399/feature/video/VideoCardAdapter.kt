@@ -110,6 +110,7 @@ class VideoCardAdapter(
             fixedItemMarginDimenRes = fixedItemMarginDimenRes,
             onItemClick = ::handleItemClick,
             onItemLongClick = ::handleItemLongClick,
+            onItemMenuKey = ::handleItemMenuKey,
             onOverlayActionClick = ::handleOverlayActionClick,
             onItemFocusLost = ::handleItemFocusLost,
             onOverlayActionSelect = ::updateSelectedActionIndex,
@@ -198,6 +199,11 @@ class VideoCardAdapter(
         }
     }
 
+    private fun handleItemMenuKey(
+        item: VideoCard,
+        position: Int,
+    ): Boolean = onLongClick?.invoke(item, position) ?: false
+
     private fun handleOverlayActionClick(
         item: VideoCard,
         position: Int,
@@ -280,6 +286,7 @@ class VideoCardAdapter(
         private val fixedItemMarginDimenRes: Int?,
         private val onItemClick: (VideoCard, Int, Boolean) -> Unit,
         private val onItemLongClick: (VideoCard, Int, Boolean) -> Boolean,
+        private val onItemMenuKey: (VideoCard, Int) -> Boolean,
         private val onOverlayActionClick: (VideoCard, Int, Int) -> Unit,
         private val onItemFocusLost: (VideoCard) -> Unit,
         private val onOverlayActionSelect: (Int) -> Unit,
@@ -602,6 +609,10 @@ class VideoCardAdapter(
                 binding.root.setDpadItemKeyHandler(
                     DpadItemKeyHandler { _, keyCode, event ->
                         handleDirectionalMotionKey(keyCode, event)
+                        if (keyCode == KeyEvent.KEYCODE_MENU && event.action == KeyEvent.ACTION_DOWN) {
+                            val pos = bindingAdapterPosition.takeIf { it != RecyclerView.NO_POSITION } ?: return@DpadItemKeyHandler false
+                            return@DpadItemKeyHandler onItemMenuKey(item, pos)
+                        }
                         false
                     },
                 )

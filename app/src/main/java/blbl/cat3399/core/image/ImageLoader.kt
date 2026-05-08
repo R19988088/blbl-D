@@ -50,6 +50,8 @@ object ImageLoader {
             return
         }
 
+        Glide.with(view).clear(view)
+        view.setImageDrawable(placeholder)
         enqueueLoad(view, normalized)
     }
 
