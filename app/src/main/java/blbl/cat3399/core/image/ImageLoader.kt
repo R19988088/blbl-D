@@ -10,11 +10,19 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestOptions
+import java.util.LinkedHashSet
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 object ImageLoader {
     private const val FADE_IN_DURATION_MS = 120
     private val placeholder = ColorDrawable(0xFF2A2A2A.toInt())
+    private val animatedUrls = object : LinkedHashSet<String>() {
+        override fun add(element: String): Boolean {
+            val added = super.add(element)
+            if (size > 300) remove(iterator().next())
+            return added
+        }
+    }
     // Glide owns request reuse, cancellation, memory cache, and disk cache for cover thumbnails.
     private val requestOptions =
         RequestOptions()
@@ -29,13 +37,17 @@ object ImageLoader {
             return
         }
 
-        Glide.with(view)
-            .load(glideUrl(normalized))
-            .apply(requestOptions)
-            .placeholder(placeholder)
-            .error(placeholder)
-            .transition(DrawableTransitionOptions.withCrossFade(FADE_IN_DURATION_MS))
-            .into(view)
+        val request =
+            Glide.with(view)
+                .load(glideUrl(normalized))
+                .apply(requestOptions)
+                .placeholder(placeholder)
+                .error(placeholder)
+        if (animatedUrls.add(normalized)) {
+            request.transition(DrawableTransitionOptions.withCrossFade(FADE_IN_DURATION_MS))
+        } else {
+            request.dontAnimate()
+        }.into(view)
     }
 
     fun clear(view: ImageView) {
