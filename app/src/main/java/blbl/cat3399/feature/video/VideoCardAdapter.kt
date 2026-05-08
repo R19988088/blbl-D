@@ -292,6 +292,7 @@ class VideoCardAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
         private var pointerDownForLongClick: Boolean = false
         private var motionResetToken: Int = 0
+        private var imageBindToken: Int = 0
 
         init {
             binding.root.stateListAnimator = null
@@ -372,7 +373,7 @@ class VideoCardAdapter(
                     } else {
                         ""
                     }
-            ImageLoader.loadInto(binding.ivCover, ImageUrl.cover(item.coverUrl))
+            bindCoverAfterContentFrame(item.coverUrl)
 
             applyOverlayTranslations()
             bindActionOverlay(
@@ -415,6 +416,14 @@ class VideoCardAdapter(
             applyFocusMotion(binding.root.hasFocus())
         }
 
+        private fun bindCoverAfterContentFrame(coverUrl: String) {
+            val token = ++imageBindToken
+            val cover = ImageUrl.cover(coverUrl)
+            binding.ivCover.post {
+                if (token != imageBindToken || bindingAdapterPosition == RecyclerView.NO_POSITION) return@post
+                ImageLoader.loadInto(binding.ivCover, cover)
+            }
+        }
         private fun applyFocusMotion(hasFocus: Boolean) {
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
             val duration = if (refined) 180L else 120L
