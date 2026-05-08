@@ -918,13 +918,13 @@ class SettingsInteractionHandler(
                 showVisibleTabsDialog(
                     sectionIndex = state.currentSectionIndex,
                     focusId = entry.id,
-                    title = "????",
+                    title = activity.getString(R.string.setting_main_visible_pages),
                     options = listOf(
-                        AppPrefs.MAIN_VISIBLE_PAGE_HOME to "??",
-                        AppPrefs.MAIN_VISIBLE_PAGE_CATEGORY to "??",
-                        AppPrefs.MAIN_VISIBLE_PAGE_DYNAMIC to "??",
-                        AppPrefs.MAIN_VISIBLE_PAGE_LIVE to "??",
-                        AppPrefs.MAIN_VISIBLE_PAGE_MY to "??",
+                        AppPrefs.MAIN_VISIBLE_PAGE_HOME to activity.getString(R.string.tab_recommend),
+                        AppPrefs.MAIN_VISIBLE_PAGE_CATEGORY to activity.getString(R.string.tab_category),
+                        AppPrefs.MAIN_VISIBLE_PAGE_DYNAMIC to activity.getString(R.string.tab_dynamic),
+                        AppPrefs.MAIN_VISIBLE_PAGE_LIVE to activity.getString(R.string.tab_live),
+                        AppPrefs.MAIN_VISIBLE_PAGE_MY to activity.getString(R.string.tab_my),
                     ),
                     selectedKeys = prefs.mainVisiblePages,
                 ) { prefs.mainVisiblePages = it }

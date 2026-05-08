@@ -95,15 +95,15 @@ object SettingsText {
         val selected = keys.takeIf { it.isNotEmpty() } ?: AppPrefs.DEFAULT_MAIN_VISIBLE_PAGES
         val labels = selected.mapNotNull {
             when (it) {
-                AppPrefs.MAIN_VISIBLE_PAGE_HOME -> "??"
-                AppPrefs.MAIN_VISIBLE_PAGE_CATEGORY -> "??"
-                AppPrefs.MAIN_VISIBLE_PAGE_DYNAMIC -> "??"
-                AppPrefs.MAIN_VISIBLE_PAGE_LIVE -> "??"
-                AppPrefs.MAIN_VISIBLE_PAGE_MY -> "??"
+                AppPrefs.MAIN_VISIBLE_PAGE_HOME -> "\u63a8\u8350"
+                AppPrefs.MAIN_VISIBLE_PAGE_CATEGORY -> "\u5206\u7c7b"
+                AppPrefs.MAIN_VISIBLE_PAGE_DYNAMIC -> "\u52a8\u6001"
+                AppPrefs.MAIN_VISIBLE_PAGE_LIVE -> "\u76f4\u64ad"
+                AppPrefs.MAIN_VISIBLE_PAGE_MY -> "\u6211\u7684"
                 else -> null
             }
         }
-        return if (labels.isEmpty()) "???" else labels.joinToString(" / ")
+        return if (labels.isEmpty()) "\u672a\u914d\u7f6e" else labels.joinToString(separator = " / ")
     }
 
     fun mainHomeVisibleTabsText(context: Context, selectedKeys: List<String>): String {

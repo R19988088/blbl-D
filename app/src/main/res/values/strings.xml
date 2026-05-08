@@ -130,4 +130,5 @@
     <string name="player_touch_boost_fmt">倍速播放 x%1$s</string>
     <string name="player_touch_brightness_fmt">亮度 %1$d%%</string>
     <string name="player_touch_volume_fmt">音量 %1$d%%</string>
+    <string name="setting_main_visible_pages">&#26174;&#31034;&#20869;&#23481;</string>
 </resources>

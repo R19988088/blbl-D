@@ -152,9 +152,9 @@
 
     <dimen name="player_controls_row_height">70dp</dimen>
     <dimen name="player_controls_row_margin_start">60dp</dimen>
-    <dimen name="player_controls_row_margin_end">16dp</dimen>
+    <dimen name="player_controls_row_margin_end">60dp</dimen>
 
-    <dimen name="player_time_margin_end">12dp</dimen>
+    <dimen name="player_time_margin_end">60dp</dimen>
     <dimen name="player_time_text_size">22sp</dimen>
 
     <dimen name="player_seek_hint_margin_start">20dp</dimen>

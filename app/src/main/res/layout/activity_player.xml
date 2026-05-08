@@ -354,7 +354,7 @@
             android:layout_width="0dp"
             android:layout_height="@dimen/player_seekbar_touch_height"
             android:background="?attr/blblFocusBgRound"
-            android:layout_marginHorizontal="0dp"
+            android:layout_marginHorizontal="@dimen/player_controls_row_margin_start"
             android:layout_marginBottom="@dimen/player_seekbar_margin_bottom"
             android:nextFocusUp="@id/btn_up_quick_profile"
             android:paddingHorizontal="0dp"
