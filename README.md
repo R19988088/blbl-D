@@ -106,3 +106,7 @@
 
 This private build is based on the original project: https://github.com/cat3399/blbl
 
+
+## Private Signing
+
+Release APKs must be signed with the same private key every time. See `SIGNING.md` before running GitHub Actions release builds.
