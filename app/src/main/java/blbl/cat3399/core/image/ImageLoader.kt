@@ -22,14 +22,17 @@ import java.util.concurrent.Executors
 object ImageLoader {
     private const val TAG = "ImageLoader"
     private const val FADE_IN_DURATION_MS = 140L
+    private const val DISPLAY_QUEUE_STEP_MS = 34L
     private val placeholder = ColorDrawable(0xFF2A2A2A.toInt())
     private val inFlight = WeakHashMap<ImageView, Job>()
     private val pendingDisplay = WeakHashMap<ImageView, Bitmap>()
+    private val displayQueue = ArrayDeque<DisplayRequest>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val decodeDispatcher = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
     private val prefetchInFlight = LinkedHashSet<String>()
     private var displayDeferred: Boolean = false
     private var fadeDeferredImages: Boolean = false
+    private var displayQueueRunning: Boolean = false
 
     private val cache = object : LruCache<String, Bitmap>(maxCacheBytes()) {
         override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
@@ -91,6 +94,7 @@ object ImageLoader {
         view.setTag(R.id.tag_image_loader_url, null)
         inFlight.remove(view)?.cancel()
         pendingDisplay.remove(view)
+        displayQueue.removeAll { it.view == view }
         if (view.drawable !== placeholder) view.setImageDrawable(placeholder)
     }
 
@@ -135,7 +139,7 @@ object ImageLoader {
             pendingDisplay[view] = bmp
         } else {
             pendingDisplay.remove(view)
-            setImageBitmap(view, bmp, fade = false)
+            enqueueDisplay(view, normalized, bmp, fade = false)
         }
     }
 
@@ -147,7 +151,40 @@ object ImageLoader {
         pendingDisplay.clear()
         pending.forEach { (view, bmp) ->
             val normalized = view.getTag(R.id.tag_image_loader_url) as? String ?: return@forEach
-            if (cache.get(normalized) === bmp) setImageBitmap(view, bmp, fade = shouldFade)
+            if (cache.get(normalized) === bmp) enqueueDisplay(view, normalized, bmp, fade = shouldFade)
+        }
+    }
+
+    private data class DisplayRequest(
+        val view: ImageView,
+        val normalized: String,
+        val bmp: Bitmap,
+        val fade: Boolean,
+    )
+
+    private fun enqueueDisplay(
+        view: ImageView,
+        normalized: String,
+        bmp: Bitmap,
+        fade: Boolean,
+    ) {
+        displayQueue.removeAll { it.view == view }
+        displayQueue.addLast(DisplayRequest(view, normalized, bmp, fade))
+        drainDisplayQueue()
+    }
+
+    private fun drainDisplayQueue() {
+        if (displayQueueRunning || displayQueue.isEmpty()) return
+        displayQueueRunning = true
+        scope.launch {
+            while (displayQueue.isNotEmpty()) {
+                val request = displayQueue.removeFirst()
+                if ((request.view.getTag(R.id.tag_image_loader_url) as? String) == request.normalized) {
+                    setImageBitmap(request.view, request.bmp, fade = request.fade)
+                    kotlinx.coroutines.delay(DISPLAY_QUEUE_STEP_MS)
+                }
+            }
+            displayQueueRunning = false
         }
     }
 
