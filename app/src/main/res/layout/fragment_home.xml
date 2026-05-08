@@ -13,6 +13,9 @@
         android:layout_marginEnd="12dp"
         android:background="@android:color/transparent"
         android:focusable="false"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        app:tabTextAppearance="@style/TextAppearance.Blbl.HomeTab"
         app:layout_constraintEnd_toStartOf="@id/tv_clock"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -28,7 +31,7 @@
         android:includeFontPadding="false"
         android:textColor="?attr/blblOnPageBackdrop"
         android:textSize="22sp"
-        android:textStyle="bold"
+        android:textStyle="normal"
         app:layout_constraintBottom_toBottomOf="@id/tab_layout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/tab_layout" />

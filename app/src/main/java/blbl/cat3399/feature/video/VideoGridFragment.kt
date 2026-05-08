@@ -5,6 +5,7 @@ import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -107,10 +108,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                             openDetailBeforePlay = BiliClient.prefs.playerOpenDetailBeforePlay,
                         )
                     },
-                    onLongClick = { card, _ ->
-                        openUpDetailFromVideoCard(card)
-                        true
-                    },
+                    onLongClick = { card, pos -> showVideoCardMenu(card, pos, actionController) },
                     actionDelegate = actionController,
                 )
         }
@@ -213,6 +211,19 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                 }
             binding.recycler.viewTreeObserver.addOnPreDrawListener(preDrawListener)
         }
+    }
+
+    private fun showVideoCardMenu(
+        card: VideoCard,
+        position: Int,
+        actionController: VideoCardActionController,
+    ): Boolean {
+        val activity = activity as? ComponentActivity ?: return false
+        val actions = actionController.manualActions(card, position).take(3)
+        activity.showVideoCardRemoteMenuPopup(card, actions) { action ->
+            actionController.onActionSelected(card, position, action)
+        }
+        return true
     }
 
     override fun onResume() {

@@ -162,16 +162,11 @@ class VideoCardAdapter(
     private fun handleItemLongClick(
         item: VideoCard,
         position: Int,
-        isPointerLongClick: Boolean,
+        @Suppress("UNUSED_PARAMETER") isPointerLongClick: Boolean,
     ): Boolean {
         val delegate = actionDelegate ?: return onLongClick?.invoke(item, position) ?: false
         return when (delegate.resolveLongPressAction(item, position)) {
-            VideoCardConfiguredLongPressAction.MANUAL -> {
-                openOverlay(
-                    item = item,
-                    initialSelectedIndex = if (isPointerLongClick) NO_ACTION_SELECTED else 0,
-                )
-            }
+            VideoCardConfiguredLongPressAction.MANUAL -> onLongClick?.invoke(item, position) ?: false
 
             VideoCardConfiguredLongPressAction.WATCH_LATER -> {
                 delegate.manualActions(item, position)
