@@ -22,7 +22,7 @@ import java.util.concurrent.Executors
 object ImageLoader {
     private const val TAG = "ImageLoader"
     private const val FADE_IN_DURATION_MS = 140L
-    private const val DISPLAY_QUEUE_STEP_MS = 34L
+    private const val DISPLAY_QUEUE_STEP_MS = 90L
     private val placeholder = ColorDrawable(0xFF2A2A2A.toInt())
     private val inFlight = WeakHashMap<ImageView, Job>()
     private val pendingDisplay = WeakHashMap<ImageView, Bitmap>()
@@ -126,7 +126,10 @@ object ImageLoader {
         fadeDeferredImages = deferred && fadeWhenFlushed
         if (displayDeferred == deferred) return
         displayDeferred = deferred
-        if (!deferred) flushPendingDisplay()
+        if (!deferred) {
+            flushPendingDisplay()
+            drainDisplayQueue()
+        }
     }
 
     private fun displayOrDefer(
@@ -174,10 +177,10 @@ object ImageLoader {
     }
 
     private fun drainDisplayQueue() {
-        if (displayQueueRunning || displayQueue.isEmpty()) return
+        if (displayDeferred || displayQueueRunning || displayQueue.isEmpty()) return
         displayQueueRunning = true
         scope.launch {
-            while (displayQueue.isNotEmpty()) {
+            while (!displayDeferred && displayQueue.isNotEmpty()) {
                 val request = displayQueue.removeFirst()
                 if ((request.view.getTag(R.id.tag_image_loader_url) as? String) == request.normalized) {
                     setImageBitmap(request.view, request.bmp, fade = request.fade)
@@ -185,6 +188,7 @@ object ImageLoader {
                 }
             }
             displayQueueRunning = false
+            if (!displayDeferred && displayQueue.isNotEmpty()) drainDisplayQueue()
         }
     }
 
