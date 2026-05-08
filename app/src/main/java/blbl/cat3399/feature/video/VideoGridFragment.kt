@@ -5,6 +5,7 @@ import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -70,6 +71,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
     private var dpadGridController: DpadGridController? = null
     private var viewportFillMonitor: GridViewportFillMonitor? = null
     private var pendingFocusFirstCardAfterRefresh: Boolean = false
+    private var lastScrollDy: Int = 0
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVideoGridBinding.inflate(inflater, container, false)
@@ -118,7 +120,17 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         binding.recycler.clearOnScrollListeners()
         binding.recycler.addOnScrollListener(
             object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    if (newState == RecyclerView.SCROLL_STATE_DRAGGING || newState == RecyclerView.SCROLL_STATE_SETTLING) {
+                        recyclerView.animate().cancel()
+                        recyclerView.translationY = 0f
+                    } else if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        applyScrollSettleMotion(recyclerView)
+                    }
+                }
+
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    if (dy != 0) lastScrollDy = dy
                     if (dy <= 0) return
                     val s = paging.snapshot()
                     if (s.isLoading || s.endReached) return
@@ -210,6 +222,24 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
             actionController.onActionSelected(card, position, action)
         }
         return true
+    }
+
+
+    private fun applyScrollSettleMotion(recyclerView: RecyclerView) {
+        val direction = when {
+            lastScrollDy > 0 -> -1f
+            lastScrollDy < 0 -> 1f
+            else -> 0f
+        }
+        if (direction == 0f) return
+        val offset = (recyclerView.resources.displayMetrics.density * 6f).coerceAtLeast(4f) * direction
+        recyclerView.animate().cancel()
+        recyclerView.translationY = offset
+        recyclerView.animate()
+            .translationY(0f)
+            .setDuration(200L)
+            .setInterpolator(DecelerateInterpolator(1.35f))
+            .start()
     }
 
     override fun onResume() {
