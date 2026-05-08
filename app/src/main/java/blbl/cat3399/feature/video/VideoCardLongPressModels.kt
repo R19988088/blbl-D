@@ -27,7 +27,9 @@ enum class VideoCardConfiguredLongPressAction {
 }
 
 enum class VideoCardQuickActionId {
+    FAVORITE,
     WATCH_LATER,
+    BLOCK_UP,
     OPEN_DETAIL,
     OPEN_UP,
     DISMISS,
@@ -39,10 +41,24 @@ data class VideoCardQuickAction(
     val contentDescription: CharSequence,
 ) {
     companion object {
+        fun favorite(label: CharSequence): VideoCardQuickAction =
+            VideoCardQuickAction(
+                id = VideoCardQuickActionId.FAVORITE,
+                iconResId = R.drawable.ic_action_fav,
+                contentDescription = label,
+            )
+
         fun watchLater(label: CharSequence): VideoCardQuickAction =
             VideoCardQuickAction(
                 id = VideoCardQuickActionId.WATCH_LATER,
                 iconResId = R.drawable.ic_video_card_watch_later,
+                contentDescription = label,
+            )
+
+        fun blockUp(label: CharSequence): VideoCardQuickAction =
+            VideoCardQuickAction(
+                id = VideoCardQuickActionId.BLOCK_UP,
+                iconResId = R.drawable.ic_video_card_delete,
                 contentDescription = label,
             )
 

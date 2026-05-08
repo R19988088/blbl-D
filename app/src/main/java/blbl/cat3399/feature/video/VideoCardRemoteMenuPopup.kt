@@ -2,7 +2,6 @@ package blbl.cat3399.feature.video
 
 import android.view.LayoutInflater
 import androidx.activity.ComponentActivity
-import androidx.core.view.isVisible
 import blbl.cat3399.core.image.ImageLoader
 import blbl.cat3399.core.image.ImageUrl
 import blbl.cat3399.core.model.VideoCard
@@ -20,7 +19,7 @@ fun ComponentActivity.showVideoCardRemoteMenuPopup(
 
     val dialogBinding = DialogPlayerRemoteMenuBinding.inflate(LayoutInflater.from(this))
     ImageLoader.loadInto(dialogBinding.imgCover, ImageUrl.cover(card.coverUrl))
-    dialogBinding.imgUpAvatar.isVisible = false
+    ImageLoader.loadInto(dialogBinding.imgUpAvatar, card.ownerFace)
     dialogBinding.tvUpId.text = card.remoteMenuDisplayText()
 
     val buttons = listOf(dialogBinding.btnFavorite, dialogBinding.btnWatchLater, dialogBinding.btnBlockUp)
@@ -52,14 +51,12 @@ fun ComponentActivity.showVideoCardRemoteMenuPopup(
 }
 
 private fun VideoCard.remoteMenuDisplayText(): String {
-    val idText =
-        when {
-            bvid.isNotBlank() -> bvid
-            aid != null && aid > 0L -> "av$aid"
-            epId != null && epId > 0L -> "ep$epId"
-            seasonId != null && seasonId > 0L -> "ss$seasonId"
-            cid != null && cid > 0L -> "cid$cid"
-            else -> stableKey()
-        }
-    return "ID: $idText"
+    val name = ownerName.trim()
+    val mid = ownerMid?.takeIf { it > 0L }
+    return when {
+        name.isNotBlank() && mid != null -> "$name\nID: $mid"
+        name.isNotBlank() -> name
+        mid != null -> "ID: $mid"
+        else -> "UP"
+    }
 }

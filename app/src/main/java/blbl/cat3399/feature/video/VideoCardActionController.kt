@@ -1,6 +1,7 @@
 package blbl.cat3399.feature.video
 
 import android.content.Context
+import androidx.activity.ComponentActivity
 import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApi
 import blbl.cat3399.core.api.BiliApiException
@@ -8,6 +9,7 @@ import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.model.VideoCard
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.ui.AppToast
+import blbl.cat3399.core.ui.popup.AppPopup
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +49,9 @@ class VideoCardActionController(
         position: Int,
     ): List<VideoCardQuickAction> {
         return listOf(
+            VideoCardQuickAction.favorite(context.getString(R.string.video_card_action_favorite)),
             VideoCardQuickAction.watchLater(context.getString(R.string.video_card_action_watch_later)),
+            VideoCardQuickAction.blockUp(context.getString(R.string.video_card_action_block_up)),
             VideoCardQuickAction.openDetail(context.getString(R.string.video_card_action_open_detail)),
             VideoCardQuickAction.openUp(context.getString(R.string.video_card_action_open_up)),
             VideoCardQuickAction.dismiss(context.getString(dismissActionLabelRes())),
@@ -60,10 +64,94 @@ class VideoCardActionController(
         action: VideoCardQuickAction,
     ) {
         when (action.id) {
+            VideoCardQuickActionId.FAVORITE -> openFavoriteFolders(card)
             VideoCardQuickActionId.WATCH_LATER -> addToWatchLater(card)
+            VideoCardQuickActionId.BLOCK_UP -> blockUp(card)
             VideoCardQuickActionId.OPEN_DETAIL -> openDetail(card, position)
             VideoCardQuickActionId.OPEN_UP -> onOpenUp(card)
             VideoCardQuickActionId.DISMISS -> dismissCard(card)
+        }
+    }
+
+    private fun openFavoriteFolders(card: VideoCard) {
+        val activity = context as? ComponentActivity
+        if (activity == null) {
+            AppToast.show(context, context.getString(R.string.video_card_action_failed))
+            return
+        }
+        val selfMid = BiliClient.cookies.getCookieValue("DedeUserID")?.trim()?.toLongOrNull()?.takeIf { it > 0L }
+        if (selfMid == null) {
+            AppToast.show(context, "请先登录后再收藏")
+            return
+        }
+        val aid = card.aid?.takeIf { it > 0L }
+        if (aid == null) {
+            AppToast.show(context, "未获取到 aid，暂不支持收藏")
+            return
+        }
+        val actionKey = buildActionKey(card = card, suffix = "favorite")
+        if (!markInFlight(actionKey)) return
+
+        scope.launch {
+            try {
+                val folders =
+                    withContext(Dispatchers.IO) {
+                        BiliApi.favFoldersWithState(upMid = selfMid, rid = aid)
+                    }
+                if (folders.isEmpty()) {
+                    AppToast.show(context, "未获取到收藏夹")
+                    return@launch
+                }
+
+                val initial = folders.filter { it.favState }.map { it.mediaId }.toSet()
+                val labels =
+                    folders.map { folder ->
+                        if (folder.favState) "${folder.title}（已收藏）" else folder.title
+                    }
+                AppPopup.singleChoice(
+                    context = activity,
+                    title = "选择收藏夹",
+                    items = labels,
+                    checkedIndex = 0,
+                ) { index, _ ->
+                    val picked = folders.getOrNull(index) ?: return@singleChoice
+                    val nextSelected = initial.toMutableSet()
+                    if (nextSelected.contains(picked.mediaId)) nextSelected.remove(picked.mediaId) else nextSelected.add(picked.mediaId)
+                    val add = (nextSelected - initial).toList()
+                    val del = (initial - nextSelected).toList()
+                    if (add.isEmpty() && del.isEmpty()) return@singleChoice
+                    applyFavoriteSelection(card = card, aid = aid, add = add, del = del)
+                }
+            } catch (t: Throwable) {
+                if (t is CancellationException) throw t
+                AppToast.show(context, errorMessage(t))
+            } finally {
+                clearInFlight(actionKey)
+            }
+        }
+    }
+
+    private fun applyFavoriteSelection(
+        card: VideoCard,
+        aid: Long,
+        add: List<Long>,
+        del: List<Long>,
+    ) {
+        val actionKey = buildActionKey(card = card, suffix = "favorite_apply")
+        if (!markInFlight(actionKey)) return
+
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    BiliApi.favResourceDeal(rid = aid, addMediaIds = add, delMediaIds = del)
+                }
+                AppToast.show(context, "收藏已更新")
+            } catch (t: Throwable) {
+                if (t is CancellationException) throw t
+                AppToast.show(context, errorMessage(t))
+            } finally {
+                clearInFlight(actionKey)
+            }
         }
     }
 
@@ -97,6 +185,28 @@ class VideoCardActionController(
                     )
                 }
                 AppToast.show(context, context.getString(R.string.video_card_action_watch_later_done))
+            } catch (t: Throwable) {
+                if (t is CancellationException) throw t
+                AppToast.show(context, errorMessage(t))
+            } finally {
+                clearInFlight(actionKey)
+            }
+        }
+    }
+
+    private fun blockUp(card: VideoCard) {
+        val ownerMid = card.ownerMid?.takeIf { it > 0L }
+        if (ownerMid == null) {
+            AppToast.show(context, "未获取到UP信息")
+            return
+        }
+        val actionKey = buildActionKey(card = card, suffix = "block_up")
+        if (!markInFlight(actionKey)) return
+
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { BiliApi.modifyRelation(fid = ownerMid, act = 5) }
+                AppToast.show(context, "已拉黑UP")
             } catch (t: Throwable) {
                 if (t is CancellationException) throw t
                 AppToast.show(context, errorMessage(t))
