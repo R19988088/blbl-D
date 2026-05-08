@@ -80,6 +80,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
     private var autoUpdateCheckJob: Job? = null
     private lateinit var userInfoOverlay: DialogUserInfoBinding
     private val userInfoReturnFocus = FocusReturn()
+    private var mainPageBrightenToken: Int = 0
     private var userInfoLoadJob: Job? = null
     private var userInfoOverlayMode: UserInfoOverlayMode = UserInfoOverlayMode.PROFILE
     private var isSidebarExpanded: Boolean = true
@@ -805,7 +806,22 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         tx.commitAllowingStateLoss()
 
         currentRootNavId = navId
+        playMainPageBrightenTransition()
         return true
+    }
+
+    private fun playMainPageBrightenTransition() {
+        val token = ++mainPageBrightenToken
+        binding.mainContainer.animate().cancel()
+        binding.mainContainer.alpha = 0f
+        binding.mainContainer.post {
+            if (token != mainPageBrightenToken) return@post
+            binding.mainContainer.animate()
+                .alpha(1f)
+                .setDuration(300L)
+                .setInterpolator(android.view.animation.DecelerateInterpolator(1.6f))
+                .start()
+        }
     }
 
     private fun currentRootFragment(): Fragment? {

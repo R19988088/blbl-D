@@ -289,6 +289,7 @@ class VideoCardAdapter(
         private val isOverlayExpanded: (VideoCard) -> Boolean,
     ) : RecyclerView.ViewHolder(binding.root) {
         private var pointerDownForLongClick: Boolean = false
+        private var motionResetToken: Int = 0
 
         init {
             binding.root.stateListAnimator = null
@@ -301,6 +302,7 @@ class VideoCardAdapter(
             binding.ivCover.animate().cancel()
             binding.root.scaleX = 1f
             binding.root.scaleY = 1f
+            binding.root.translationX = 0f
             binding.root.translationY = 0f
             binding.ivCover.scaleX = 1f
             binding.ivCover.scaleY = 1f
@@ -415,26 +417,64 @@ class VideoCardAdapter(
         private fun applyFocusMotion(hasFocus: Boolean) {
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
             val duration = if (refined) 220L else 120L
-            val rootScale = if (hasFocus) if (refined) 1.026f else 1.04f else 1f
-            val coverScale = if (hasFocus && refined) 1.035f else 1f
-            val coverShiftX = if (hasFocus && refined) binding.root.resources.displayMetrics.density * 2.5f else 0f
-            val coverShiftY = if (hasFocus && refined) -binding.root.resources.displayMetrics.density * 1.5f else 0f
+            val rootScale = if (hasFocus && !refined) 1.04f else 1f
 
             binding.root.animate()
                 .scaleX(rootScale)
                 .scaleY(rootScale)
-                .translationY(if (hasFocus && refined) -binding.root.resources.displayMetrics.density * 1.5f else 0f)
+                .translationX(0f)
+                .translationY(0f)
                 .setDuration(duration)
-                .setInterpolator(android.view.animation.DecelerateInterpolator(1.8f))
+                .setInterpolator(
+                    if (refined) {
+                        android.view.animation.OvershootInterpolator(0.9f)
+                    } else {
+                        android.view.animation.DecelerateInterpolator(1.8f)
+                    },
+                )
                 .start()
 
             binding.ivCover.animate()
-                .scaleX(coverScale)
-                .scaleY(coverScale)
-                .translationX(coverShiftX)
-                .translationY(coverShiftY)
+                .scaleX(1f)
+                .scaleY(1f)
+                .translationX(0f)
+                .translationY(0f)
                 .setDuration(duration)
                 .setInterpolator(android.view.animation.DecelerateInterpolator(1.8f))
+                .start()
+        }
+
+        private fun nudgeFocusedCard(directionX: Float, directionY: Float) {
+            if (BiliClient.prefs.motionEffectStyle != AppPrefs.MOTION_EFFECT_STYLE_REFINED) return
+            val widthShift = binding.root.width * 0.05f
+            val heightShift = binding.root.height * 0.05f
+            if (widthShift <= 0f || heightShift <= 0f) return
+            val token = ++motionResetToken
+
+            binding.root.animate().cancel()
+            binding.root.animate()
+                .translationX(widthShift * directionX)
+                .translationY(heightShift * directionY)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(110L)
+                .setInterpolator(android.view.animation.OvershootInterpolator(0.7f))
+                .withEndAction {
+                    binding.root.postDelayed(
+                        {
+                            if (token != motionResetToken || !binding.root.hasFocus()) return@postDelayed
+                            binding.root.animate()
+                                .translationX(0f)
+                                .translationY(0f)
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(200L)
+                                .setInterpolator(android.view.animation.OvershootInterpolator(0.85f))
+                                .start()
+                        },
+                        20L,
+                    )
+                }
                 .start()
         }
 
@@ -538,7 +578,12 @@ class VideoCardAdapter(
             if (overlayUi == null) {
                 actionButtons.forEach { it.isSelected = false }
                 binding.ivActionDismiss.contentDescription = binding.root.context.getString(R.string.video_card_action_not_interested)
-                binding.root.setDpadItemKeyHandler(null)
+                binding.root.setDpadItemKeyHandler(
+                    DpadItemKeyHandler { _, keyCode, event ->
+                        handleDirectionalMotionKey(keyCode, event)
+                        false
+                    },
+                )
                 return
             }
 
@@ -560,6 +605,7 @@ class VideoCardAdapter(
                     null
                 } else {
                     DpadItemKeyHandler { _, keyCode, event ->
+                        handleDirectionalMotionKey(keyCode, event)
                         if (!isOverlayExpanded(item)) return@DpadItemKeyHandler false
                         when (keyCode) {
                             KeyEvent.KEYCODE_BACK,
@@ -620,6 +666,16 @@ class VideoCardAdapter(
                     }
                 },
             )
+        }
+
+        private fun handleDirectionalMotionKey(keyCode: Int, event: KeyEvent) {
+            if (event.action != KeyEvent.ACTION_DOWN || event.repeatCount != 0 || !binding.root.hasFocus()) return
+            when (keyCode) {
+                KeyEvent.KEYCODE_DPAD_LEFT -> nudgeFocusedCard(-1f, 0f)
+                KeyEvent.KEYCODE_DPAD_RIGHT -> nudgeFocusedCard(1f, 0f)
+                KeyEvent.KEYCODE_DPAD_UP -> nudgeFocusedCard(0f, -1f)
+                KeyEvent.KEYCODE_DPAD_DOWN -> nudgeFocusedCard(0f, 1f)
+            }
         }
 
         private fun buildWatchProgressUi(item: VideoCard): WatchProgressUi? {
