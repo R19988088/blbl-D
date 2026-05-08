@@ -436,7 +436,7 @@ class VideoCardAdapter(
             if (lastFocusMotionState == hasFocus) return
             lastFocusMotionState = hasFocus
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
-            val duration = if (refined) 180L else 120L
+            val duration = if (refined) 235L else 155L
             val rootScale = if (hasFocus) 1.035f else 1f
 
             binding.root.animate()
@@ -447,9 +447,9 @@ class VideoCardAdapter(
                 .setDuration(duration)
                 .setInterpolator(
                     if (refined) {
-                        OvershootInterpolator(1.15f)
+                        OvershootInterpolator(0.85f)
                     } else {
-                        DecelerateInterpolator(1.8f)
+                        DecelerateInterpolator(1.45f)
                     },
                 )
                 .start()
@@ -460,14 +460,14 @@ class VideoCardAdapter(
                 .translationX(0f)
                 .translationY(0f)
                 .setDuration(duration)
-                .setInterpolator(DecelerateInterpolator(1.8f))
+                .setInterpolator(DecelerateInterpolator(1.45f))
                 .start()
         }
 
         private fun nudgeFocusedCard(directionX: Float, directionY: Float) {
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
-            val widthShift = binding.root.width * if (refined) 0.045f else 0.025f
-            val heightShift = binding.root.height * if (refined) 0.045f else 0.025f
+            val widthShift = binding.root.width * if (refined) 0.04f else 0.022f
+            val heightShift = binding.root.height * if (refined) 0.04f else 0.022f
             if (widthShift <= 0f || heightShift <= 0f) return
             val token = ++motionResetToken
             val focusedScale = if (binding.root.hasFocus()) 1.035f else 1f
@@ -478,8 +478,8 @@ class VideoCardAdapter(
                 .translationY(heightShift * directionY)
                 .scaleX(focusedScale * 0.985f)
                 .scaleY(focusedScale * 0.985f)
-                .setDuration(80L)
-                .setInterpolator(DecelerateInterpolator(1.6f))
+                .setDuration(105L)
+                .setInterpolator(DecelerateInterpolator(1.35f))
                 .withEndAction {
                     binding.root.postDelayed(
                         {
@@ -489,11 +489,11 @@ class VideoCardAdapter(
                                 .translationY(0f)
                                 .scaleX(focusedScale)
                                 .scaleY(focusedScale)
-                                .setDuration(if (refined) 190L else 150L)
-                                .setInterpolator(OvershootInterpolator(if (refined) 1.25f else 0.9f))
+                                .setDuration(if (refined) 250L else 195L)
+                                .setInterpolator(OvershootInterpolator(if (refined) 0.95f else 0.65f))
                                 .start()
                         },
-                        8L,
+                        12L,
                     )
                 }
                 .start()
