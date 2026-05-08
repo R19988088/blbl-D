@@ -17,7 +17,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "blbl.cat3399"
+        applicationId = "blbl.r19988088"
         minSdk = 21
         targetSdk = 36
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
