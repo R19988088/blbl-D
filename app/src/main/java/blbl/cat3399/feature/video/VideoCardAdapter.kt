@@ -69,8 +69,17 @@ class VideoCardAdapter(
     fun append(list: List<VideoCard>) {
         if (list.isEmpty()) return
         val start = items.size
-        items.addAll(list)
+        items.addAll(list.map { it.asPlaceholderCard() })
         notifyItemRangeInserted(start, list.size)
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            list.forEachIndexed { index, item ->
+                val targetIndex = start + index
+                if (targetIndex in items.indices && stableKeyFor(items[targetIndex]) == stableKeyFor(item)) {
+                    items[targetIndex] = item
+                }
+            }
+            notifyItemRangeChanged(start, list.size)
+        }
     }
 
     fun snapshot(): List<VideoCard> = items.toList()
@@ -134,6 +143,24 @@ class VideoCardAdapter(
     }
 
     override fun getItemCount(): Int = items.size
+
+    private fun VideoCard.asPlaceholderCard(): VideoCard =
+        copy(
+            title = "",
+            coverUrl = "",
+            durationSec = 0,
+            ownerName = "",
+            ownerFace = null,
+            view = null,
+            danmaku = null,
+            pubDate = null,
+            pubDateText = null,
+            isChargingArc = false,
+            coverLeftBottomText = null,
+            accessBadgeText = null,
+            progressSec = null,
+            progressFinished = false,
+        )
 
     private fun stableKeyFor(item: VideoCard): String = stableIdKey?.invoke(item) ?: item.stableKey()
 
@@ -316,6 +343,16 @@ class VideoCardAdapter(
         ) {
             applyFixedSizing()
 
+            if (item.isPlaceholderCard()) {
+                bindPlaceholder()
+                return
+            }
+
+            binding.root.isEnabled = true
+            binding.root.isFocusable = true
+            binding.root.isClickable = true
+            binding.root.alpha = 1f
+            binding.ivCover.alpha = 1f
             binding.root.isSelected = isSelected?.invoke(item, position) == true
 
             val watchProgressUi = buildWatchProgressUi(item)
@@ -411,6 +448,40 @@ class VideoCardAdapter(
             applyFocusMotion(binding.root.hasFocus())
         }
 
+
+        private fun VideoCard.isPlaceholderCard(): Boolean = title.isBlank() && coverUrl.isBlank()
+
+        private fun bindPlaceholder() {
+            imageBindToken++
+            binding.root.isSelected = false
+            binding.root.isEnabled = false
+            binding.root.isFocusable = false
+            binding.root.isClickable = false
+            binding.root.alpha = 1f
+            ImageLoader.clear(binding.ivCover)
+            binding.ivCover.alpha = 0.45f
+            binding.tvCoverLeftBottom.isVisible = false
+            binding.tvProgressLeft.isVisible = false
+            binding.tvProgressTime.isVisible = false
+            binding.progressWatch.isVisible = false
+            binding.tvTitle.text = ""
+            binding.tvSubtitle.text = ""
+            binding.tvPubdate.text = ""
+            binding.llSubtitle.isVisible = false
+            binding.tvDuration.isVisible = false
+            binding.llStats.isVisible = false
+            binding.ivStatPlay.isVisible = false
+            binding.tvView.isVisible = false
+            binding.ivStatDanmaku.isVisible = false
+            binding.tvDanmaku.isVisible = false
+            binding.tvChargeBadge.isVisible = false
+            binding.vActionScrim.isVisible = false
+            binding.llActions.isVisible = false
+            binding.root.setOnClickListener(null)
+            binding.root.setOnLongClickListener(null)
+            binding.root.setOnTouchListener(null)
+            binding.root.onFocusChangeListener = null
+        }
         private fun bindCoverAfterContentFrame(coverUrl: String) {
             val token = ++imageBindToken
             val cover = ImageUrl.cover(coverUrl)
