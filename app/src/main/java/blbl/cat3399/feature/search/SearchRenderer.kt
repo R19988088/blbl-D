@@ -603,6 +603,7 @@ class SearchRenderer internal constructor(
         }
         val list = merged.values.toList()
         binding.recyclerSuggest.visibility = if (list.isNotEmpty()) View.VISIBLE else View.INVISIBLE
+        binding.tvHistoryEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         suggestAdapter.submit(list)
     }
 

@@ -109,6 +109,10 @@ class SettingsRenderer(
         showSection(state.currentSectionIndex, focusId = focusId)
     }
 
+    fun focusBackButton(): Boolean {
+        return binding.btnBack.requestFocus()
+    }
+
     fun refreshAboutSectionKeepPosition() {
         if (sections.getOrNull(state.currentSectionIndex) != "关于应用") return
         showSection(state.currentSectionIndex, keepScroll = true, focusId = state.lastFocusedRightId)
@@ -239,7 +243,7 @@ class SettingsRenderer(
 
                     SettingEntry(
                         SettingId.MainVisiblePages,
-                        "????",
+                        "主页面显示",
                         SettingsText.mainVisiblePagesText(prefs.mainVisiblePages),
                         null,
                     ),

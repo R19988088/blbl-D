@@ -1613,6 +1613,155 @@ class SettingsInteractionHandler(
         }
     }
 
+    fun onEntryAdjusted(entry: SettingEntry, direction: Int): Boolean {
+        val step = if (direction < 0) -1 else 1
+        val prefs = BiliClient.prefs
+        state.pendingRestoreRightId = entry.id
+        fun refresh(): Boolean {
+            renderer.refreshSection(entry.id)
+            return true
+        }
+        fun cycle(current: String, options: List<String>): String {
+            if (options.isEmpty()) return current
+            val index = options.indexOf(current).takeIf { it >= 0 } ?: 0
+            return options[(index + step + options.size) % options.size]
+        }
+        fun cycleInt(current: Int, options: List<Int>): Int {
+            if (options.isEmpty()) return current
+            val index = options.indexOf(current).takeIf { it >= 0 } ?: 0
+            return options[(index + step + options.size) % options.size]
+        }
+        fun cycleFloat(current: Float, options: List<Float>): Float {
+            if (options.isEmpty()) return current
+            val index = options.indices.minByOrNull { kotlin.math.abs(options[it] - current) } ?: 0
+            return options[(index + step + options.size) % options.size]
+        }
+        return when (entry.id) {
+            SettingId.ImageQuality -> {
+                prefs.imageQuality = cycle(prefs.imageQuality, listOf("small", "medium", "large"))
+                refresh()
+            }
+
+            SettingId.CustomPageEnabled -> {
+                prefs.customPageConfig = prefs.customPageConfig.copy(enabled = !prefs.customPageConfig.enabled)
+                refresh()
+            }
+
+            SettingId.AvoidDisplayCutout -> {
+                prefs.avoidDisplayCutout = !prefs.avoidDisplayCutout
+                activity.reapplyWindowDisplayPolicy()
+                refresh()
+            }
+
+            SettingId.TabSwitchFollowsFocus -> {
+                prefs.tabSwitchFollowsFocus = !prefs.tabSwitchFollowsFocus
+                refresh()
+            }
+
+            SettingId.MainAutoHideSidebarOnEnterContent -> {
+                prefs.mainAutoHideSidebarOnEnterContent = !prefs.mainAutoHideSidebarOnEnterContent
+                refresh()
+            }
+
+            SettingId.DynamicFollowingRecentUpdateDotEnabled -> {
+                prefs.dynamicFollowingRecentUpdateDotEnabled = !prefs.dynamicFollowingRecentUpdateDotEnabled
+                refresh()
+            }
+
+            SettingId.GridSpanCount -> {
+                prefs.gridSpanCount = cycleInt(prefs.gridSpanCount.takeIf { it > 0 } ?: 4, (1..6).toList())
+                refresh()
+            }
+
+            SettingId.DynamicGridSpanCount -> {
+                prefs.dynamicGridSpanCount = cycleInt(prefs.dynamicGridSpanCount.takeIf { it > 0 } ?: 4, (1..6).toList())
+                refresh()
+            }
+
+            SettingId.PgcGridSpanCount -> {
+                prefs.pgcGridSpanCount = cycleInt(prefs.pgcGridSpanCount.takeIf { it > 0 } ?: 4, (1..6).toList())
+                refresh()
+            }
+
+            SettingId.PlayerSpeed -> {
+                prefs.playerSpeed = cycleFloat(prefs.playerSpeed, PlaybackSettingChoices.playbackSpeeds)
+                refresh()
+            }
+
+            SettingId.DanmakuOpacity -> {
+                prefs.danmakuOpacity = cycleFloat(prefs.danmakuOpacity, PlaybackSettingChoices.danmakuOpacities).coerceIn(0.05f, 1.0f)
+                refresh()
+            }
+
+            SettingId.DanmakuTextSizeSp -> {
+                prefs.danmakuTextSizeSp = cycleFloat(prefs.danmakuTextSizeSp, PlaybackSettingChoices.danmakuTextSizes.map { it.toFloat() })
+                refresh()
+            }
+
+            SettingId.DanmakuArea -> {
+                prefs.danmakuArea = cycleFloat(prefs.danmakuArea, PlaybackSettingChoices.danmakuAreas.map { it.first })
+                refresh()
+            }
+
+            SettingId.DanmakuSpeed -> {
+                prefs.danmakuSpeed = cycleInt(prefs.danmakuSpeed, PlaybackSettingChoices.danmakuSpeeds)
+                refresh()
+            }
+
+            SettingId.DanmakuEnabled -> {
+                prefs.danmakuEnabled = !prefs.danmakuEnabled
+                refresh()
+            }
+
+            SettingId.DanmakuFollowBiliShield -> {
+                prefs.danmakuFollowBiliShield = !prefs.danmakuFollowBiliShield
+                refresh()
+            }
+
+            SettingId.DanmakuShowHighLikeIcon -> {
+                prefs.danmakuShowHighLikeIcon = !prefs.danmakuShowHighLikeIcon
+                refresh()
+            }
+
+            SettingId.DanmakuAiShieldEnabled -> {
+                prefs.danmakuAiShieldEnabled = !prefs.danmakuAiShieldEnabled
+                refresh()
+            }
+
+            SettingId.DanmakuAiShieldLevel -> {
+                prefs.danmakuAiShieldLevel = cycleInt(prefs.danmakuAiShieldLevel.coerceIn(1, 10), (1..10).toList())
+                refresh()
+            }
+
+            SettingId.DanmakuAllowScroll -> {
+                prefs.danmakuAllowScroll = !prefs.danmakuAllowScroll
+                refresh()
+            }
+
+            SettingId.DanmakuAllowTop -> {
+                prefs.danmakuAllowTop = !prefs.danmakuAllowTop
+                refresh()
+            }
+
+            SettingId.DanmakuAllowBottom -> {
+                prefs.danmakuAllowBottom = !prefs.danmakuAllowBottom
+                refresh()
+            }
+
+            SettingId.DanmakuAllowColor -> {
+                prefs.danmakuAllowColor = !prefs.danmakuAllowColor
+                refresh()
+            }
+
+            SettingId.DanmakuAllowSpecial -> {
+                prefs.danmakuAllowSpecial = !prefs.danmakuAllowSpecial
+                refresh()
+            }
+
+            else -> false
+        }
+    }
+
     private fun restartToMain() {
         val intent =
             Intent(activity, MainActivity::class.java)

@@ -76,7 +76,11 @@ class SettingsActivity : BaseActivity() {
 
         binding.recyclerRight.layoutManager = LinearLayoutManager(this)
         binding.recyclerRight.itemAnimator = null
-        rightAdapter = SettingsEntryAdapter { entry -> interactionHandler.onEntryClicked(entry) }
+        rightAdapter =
+            SettingsEntryAdapter(
+                onClick = { entry -> interactionHandler.onEntryClicked(entry) },
+                onAdjust = { entry, direction -> interactionHandler.onEntryAdjusted(entry, direction) },
+            )
         binding.recyclerRight.adapter = rightAdapter
 
         renderer =
@@ -125,7 +129,11 @@ class SettingsActivity : BaseActivity() {
                 val focused = currentFocus
                 val focusInContent = focused != null && FocusTreeUtils.isDescendantOf(focused, binding.recyclerRight)
                 if (focusInContent) {
-                    renderer.focusSectionTab(state.currentSectionIndex)
+                    if (state.returnKeyRequiresBackButton) {
+                        renderer.focusBackButton()
+                    } else {
+                        renderer.focusSectionTab(state.currentSectionIndex)
+                    }
                 } else {
                     finish()
                 }

@@ -37,7 +37,7 @@
         android:textSize="22sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/iv_search"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/panel_keyboard"
         app:layout_constraintStart_toEndOf="@id/iv_search"
         app:layout_constraintTop_toTopOf="@id/iv_search" />
 
@@ -174,8 +174,31 @@
             android:clipToPadding="false"
             android:orientation="vertical"
             android:paddingStart="@dimen/focus_safe_padding_h"
+            android:paddingTop="@dimen/focus_safe_padding_v"
             android:paddingEnd="@dimen/focus_safe_padding_h"
             android:paddingBottom="@dimen/focus_safe_padding_v">
+
+            <TextView
+                android:id="@+id/tv_history_title"
+                android:layout_width="match_parent"
+                android:layout_height="32dp"
+                android:gravity="center_vertical"
+                android:includeFontPadding="false"
+                android:text="历史记录"
+                android:textColor="?attr/blblOnPageBackdropSecondary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_history_empty"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:includeFontPadding="false"
+                android:text="暂无"
+                android:textColor="?attr/blblOnPageBackdropSecondary"
+                android:textSize="16sp" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_suggest"

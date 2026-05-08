@@ -26,6 +26,7 @@ class SettingsState {
     var pendingRestoreLeftIndex: Int? = null
     var pendingRestoreBack: Boolean = false
     var focusRequestToken: Int = 0
+    var returnKeyRequiresBackButton: Boolean = true
 
     var cacheSizeBytes: Long? = null
 

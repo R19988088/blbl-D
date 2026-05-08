@@ -1,5 +1,6 @@
 package blbl.cat3399.feature.settings
 
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -8,6 +9,7 @@ import blbl.cat3399.databinding.ItemSettingEntryBinding
 
 class SettingsEntryAdapter(
     private val onClick: (SettingEntry) -> Unit,
+    private val onAdjust: (SettingEntry, Int) -> Boolean = { _, _ -> false },
 ) : RecyclerView.Adapter<SettingsEntryAdapter.Vh>() {
     private val items = ArrayList<SettingEntry>()
 
@@ -49,12 +51,12 @@ class SettingsEntryAdapter(
         return Vh(binding)
     }
 
-    override fun onBindViewHolder(holder: Vh, position: Int) = holder.bind(items[position], onClick)
+    override fun onBindViewHolder(holder: Vh, position: Int) = holder.bind(items[position], onClick, onAdjust)
 
     override fun getItemCount(): Int = items.size
 
     class Vh(private val binding: ItemSettingEntryBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(item: SettingEntry, onClick: (SettingEntry) -> Unit) {
+        fun bind(item: SettingEntry, onClick: (SettingEntry) -> Unit, onAdjust: (SettingEntry, Int) -> Boolean) {
             binding.root.tag = item.id
             binding.tvTitle.text = item.title
             if (item.value.isBlank()) {
@@ -71,6 +73,18 @@ class SettingsEntryAdapter(
                 binding.tvDesc.text = item.desc
             }
             binding.root.setOnClickListener { onClick(item) }
+            binding.root.setOnKeyListener { _, keyCode, event ->
+                if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        onAdjust(item, -1)
+                        true
+                    }
+
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> onAdjust(item, 1)
+                    else -> false
+                }
+            }
         }
     }
 }
