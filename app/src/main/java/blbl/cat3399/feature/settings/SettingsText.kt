@@ -163,6 +163,12 @@ object SettingsText {
             else -> "手动选择"
         }
 
+    fun motionEffectStyleText(prefValue: String): String =
+        when (prefValue) {
+            blbl.cat3399.core.prefs.AppPrefs.MOTION_EFFECT_STYLE_TRADITIONAL -> "传统"
+            else -> "细腻"
+        }
+
     fun themePresetText(prefValue: String): String =
         when (prefValue) {
             blbl.cat3399.core.prefs.AppPrefs.THEME_PRESET_TV_PINK -> "小电视粉"

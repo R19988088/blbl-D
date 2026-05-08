@@ -12,6 +12,8 @@ import blbl.cat3399.R
 import blbl.cat3399.core.image.ImageLoader
 import blbl.cat3399.core.image.ImageUrl
 import blbl.cat3399.core.model.VideoCard
+import blbl.cat3399.core.net.BiliClient
+import blbl.cat3399.core.prefs.AppPrefs
 import blbl.cat3399.core.ui.DpadItemKeyHandler
 import blbl.cat3399.core.ui.cloneInUserScale
 import blbl.cat3399.core.ui.setDpadItemKeyHandler
@@ -122,6 +124,11 @@ class VideoCardAdapter(
             overlayUi = currentOverlayUi(item, position),
             actionDelegate = actionDelegate,
         )
+    }
+
+    override fun onViewRecycled(holder: Vh) {
+        holder.clear()
+        super.onViewRecycled(holder)
     }
 
     override fun getItemCount(): Int = items.size
@@ -284,7 +291,21 @@ class VideoCardAdapter(
         private var pointerDownForLongClick: Boolean = false
 
         init {
+            binding.root.stateListAnimator = null
             applyFixedSizing()
+        }
+
+        fun clear() {
+            ImageLoader.clear(binding.ivCover)
+            binding.root.animate().cancel()
+            binding.ivCover.animate().cancel()
+            binding.root.scaleX = 1f
+            binding.root.scaleY = 1f
+            binding.root.translationY = 0f
+            binding.ivCover.scaleX = 1f
+            binding.ivCover.scaleY = 1f
+            binding.ivCover.translationX = 0f
+            binding.ivCover.translationY = 0f
         }
 
         fun bind(
@@ -379,6 +400,7 @@ class VideoCardAdapter(
 
             binding.root.onFocusChangeListener =
                 View.OnFocusChangeListener { _, hasFocus ->
+                    applyFocusMotion(hasFocus)
                     if (!hasFocus) {
                         binding.root.post {
                             if (bindingAdapterPosition != RecyclerView.NO_POSITION && !binding.root.hasFocus()) {
@@ -387,6 +409,33 @@ class VideoCardAdapter(
                         }
                     }
                 }
+            applyFocusMotion(binding.root.hasFocus())
+        }
+
+        private fun applyFocusMotion(hasFocus: Boolean) {
+            val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
+            val duration = if (refined) 220L else 120L
+            val rootScale = if (hasFocus) if (refined) 1.026f else 1.04f else 1f
+            val coverScale = if (hasFocus && refined) 1.035f else 1f
+            val coverShiftX = if (hasFocus && refined) binding.root.resources.displayMetrics.density * 2.5f else 0f
+            val coverShiftY = if (hasFocus && refined) -binding.root.resources.displayMetrics.density * 1.5f else 0f
+
+            binding.root.animate()
+                .scaleX(rootScale)
+                .scaleY(rootScale)
+                .translationY(if (hasFocus && refined) -binding.root.resources.displayMetrics.density * 1.5f else 0f)
+                .setDuration(duration)
+                .setInterpolator(android.view.animation.DecelerateInterpolator(1.8f))
+                .start()
+
+            binding.ivCover.animate()
+                .scaleX(coverScale)
+                .scaleY(coverScale)
+                .translationX(coverShiftX)
+                .translationY(coverShiftY)
+                .setDuration(duration)
+                .setInterpolator(android.view.animation.DecelerateInterpolator(1.8f))
+                .start()
         }
 
         private fun applyFixedSizing() {

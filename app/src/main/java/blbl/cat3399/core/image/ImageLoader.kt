@@ -64,7 +64,8 @@ object ImageLoader {
         val job = scope.launch {
             try {
                 val bytes = withContext(Dispatchers.IO) { BiliClient.getBytes(normalized) }
-                val bmp = withContext(Dispatchers.Default) { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }
+                val targetSize = viewTargetSize(view)
+                val bmp = withContext(Dispatchers.Default) { decodeBitmap(bytes, targetSize) }
                 if (bmp != null) {
                     cache.put(normalized, bmp)
                     if ((view.getTag(R.id.tag_image_loader_url) as? String) == normalized) {
@@ -76,6 +77,60 @@ object ImageLoader {
             }
         }
         inFlight[view] = job
+    }
+
+    fun clear(view: ImageView) {
+        view.setTag(R.id.tag_image_loader_url, null)
+        inFlight.remove(view)?.cancel()
+        if (view.drawable !== placeholder) view.setImageDrawable(placeholder)
+    }
+
+    private data class TargetSize(
+        val width: Int,
+        val height: Int,
+    )
+
+    private fun viewTargetSize(view: ImageView): TargetSize? {
+        val width = view.width.takeIf { it > 0 } ?: view.measuredWidth.takeIf { it > 0 }
+        val height = view.height.takeIf { it > 0 } ?: view.measuredHeight.takeIf { it > 0 }
+        if (width == null || height == null) return null
+        val density = view.resources.displayMetrics.density
+        val guardScale = if (density >= 2f) 1.25f else 1.5f
+        return TargetSize(
+            width = (width * guardScale).toInt().coerceAtLeast(width),
+            height = (height * guardScale).toInt().coerceAtLeast(height),
+        )
+    }
+
+    private fun decodeBitmap(bytes: ByteArray, targetSize: TargetSize?): Bitmap? {
+        if (targetSize == null) return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+
+        val bounds =
+            BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        }
+
+        val options =
+            BitmapFactory.Options().apply {
+                inSampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, targetSize)
+            }
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+    }
+
+    private fun calculateInSampleSize(
+        sourceWidth: Int,
+        sourceHeight: Int,
+        targetSize: TargetSize,
+    ): Int {
+        var sample = 1
+        while (sourceWidth / (sample * 2) >= targetSize.width && sourceHeight / (sample * 2) >= targetSize.height) {
+            sample *= 2
+        }
+        return sample
     }
 
     private fun normalizeImageUrl(url: String?): String? {

@@ -113,7 +113,9 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         }
         binding.recycler.adapter = adapter
         binding.recycler.setHasFixedSize(true)
-        binding.recycler.layoutManager = GridLayoutManager(requireContext(), spanCountForWidth())
+        val spanCount = spanCountForWidth()
+        binding.recycler.layoutManager = GridLayoutManager(requireContext(), spanCount)
+        binding.recycler.setItemViewCacheSize(spanCount * 2)
         (binding.recycler.itemAnimator as? androidx.recyclerview.widget.SimpleItemAnimator)?.supportsChangeAnimations = false
         binding.recycler.clearOnScrollListeners()
         binding.recycler.addOnScrollListener(

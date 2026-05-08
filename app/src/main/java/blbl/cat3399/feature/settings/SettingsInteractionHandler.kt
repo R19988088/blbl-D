@@ -827,6 +827,24 @@ class SettingsInteractionHandler(
                 }
             }
 
+            SettingId.MotionEffectStyle -> {
+                val options =
+                    listOf(
+                        AppPrefs.MOTION_EFFECT_STYLE_TRADITIONAL to "传统",
+                        AppPrefs.MOTION_EFFECT_STYLE_REFINED to "细腻",
+                    )
+                showChoiceDialog(
+                    title = "动态效果",
+                    items = options.map { it.second },
+                    current = SettingsText.motionEffectStyleText(prefs.motionEffectStyle),
+                ) { selected ->
+                    val value = options.firstOrNull { it.second == selected }?.first ?: AppPrefs.MOTION_EFFECT_STYLE_REFINED
+                    prefs.motionEffectStyle = value
+                    AppToast.show(activity, "动态效果：$selected")
+                    renderer.refreshSection(entry.id)
+                }
+            }
+
             SettingId.StartupPage -> {
                 val options =
                     MainRootNavRegistry.startupSpecs().map { spec ->

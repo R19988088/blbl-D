@@ -20,8 +20,8 @@ jobs:
   build-debug:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "17"
@@ -129,7 +129,7 @@ jobs:
           aws s3 cp "app/build/outputs/apk/debug/app-debug.apk" "s3://${R2_BUCKET}/${KEY_PREFIX}blbl-${CLEAN_VERSION}-debug.apk" --endpoint-url "${ENDPOINT}" --content-type "application/vnd.android.package-archive"
           aws s3 cp "app/build/outputs/apk/debug/app-debug.apk" "s3://${R2_BUCKET}/${KEY_PREFIX}blbl-latest-debug.apk" --endpoint-url "${ENDPOINT}" --content-type "application/vnd.android.package-archive" --cache-control "no-cache"
       - name: Upload debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk

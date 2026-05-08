@@ -228,6 +228,12 @@ class SettingsRenderer(
                         null,
                     ),
                     SettingEntry(
+                        SettingId.MotionEffectStyle,
+                        "动态效果",
+                        SettingsText.motionEffectStyleText(prefs.motionEffectStyle),
+                        null,
+                    ),
+                    SettingEntry(
                         SettingId.VideoCardLongPressAction,
                         "长按视频卡片",
                         SettingsText.videoCardLongPressActionText(prefs.videoCardLongPressAction),

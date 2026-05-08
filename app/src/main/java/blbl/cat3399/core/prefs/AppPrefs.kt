@@ -635,6 +635,10 @@ class AppPrefs(context: Context) {
         get() = normalizeVideoCardLongPressAction(prefs.getString(KEY_VIDEO_CARD_LONG_PRESS_ACTION, VIDEO_CARD_LONG_PRESS_ACTION_MANUAL))
         set(value) = prefs.edit().putString(KEY_VIDEO_CARD_LONG_PRESS_ACTION, normalizeVideoCardLongPressAction(value)).apply()
 
+    var motionEffectStyle: String
+        get() = normalizeMotionEffectStyle(prefs.getString(KEY_MOTION_EFFECT_STYLE, MOTION_EFFECT_STYLE_REFINED))
+        set(value) = prefs.edit().putString(KEY_MOTION_EFFECT_STYLE, normalizeMotionEffectStyle(value)).apply()
+
     var playerDebugEnabled: Boolean
         get() = prefs.getBoolean(KEY_PLAYER_DEBUG, false)
         set(value) = prefs.edit().putBoolean(KEY_PLAYER_DEBUG, value).apply()
@@ -1017,6 +1021,9 @@ class AppPrefs(context: Context) {
         const val VIDEO_CARD_LONG_PRESS_ACTION_OPEN_UP = "open_up"
         const val VIDEO_CARD_LONG_PRESS_ACTION_DISMISS = "dismiss"
 
+        const val MOTION_EFFECT_STYLE_TRADITIONAL = "traditional"
+        const val MOTION_EFFECT_STYLE_REFINED = "refined"
+
         private const val KEY_DISCLAIMER_ACCEPTED = "disclaimer_accepted"
         private const val KEY_WEB_REFRESH_TOKEN = "web_refresh_token"
         private const val KEY_APP_AUTH_SESSION = "app_auth_session"
@@ -1093,6 +1100,7 @@ class AppPrefs(context: Context) {
         private const val KEY_MAIN_AUTO_HIDE_SIDEBAR_ON_ENTER_CONTENT = "main_auto_hide_sidebar_on_enter_content"
         private const val KEY_MAIN_BACK_FOCUS_SCHEME = "main_back_focus_scheme"
         private const val KEY_VIDEO_CARD_LONG_PRESS_ACTION = "video_card_long_press_action"
+        private const val KEY_MOTION_EFFECT_STYLE = "motion_effect_style"
         private const val KEY_PLAYER_DEBUG = "player_debug_enabled"
         private const val KEY_PLAYER_DOUBLE_BACK_TO_EXIT = "player_double_back_on_ended"
         private const val KEY_PLAYER_DOWN_KEY_OSD_FOCUS_TARGET = "player_down_key_osd_focus_target"
@@ -1198,6 +1206,13 @@ class AppPrefs(context: Context) {
                 VIDEO_CARD_LONG_PRESS_ACTION_OPEN_UP -> VIDEO_CARD_LONG_PRESS_ACTION_OPEN_UP
                 VIDEO_CARD_LONG_PRESS_ACTION_DISMISS -> VIDEO_CARD_LONG_PRESS_ACTION_DISMISS
                 else -> VIDEO_CARD_LONG_PRESS_ACTION_MANUAL
+            }
+        }
+
+        fun normalizeMotionEffectStyle(value: String?): String {
+            return when (value?.trim()) {
+                MOTION_EFFECT_STYLE_TRADITIONAL -> MOTION_EFFECT_STYLE_TRADITIONAL
+                else -> MOTION_EFFECT_STYLE_REFINED
             }
         }
 
