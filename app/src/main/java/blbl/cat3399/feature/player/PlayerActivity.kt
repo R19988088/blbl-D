@@ -2052,6 +2052,11 @@ class PlayerActivity : BaseActivity() {
             setControlsVisible(true)
         }
 
+        binding.btnResolution.setOnClickListener {
+            showResolutionDialog()
+            setControlsVisible(true)
+        }
+
         binding.btnListPanel.setOnClickListener {
             showListPanelFromButton()
             setControlsVisible(true)
@@ -2082,6 +2087,11 @@ class PlayerActivity : BaseActivity() {
                 return@setOnClickListener
             }
             toggleSubtitles(exo)
+            setControlsVisible(true)
+        }
+
+        binding.btnRemoteMenu.setOnClickListener {
+            showRemoteMenuPopup()
             setControlsVisible(true)
         }
 

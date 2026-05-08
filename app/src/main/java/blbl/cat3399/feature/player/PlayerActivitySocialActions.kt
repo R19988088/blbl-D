@@ -20,10 +20,12 @@ import blbl.cat3399.core.model.VideoCard
 
 internal fun PlayerActivity.applyOsdButtonsVisibility() {
     val enabled = BiliClient.prefs.playerOsdButtons.toSet()
-    binding.btnPrev.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_PREV)) View.VISIBLE else View.GONE
+    binding.btnPrev.visibility = View.VISIBLE
     binding.btnPlayPause.visibility = View.VISIBLE
     binding.btnNext.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_NEXT)) View.VISIBLE else View.GONE
-    binding.btnSubtitle.visibility = View.GONE
+    binding.btnResolution.visibility = View.VISIBLE
+    binding.btnSubtitle.visibility = View.VISIBLE
+    binding.btnRemoteMenu.visibility = View.VISIBLE
     binding.btnDanmaku.visibility = View.GONE
     binding.btnComments.visibility = View.GONE
     binding.btnDetail.visibility = View.GONE
@@ -47,6 +49,7 @@ internal fun PlayerActivity.applyOsdButtonsVisibility() {
 }
 
 internal fun PlayerActivity.updateActionButtonsUi() {
+    binding.btnResolution.text = qnLabel(selectedResolutionQn())
     updateLikeButtonUi()
     updateCoinButtonUi()
     updateFavButtonUi()

@@ -186,7 +186,7 @@ class AppPrefs(context: Context) {
         set(value) = prefs.edit().putString(KEY_IMAGE_QUALITY, value).apply()
 
     var danmakuEnabled: Boolean
-        get() = prefs.getBoolean(KEY_DANMAKU_ENABLED, true)
+        get() = prefs.getBoolean(KEY_DANMAKU_ENABLED, false)
         set(value) = prefs.edit().putBoolean(KEY_DANMAKU_ENABLED, value).apply()
 
     var danmakuAllowTop: Boolean

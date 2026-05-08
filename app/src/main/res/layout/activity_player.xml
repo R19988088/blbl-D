@@ -391,7 +391,7 @@
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_player_prev"
                 app:tint="@color/player_button_tint"
-                android:visibility="gone" />
+                android:visibility="visible" />
 
             <ImageButton
                 android:id="@+id/btn_play_pause"
@@ -419,6 +419,21 @@
             android:src="@drawable/ic_player_next"
             app:tint="@color/player_button_tint" />
 
+            <TextView
+                android:id="@+id/btn_resolution"
+                android:layout_width="wrap_content"
+                android:layout_height="?attr/playerOsdButtonTargetSize"
+                android:layout_marginEnd="?attr/playerOsdGap"
+                android:background="?attr/blblFocusBgRound"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:minWidth="?attr/playerOsdButtonTargetSize"
+                android:paddingHorizontal="12dp"
+                android:text="画质"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="16sp" />
+
             <ImageButton
                 android:id="@+id/btn_subtitle"
                 android:layout_width="?attr/playerOsdButtonTargetSize"
@@ -431,6 +446,19 @@
             android:src="@drawable/ic_player_subtitle"
             app:tint="@color/player_button_tint"
             android:contentDescription="@string/player_btn_subtitle" />
+
+            <ImageButton
+                android:id="@+id/btn_remote_menu"
+                android:layout_width="?attr/playerOsdButtonTargetSize"
+                android:layout_height="?attr/playerOsdButtonTargetSize"
+                android:layout_marginEnd="?attr/playerOsdGap"
+                android:background="?attr/blblFocusBgRound"
+                android:contentDescription="菜单"
+                android:focusable="true"
+                android:padding="?attr/playerOsdPadNormal"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_panel_left_dashed"
+                app:tint="@color/player_button_tint" />
 
             <ImageButton
                 android:id="@+id/btn_danmaku"
