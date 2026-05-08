@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApi
 import blbl.cat3399.core.log.AppLog
+import blbl.cat3399.core.image.ImageLoader
 import blbl.cat3399.core.model.VideoCard
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.paging.PagedGridStateMachine
@@ -115,11 +116,15 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         binding.recycler.setHasFixedSize(true)
         val spanCount = spanCountForWidth()
         binding.recycler.layoutManager = GridLayoutManager(requireContext(), spanCount)
-        binding.recycler.setItemViewCacheSize(spanCount * 2)
+        binding.recycler.setItemViewCacheSize(spanCount * 3)
         (binding.recycler.itemAnimator as? androidx.recyclerview.widget.SimpleItemAnimator)?.supportsChangeAnimations = false
         binding.recycler.clearOnScrollListeners()
         binding.recycler.addOnScrollListener(
             object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    ImageLoader.setDisplayDeferred(newState == RecyclerView.SCROLL_STATE_SETTLING)
+                }
+
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dy <= 0) return
                     val s = paging.snapshot()

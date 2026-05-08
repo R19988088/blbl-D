@@ -127,7 +127,7 @@ class VideoCardAdapter(
     }
 
     override fun onViewRecycled(holder: Vh) {
-        holder.clear()
+        holder.resetTransientState()
         super.onViewRecycled(holder)
     }
 
@@ -296,8 +296,7 @@ class VideoCardAdapter(
             applyFixedSizing()
         }
 
-        fun clear() {
-            ImageLoader.clear(binding.ivCover)
+        fun resetTransientState() {
             binding.root.animate().cancel()
             binding.ivCover.animate().cancel()
             binding.root.scaleX = 1f

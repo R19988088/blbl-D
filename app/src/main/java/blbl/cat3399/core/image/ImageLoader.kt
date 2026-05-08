@@ -16,12 +16,17 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.WeakHashMap
+import java.util.concurrent.Executors
+import kotlinx.coroutines.asCoroutineDispatcher
 
 object ImageLoader {
     private const val TAG = "ImageLoader"
     private val placeholder = ColorDrawable(0xFF2A2A2A.toInt())
     private val inFlight = WeakHashMap<ImageView, Job>()
+    private val pendingDisplay = WeakHashMap<ImageView, Bitmap>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val decodeDispatcher = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
+    private var displayDeferred: Boolean = false
 
     private val cache = object : LruCache<String, Bitmap>(maxCacheBytes()) {
         override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
@@ -56,7 +61,7 @@ object ImageLoader {
 
         val cached = cache.get(normalized)
         if (cached != null) {
-            view.setImageBitmap(cached)
+            displayOrDefer(view, normalized, cached)
             return
         }
 
@@ -65,11 +70,11 @@ object ImageLoader {
             try {
                 val bytes = withContext(Dispatchers.IO) { BiliClient.getBytes(normalized) }
                 val targetSize = viewTargetSize(view)
-                val bmp = withContext(Dispatchers.Default) { decodeBitmap(bytes, targetSize) }
+                val bmp = withContext(decodeDispatcher) { decodeBitmap(bytes, targetSize) }
                 if (bmp != null) {
                     cache.put(normalized, bmp)
                     if ((view.getTag(R.id.tag_image_loader_url) as? String) == normalized) {
-                        view.setImageBitmap(bmp)
+                        displayOrDefer(view, normalized, bmp)
                     }
                 }
             } catch (t: Throwable) {
@@ -82,7 +87,38 @@ object ImageLoader {
     fun clear(view: ImageView) {
         view.setTag(R.id.tag_image_loader_url, null)
         inFlight.remove(view)?.cancel()
+        pendingDisplay.remove(view)
         if (view.drawable !== placeholder) view.setImageDrawable(placeholder)
+    }
+
+    fun setDisplayDeferred(deferred: Boolean) {
+        if (displayDeferred == deferred) return
+        displayDeferred = deferred
+        if (!deferred) flushPendingDisplay()
+    }
+
+    private fun displayOrDefer(
+        view: ImageView,
+        normalized: String,
+        bmp: Bitmap,
+    ) {
+        if ((view.getTag(R.id.tag_image_loader_url) as? String) != normalized) return
+        if (displayDeferred) {
+            pendingDisplay[view] = bmp
+        } else {
+            pendingDisplay.remove(view)
+            view.setImageBitmap(bmp)
+        }
+    }
+
+    private fun flushPendingDisplay() {
+        if (pendingDisplay.isEmpty()) return
+        val pending = pendingDisplay.entries.toList()
+        pendingDisplay.clear()
+        pending.forEach { (view, bmp) ->
+            val normalized = view.getTag(R.id.tag_image_loader_url) as? String ?: return@forEach
+            if (cache.get(normalized) === bmp) view.setImageBitmap(bmp)
+        }
     }
 
     private data class TargetSize(
