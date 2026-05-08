@@ -13,20 +13,23 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.WeakHashMap
 import java.util.concurrent.Executors
-import kotlinx.coroutines.asCoroutineDispatcher
 
 object ImageLoader {
     private const val TAG = "ImageLoader"
+    private const val FADE_IN_DURATION_MS = 140L
     private val placeholder = ColorDrawable(0xFF2A2A2A.toInt())
     private val inFlight = WeakHashMap<ImageView, Job>()
     private val pendingDisplay = WeakHashMap<ImageView, Bitmap>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val decodeDispatcher = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
+    private val prefetchInFlight = LinkedHashSet<String>()
     private var displayDeferred: Boolean = false
+    private var fadeDeferredImages: Boolean = false
 
     private val cache = object : LruCache<String, Bitmap>(maxCacheBytes()) {
         override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
@@ -91,7 +94,32 @@ object ImageLoader {
         if (view.drawable !== placeholder) view.setImageDrawable(placeholder)
     }
 
-    fun setDisplayDeferred(deferred: Boolean) {
+    fun prefetch(urls: List<String?>) {
+        urls.asSequence()
+            .mapNotNull(::normalizeImageUrl)
+            .distinct()
+            .filter { cache.get(it) == null && prefetchInFlight.add(it) }
+            .take(24)
+            .forEach { normalized ->
+                scope.launch {
+                    try {
+                        val bytes = withContext(Dispatchers.IO) { BiliClient.getBytes(normalized) }
+                        val bmp = withContext(decodeDispatcher) { decodeBitmap(bytes, null) }
+                        if (bmp != null) cache.put(normalized, bmp)
+                    } catch (t: Throwable) {
+                        AppLog.w(TAG, "prefetch failed url=$normalized", t)
+                    } finally {
+                        prefetchInFlight.remove(normalized)
+                    }
+                }
+            }
+    }
+
+    fun setDisplayDeferred(
+        deferred: Boolean,
+        fadeWhenFlushed: Boolean = deferred,
+    ) {
+        fadeDeferredImages = deferred && fadeWhenFlushed
         if (displayDeferred == deferred) return
         displayDeferred = deferred
         if (!deferred) flushPendingDisplay()
@@ -107,17 +135,38 @@ object ImageLoader {
             pendingDisplay[view] = bmp
         } else {
             pendingDisplay.remove(view)
-            view.setImageBitmap(bmp)
+            setImageBitmap(view, bmp, fade = false)
         }
     }
 
     private fun flushPendingDisplay() {
         if (pendingDisplay.isEmpty()) return
         val pending = pendingDisplay.entries.toList()
+        val shouldFade = fadeDeferredImages
+        fadeDeferredImages = false
         pendingDisplay.clear()
         pending.forEach { (view, bmp) ->
             val normalized = view.getTag(R.id.tag_image_loader_url) as? String ?: return@forEach
-            if (cache.get(normalized) === bmp) view.setImageBitmap(bmp)
+            if (cache.get(normalized) === bmp) setImageBitmap(view, bmp, fade = shouldFade)
+        }
+    }
+
+    private fun setImageBitmap(
+        view: ImageView,
+        bmp: Bitmap,
+        fade: Boolean,
+    ) {
+        view.animate().cancel()
+        if (fade) view.alpha = 0.62f
+        view.setImageBitmap(bmp)
+        if (fade) {
+            view.animate()
+                .alpha(1f)
+                .setDuration(FADE_IN_DURATION_MS)
+                .setInterpolator(android.view.animation.DecelerateInterpolator(1.8f))
+                .start()
+        } else {
+            view.alpha = 1f
         }
     }
 
@@ -189,6 +238,6 @@ object ImageLoader {
 
     private fun maxCacheBytes(): Int {
         val maxMemory = Runtime.getRuntime().maxMemory().toInt()
-        return maxMemory / 16
+        return maxMemory / 10
     }
 }

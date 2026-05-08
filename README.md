@@ -20,3 +20,8 @@
 - 最新版本接口：`https://api.github.com/repos/R19988088/blbl-D/releases/latest`。
 - APK 下载地址由 Release 资源名决定：`blbl-D-latest-debug.apk`、`blbl-D-latest-release.apk`，以及按版本下载的 `blbl-D-{version}-{debug|release}.apk`。
 - 如果检测更新提示 404，优先检查 `R19988088/blbl-D/releases` 是否存在 Release、对应 APK 资源是否已上传，以及 Release 是否为公开可访问。
+
+## 本机开发限制
+- 当前本机环境不能作为编译验证环境使用；修改完成后按代码检查结果直接提交推送。
+- 当前本机环境不能使用 g 命令；搜索请使用 PowerShell 自带文件搜索。
+

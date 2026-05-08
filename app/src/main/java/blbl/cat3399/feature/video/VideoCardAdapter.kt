@@ -6,6 +6,8 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.OvershootInterpolator
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import blbl.cat3399.R
@@ -415,8 +417,8 @@ class VideoCardAdapter(
 
         private fun applyFocusMotion(hasFocus: Boolean) {
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
-            val duration = if (refined) 220L else 120L
-            val rootScale = if (hasFocus && !refined) 1.04f else 1f
+            val duration = if (refined) 180L else 120L
+            val rootScale = if (hasFocus) 1.035f else 1f
 
             binding.root.animate()
                 .scaleX(rootScale)
@@ -426,9 +428,9 @@ class VideoCardAdapter(
                 .setDuration(duration)
                 .setInterpolator(
                     if (refined) {
-                        android.view.animation.OvershootInterpolator(0.9f)
+                        OvershootInterpolator(1.15f)
                     } else {
-                        android.view.animation.DecelerateInterpolator(1.8f)
+                        DecelerateInterpolator(1.8f)
                     },
                 )
                 .start()
@@ -439,25 +441,26 @@ class VideoCardAdapter(
                 .translationX(0f)
                 .translationY(0f)
                 .setDuration(duration)
-                .setInterpolator(android.view.animation.DecelerateInterpolator(1.8f))
+                .setInterpolator(DecelerateInterpolator(1.8f))
                 .start()
         }
 
         private fun nudgeFocusedCard(directionX: Float, directionY: Float) {
-            if (BiliClient.prefs.motionEffectStyle != AppPrefs.MOTION_EFFECT_STYLE_REFINED) return
-            val widthShift = binding.root.width * 0.05f
-            val heightShift = binding.root.height * 0.05f
+            val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
+            val widthShift = binding.root.width * if (refined) 0.045f else 0.025f
+            val heightShift = binding.root.height * if (refined) 0.045f else 0.025f
             if (widthShift <= 0f || heightShift <= 0f) return
             val token = ++motionResetToken
+            val focusedScale = if (binding.root.hasFocus()) 1.035f else 1f
 
             binding.root.animate().cancel()
             binding.root.animate()
                 .translationX(widthShift * directionX)
                 .translationY(heightShift * directionY)
-                .scaleX(1f)
-                .scaleY(1f)
-                .setDuration(110L)
-                .setInterpolator(android.view.animation.OvershootInterpolator(0.7f))
+                .scaleX(focusedScale * 0.985f)
+                .scaleY(focusedScale * 0.985f)
+                .setDuration(80L)
+                .setInterpolator(DecelerateInterpolator(1.6f))
                 .withEndAction {
                     binding.root.postDelayed(
                         {
@@ -465,13 +468,13 @@ class VideoCardAdapter(
                             binding.root.animate()
                                 .translationX(0f)
                                 .translationY(0f)
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(200L)
-                                .setInterpolator(android.view.animation.OvershootInterpolator(0.85f))
+                                .scaleX(focusedScale)
+                                .scaleY(focusedScale)
+                                .setDuration(if (refined) 190L else 150L)
+                                .setInterpolator(OvershootInterpolator(if (refined) 1.25f else 0.9f))
                                 .start()
                         },
-                        20L,
+                        8L,
                     )
                 }
                 .start()

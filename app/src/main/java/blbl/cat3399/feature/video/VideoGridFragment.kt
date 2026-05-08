@@ -1,4 +1,4 @@
-package blbl.cat3399.feature.video
+﻿package blbl.cat3399.feature.video
 
 import android.os.Bundle
 import android.os.SystemClock
@@ -13,6 +13,7 @@ import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApi
 import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.image.ImageLoader
+import blbl.cat3399.core.image.ImageUrl
 import blbl.cat3399.core.model.VideoCard
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.paging.PagedGridStateMachine
@@ -70,6 +71,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
     private var dpadGridController: DpadGridController? = null
     private var viewportFillMonitor: GridViewportFillMonitor? = null
     private var pendingFocusFirstCardAfterRefresh: Boolean = false
+    private var scrollStartAnchorPosition: Int = RecyclerView.NO_POSITION
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVideoGridBinding.inflate(inflater, container, false)
@@ -122,10 +124,17 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         binding.recycler.addOnScrollListener(
             object : RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    ImageLoader.setDisplayDeferred(newState == RecyclerView.SCROLL_STATE_SETTLING)
+                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        scrollStartAnchorPosition = RecyclerView.NO_POSITION
+                        ImageLoader.setDisplayDeferred(false)
+                    } else {
+                        captureScrollStartAnchor(recyclerView)
+                    }
                 }
 
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    updateImageDisplayPacing(recyclerView)
+                    prefetchUpcomingCovers(recyclerView, dy)
                     if (dy <= 0) return
                     val s = paging.snapshot()
                     if (s.isLoading || s.endReached) return
@@ -226,6 +235,59 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         return true
     }
 
+    private fun captureScrollStartAnchor(recyclerView: RecyclerView) {
+        if (scrollStartAnchorPosition != RecyclerView.NO_POSITION) return
+        val lm = recyclerView.layoutManager as? GridLayoutManager ?: return
+        scrollStartAnchorPosition = lm.findFirstVisibleItemPosition()
+    }
+
+    private fun updateImageDisplayPacing(recyclerView: RecyclerView) {
+        val lm = recyclerView.layoutManager as? GridLayoutManager ?: return
+        if (scrollStartAnchorPosition == RecyclerView.NO_POSITION) {
+            scrollStartAnchorPosition = lm.findFirstVisibleItemPosition()
+        }
+        val firstVisible = lm.findFirstVisibleItemPosition()
+        if (firstVisible == RecyclerView.NO_POSITION || scrollStartAnchorPosition == RecyclerView.NO_POSITION) return
+        val rowsMoved = kotlin.math.abs(firstVisible - scrollStartAnchorPosition) / lm.spanCount.coerceAtLeast(1)
+        ImageLoader.setDisplayDeferred(
+            deferred = rowsMoved >= 3,
+            fadeWhenFlushed = true,
+        )
+    }
+
+    private fun prefetchUpcomingCovers(
+        recyclerView: RecyclerView,
+        dy: Int,
+    ) {
+        val lm = recyclerView.layoutManager as? GridLayoutManager ?: return
+        val spanCount = lm.spanCount.coerceAtLeast(1)
+        val anchor =
+            if (dy >= 0) {
+                lm.findLastVisibleItemPosition()
+            } else {
+                lm.findFirstVisibleItemPosition()
+            }
+        if (anchor == RecyclerView.NO_POSITION) return
+
+        val rowsToPrefetch = 5
+        val count = spanCount * rowsToPrefetch
+        val items = adapter.snapshot()
+        if (items.isEmpty()) return
+
+        val range =
+            if (dy >= 0) {
+                ((anchor + 1)..(anchor + count))
+            } else {
+                ((anchor - count) until anchor)
+            }
+        val urls =
+            range.asSequence()
+                .filter { it in items.indices }
+                .map { ImageUrl.cover(items[it].coverUrl) }
+                .toList()
+        ImageLoader.prefetch(urls)
+    }
+
     private fun maybeTriggerInitialLoad() {
         if (initialLoadTriggered) return
         if (!this::adapter.isInitialized) return
@@ -310,7 +372,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
             } catch (t: Throwable) {
                 if (t is CancellationException) throw t
                 AppLog.e("VideoGrid", "load failed source=$source rid=$rid page=${startKey.page}", t)
-                context?.let { AppToast.show(it, "加载失败，可查看 Logcat(标签 BLBL)") }
+                context?.let { AppToast.show(it, "鍔犺浇澶辫触锛屽彲鏌ョ湅 Logcat(鏍囩 BLBL)") }
             } finally {
                 if (isRefresh && paging.snapshot().generation == startGen) _binding?.swipeRefresh?.isRefreshing = false
                 AppLog.d(
@@ -619,3 +681,4 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         }
     }
 }
+
