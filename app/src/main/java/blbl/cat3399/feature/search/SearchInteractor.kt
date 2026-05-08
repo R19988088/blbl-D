@@ -36,7 +36,7 @@ class SearchInteractor(
         renderer.updateQueryUi()
         renderer.updateMiddleUi(historyMatches(state.query), extra = state.suggestKeywords)
         renderer.updateClearHistoryButton(state.query)
-        renderer.updateHotUi(state.hotKeywords)
+        renderer.updateHistoryUi(state.history)
     }
 
     fun clearHistory() {
@@ -44,11 +44,12 @@ class SearchInteractor(
         reloadHistory()
         state.suggestKeywords = emptyList()
         renderer.updateMiddleUi(historyMatches(state.query), extra = state.suggestKeywords)
+        renderer.updateHistoryUi(state.history)
         renderer.updateClearHistoryButton(state.query)
-        renderer.focusFirstKey()
+        renderer.focusQueryInputForIme()
     }
 
-    fun loadHotAndDefault() {
+    fun loadDefaultHint() {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             runCatching {
                 val hint = BiliApi.searchDefaultText()
@@ -56,19 +57,7 @@ class SearchInteractor(
                 renderer.updateQueryUi()
             }
         }
-        if (state.hotKeywords.isNotEmpty()) {
-            renderer.updateHotUi(state.hotKeywords)
-            return
-        }
-        fragment.viewLifecycleOwner.lifecycleScope.launch {
-            runCatching {
-                val hot = BiliApi.searchHot(limit = 12)
-                state.hotKeywords = hot
-                renderer.updateHotUi(hot)
-            }.onFailure {
-                AppLog.w("Search", "load hot failed", it)
-            }
-        }
+        renderer.updateHistoryUi(state.history)
     }
 
     fun onKeyClicked(key: String) {
@@ -136,6 +125,7 @@ class SearchInteractor(
 
         BiliClient.prefs.addSearchHistory(keyword)
         reloadHistory()
+        renderer.updateHistoryUi(state.history)
 
         renderer.hideImeAndClearQueryFocusIfNeeded()
         renderer.showResults()

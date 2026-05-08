@@ -30,7 +30,7 @@
             android:layout_height="@dimen/search_hot_icon_size"
             android:layout_marginEnd="@dimen/search_hot_icon_margin_end"
             android:contentDescription="@string/tab_search"
-            android:src="@drawable/ic_hot_fire"
+            android:src="@drawable/ic_nav_history"
             app:tint="?android:attr/textColorSecondary" />
 
         <TextView
@@ -40,7 +40,7 @@
             android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="hot"
+            android:text="history"
             android:textColor="?attr/colorOnSurface"
             android:textSize="@dimen/search_hot_text_size" />
     </LinearLayout>

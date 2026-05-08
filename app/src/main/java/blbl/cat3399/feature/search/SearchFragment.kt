@@ -44,7 +44,7 @@ class SearchFragment : Fragment(), BackPressHandler, RefreshKeyHandler {
         renderer.setupInput()
         renderer.setupResults()
         renderer.applyUiScale()
-        interactor.loadHotAndDefault()
+        interactor.loadDefaultHint()
         interactor.scheduleMiddleList(state.query)
 
         if (state.resultsVisible) {
@@ -53,7 +53,7 @@ class SearchFragment : Fragment(), BackPressHandler, RefreshKeyHandler {
             renderer.showInput()
         }
         if (savedInstanceState == null) {
-            renderer.focusFirstKey()
+            renderer.focusQueryInputForIme()
         }
     }
 
@@ -66,7 +66,7 @@ class SearchFragment : Fragment(), BackPressHandler, RefreshKeyHandler {
         AppLog.d("Back", "SearchFragment handleBackPressed resultsVisible=$resultsVisible")
         return if (resultsVisible) {
             r.showInput()
-            r.focusFirstKey()
+            r.focusQueryInputForIme()
             true
         } else {
             // Search (input panel) behaves like Dynamic: Back in page content returns to the sidebar.

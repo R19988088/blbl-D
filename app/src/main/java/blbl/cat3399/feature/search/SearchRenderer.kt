@@ -42,6 +42,7 @@ class SearchRenderer internal constructor(
 ) {
     private val viewContext: Context = binding.root.context
     private var released: Boolean = false
+    private var imeEditMode: Boolean = false
 
     val keyAdapter: SearchKeyAdapter get() = adapters.keyAdapter
     val suggestAdapter: SearchSuggestAdapter get() = adapters.suggestAdapter
@@ -260,14 +261,13 @@ class SearchRenderer internal constructor(
     private fun setupQueryInput() {
         val input = binding.tvQuery
 
-        var imeEditMode = false
-
         input.setOnEditorActionListener { _, actionId, _ ->
-            // Only treat explicit IME "search" action as a search trigger.
+            // Keep IME/voice completion on the in-page search button.
             // Hardware DPAD/ENTER should not trigger search directly on the input.
             val isImeSearchAction = actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
             if (imeEditMode && isImeSearchAction) {
-                interactor.performSearch()
+                exitImeEditMode()
+                focusSearchButton()
                 true
             } else {
                 false
@@ -277,30 +277,6 @@ class SearchRenderer internal constructor(
         input.doAfterTextChanged {
             if (state.ignoreQueryTextChanges) return@doAfterTextChanged
             interactor.onQueryTextChangedFromIme(it?.toString().orEmpty())
-        }
-
-        fun enterImeEditMode() {
-            if (isResultsVisible()) showInput()
-            imeEditMode = true
-
-            input.showSoftInputOnFocus = true
-            input.isCursorVisible = true
-            input.isLongClickable = true
-            if (input.isInTouchMode) {
-                if (!input.requestFocusFromTouch()) input.requestFocus()
-            } else {
-                input.requestFocus()
-            }
-            input.setSelection(input.text?.length ?: 0)
-            input.showImeReliable(isAlive = { !released && imeEditMode })
-        }
-
-        fun exitImeEditMode() {
-            imeEditMode = false
-            input.showSoftInputOnFocus = false
-            input.isCursorVisible = false
-            input.isLongClickable = false
-            input.hideImeReliable()
         }
 
         input.apply {
@@ -353,6 +329,32 @@ class SearchRenderer internal constructor(
                 else -> false
             }
         }
+    }
+
+    private fun enterImeEditMode() {
+        val input = binding.tvQuery
+        if (isResultsVisible()) showInput()
+        imeEditMode = true
+
+        input.showSoftInputOnFocus = true
+        input.isCursorVisible = true
+        input.isLongClickable = true
+        if (input.isInTouchMode) {
+            if (!input.requestFocusFromTouch()) input.requestFocus()
+        } else {
+            input.requestFocus()
+        }
+        input.setSelection(input.text?.length ?: 0)
+        input.showImeReliable(isAlive = { !released && imeEditMode })
+    }
+
+    private fun exitImeEditMode() {
+        val input = binding.tvQuery
+        imeEditMode = false
+        input.showSoftInputOnFocus = false
+        input.isCursorVisible = false
+        input.isLongClickable = false
+        input.hideImeReliable()
     }
 
     fun setupResults() {
@@ -604,8 +606,9 @@ class SearchRenderer internal constructor(
         suggestAdapter.submit(list)
     }
 
-    fun updateHotUi(keywords: List<String>) {
-        hotAdapter.submit(keywords)
+    fun updateHistoryUi(history: List<String>) {
+        binding.recyclerHot.visibility = if (history.isNotEmpty()) View.VISIBLE else View.INVISIBLE
+        hotAdapter.submit(history)
     }
 
     fun updateClearHistoryButton(term: String) {
@@ -615,8 +618,20 @@ class SearchRenderer internal constructor(
 
     fun hideImeAndClearQueryFocusIfNeeded() {
         if (!binding.tvQuery.hasFocus()) return
-        binding.tvQuery.hideImeReliable()
+        exitImeEditMode()
         binding.tvQuery.clearFocus()
+    }
+
+    fun focusQueryInputForIme() {
+        binding.tvQuery.postIfAlive(isAlive = { !released }) {
+            enterImeEditMode()
+        }
+    }
+
+    fun focusSearchButton() {
+        binding.btnSearch.postIfAlive(isAlive = { !released }) {
+            binding.btnSearch.requestFocus()
+        }
     }
 
     fun focusFirstKey() {

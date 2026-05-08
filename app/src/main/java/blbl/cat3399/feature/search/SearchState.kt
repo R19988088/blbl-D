@@ -7,7 +7,6 @@ class SearchState {
     var query: String = ""
     var history: List<String> = emptyList()
     var suggestKeywords: List<String> = emptyList()
-    var hotKeywords: List<String> = emptyList()
     var resultsVisible: Boolean = false
 
     var ignoreQueryTextChanges: Boolean = false
