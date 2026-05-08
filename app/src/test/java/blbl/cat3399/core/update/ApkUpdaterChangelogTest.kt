@@ -46,4 +46,13 @@ class ApkUpdaterChangelogTest {
         assertEquals("0.3.1", update.versionName)
         assertTrue(update.changelog.contains("新版本"))
     }
+
+    @Test
+    fun updateApkUrl_should_always_use_latest_release_asset() {
+        assertEquals(
+            "https://github.com/R19988088/blbl-D/releases/latest/download/blbl-android-latest-release.apk",
+            ApkUpdater.TEST_APK_URL,
+        )
+        assertEquals(ApkUpdater.TEST_APK_URL, ApkUpdater.apkUrlFor("0.1.5"))
+    }
 }

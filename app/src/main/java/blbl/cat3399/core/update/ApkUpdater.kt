@@ -28,11 +28,10 @@ import kotlin.math.roundToInt
 object ApkUpdater {
     private const val GITHUB_REPO = "R19988088/blbl-D"
     private const val RELEASES_LATEST_URL = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
-    private const val DEBUG_APK_URL = "https://github.com/$GITHUB_REPO/releases/latest/download/blbl-android-latest-debug.apk"
     private const val RELEASE_APK_URL = "https://github.com/$GITHUB_REPO/releases/latest/download/blbl-android-latest-release.apk"
     private const val CHANGELOG_URL = RELEASES_LATEST_URL
     val TEST_APK_URL: String
-        get() = if (BuildConfig.DEBUG) DEBUG_APK_URL else RELEASE_APK_URL
+        get() = RELEASE_APK_URL
     val TEST_CHANGELOG_URL: String
         get() = CHANGELOG_URL
 
@@ -192,11 +191,7 @@ object ApkUpdater {
         }
     }
 
-    fun apkUrlFor(versionName: String): String {
-        val cleanVersion = versionName.trim().removePrefix("v")
-        val channel = if (BuildConfig.DEBUG) "debug" else "release"
-        return "https://github.com/$GITHUB_REPO/releases/download/v$cleanVersion/blbl-android-$cleanVersion-$channel.apk"
-    }
+    fun apkUrlFor(versionName: String): String = RELEASE_APK_URL
 
     private data class VersionHeading(
         val level: Int,
