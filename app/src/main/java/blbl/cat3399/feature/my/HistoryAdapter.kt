@@ -11,6 +11,7 @@ import blbl.cat3399.feature.video.VideoCardAdapter
 
 internal class HistoryAdapter(
     private val onVideoClick: (VideoCard, Int) -> Unit,
+    private val onVideoLongClick: (VideoCard, Int) -> Boolean,
     private val onLiveClick: (LiveRoomCard) -> Unit,
     actionDelegate: VideoCardActionDelegate?,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -19,6 +20,7 @@ internal class HistoryAdapter(
     private val videoAdapter =
         VideoCardAdapter(
             onClick = { card, _ -> videoIndex(card)?.let { onVideoClick(card, it) } },
+            onLongClick = { card, _ -> videoIndex(card)?.let { onVideoLongClick(card, it) } ?: false },
             actionDelegate = actionDelegate,
         )
     private val liveAdapter = LiveRoomAdapter { _, room -> onLiveClick(room) }

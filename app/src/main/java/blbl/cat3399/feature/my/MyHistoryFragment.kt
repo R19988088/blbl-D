@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.activity.ComponentActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
@@ -39,6 +40,7 @@ import blbl.cat3399.feature.video.buildPagedVideoCardPlaybackHandle
 import blbl.cat3399.feature.video.historyVideoCardPlaylistItem
 import blbl.cat3399.feature.video.openVideoDetailFromPlaybackHandle
 import blbl.cat3399.feature.video.openVideoFromPlaybackHandle
+import blbl.cat3399.feature.video.showVideoCardRemoteMenuPopup
 import blbl.cat3399.ui.RefreshKeyHandler
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -100,6 +102,7 @@ class MyHistoryFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHandler 
                             },
                         )
                     },
+                    onVideoLongClick = { card, pos -> showHistoryVideoCardMenu(card, pos, actionController) },
                     onLiveClick = ::openLive,
                     actionDelegate = actionController,
                 )
@@ -412,6 +415,21 @@ class MyHistoryFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHandler 
                 .putExtra(LivePlayerActivity.EXTRA_TITLE, room.title)
                 .putExtra(LivePlayerActivity.EXTRA_UNAME, room.uname),
         )
+    }
+
+    private fun showHistoryVideoCardMenu(
+        card: VideoCard,
+        position: Int,
+        actionController: VideoCardActionController,
+    ): Boolean {
+        val activity = activity as? ComponentActivity ?: return false
+        val actions = actionController.manualActions(card, position).let { list ->
+            list.take(3) + list.filter { it.id == blbl.cat3399.feature.video.VideoCardQuickActionId.DISMISS }.take(1)
+        }
+        activity.showVideoCardRemoteMenuPopup(card, actions) { action ->
+            actionController.onActionSelected(card, position, action)
+        }
+        return true
     }
 
     private fun filterFreshHistoryEntries(entries: List<HistoryEntry>): List<HistoryEntry> {

@@ -299,6 +299,8 @@ internal fun PlayerActivity.hasControlsFocusOutsideSeekBar(): Boolean {
     if (osdMode != PlayerActivity.OsdMode.Full) return false
     return binding.topBar.hasFocus() ||
         binding.cardUpQuick.hasFocus() ||
+        binding.controlsRow.hasFocus() ||
+        binding.btnResolution.hasFocus() ||
         (binding.bottomBar.hasFocus() && !binding.seekProgress.isFocused)
 }
 

@@ -2,6 +2,7 @@ package blbl.cat3399.feature.video
 
 import android.view.LayoutInflater
 import androidx.activity.ComponentActivity
+import androidx.core.view.isVisible
 import blbl.cat3399.core.image.ImageLoader
 import blbl.cat3399.core.image.ImageUrl
 import blbl.cat3399.core.model.VideoCard
@@ -14,7 +15,7 @@ fun ComponentActivity.showVideoCardRemoteMenuPopup(
     actions: List<VideoCardQuickAction>,
     onActionSelected: (VideoCardQuickAction) -> Unit,
 ) {
-    val safeActions = actions.take(3)
+    val safeActions = actions.take(4)
     if (safeActions.isEmpty()) return
 
     val dialogBinding = DialogPlayerRemoteMenuBinding.inflate(LayoutInflater.from(this))
@@ -22,7 +23,8 @@ fun ComponentActivity.showVideoCardRemoteMenuPopup(
     ImageLoader.loadInto(dialogBinding.imgUpAvatar, card.ownerFace)
     dialogBinding.tvUpId.text = card.remoteMenuDisplayText()
 
-    val buttons = listOf(dialogBinding.btnFavorite, dialogBinding.btnWatchLater, dialogBinding.btnBlockUp)
+    val buttons = listOf(dialogBinding.btnFavorite, dialogBinding.btnWatchLater, dialogBinding.btnBlockUp, dialogBinding.btnExtraAction)
+    dialogBinding.btnExtraAction.isVisible = safeActions.size > 3
     var handle: PopupHandle? = null
     buttons.forEachIndexed { index, button ->
         val action = safeActions.getOrNull(index)

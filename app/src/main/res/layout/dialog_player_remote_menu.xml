@@ -94,5 +94,20 @@
             android:text="拉黑UP"
             android:textColor="?attr/colorOnSurface"
             android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/btn_extra_action"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:background="?attr/blblFocusBgRound"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="删除历史"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="18sp"
+            android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>

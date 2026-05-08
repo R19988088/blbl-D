@@ -303,6 +303,7 @@ class VideoCardActionController(
     private fun dismissActionLabelRes(): Int {
         return when (dismissBehavior) {
             VideoCardDismissBehavior.LocalNotInterested -> R.string.video_card_action_not_interested
+            VideoCardDismissBehavior.DeleteHistory -> R.string.video_card_action_delete_history
             else -> R.string.video_card_action_delete
         }
     }
