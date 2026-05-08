@@ -127,14 +127,14 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                         scrollStartAnchorPosition = RecyclerView.NO_POSITION
                         ImageLoader.setDisplayDeferred(false)
+                        prefetchIdleCovers(recyclerView)
                     } else {
+                        ImageLoader.setDisplayDeferred(true, fadeWhenFlushed = true)
                         captureScrollStartAnchor(recyclerView)
                     }
                 }
 
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    updateImageDisplayPacing(recyclerView)
-                    prefetchUpcomingCovers(recyclerView, dy)
                     if (dy <= 0) return
                     val s = paging.snapshot()
                     if (s.isLoading || s.endReached) return
@@ -241,48 +241,21 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         scrollStartAnchorPosition = lm.findFirstVisibleItemPosition()
     }
 
-    private fun updateImageDisplayPacing(recyclerView: RecyclerView) {
-        val lm = recyclerView.layoutManager as? GridLayoutManager ?: return
-        if (scrollStartAnchorPosition == RecyclerView.NO_POSITION) {
-            scrollStartAnchorPosition = lm.findFirstVisibleItemPosition()
-        }
-        val firstVisible = lm.findFirstVisibleItemPosition()
-        if (firstVisible == RecyclerView.NO_POSITION || scrollStartAnchorPosition == RecyclerView.NO_POSITION) return
-        val rowsMoved = kotlin.math.abs(firstVisible - scrollStartAnchorPosition) / lm.spanCount.coerceAtLeast(1)
-        ImageLoader.setDisplayDeferred(
-            deferred = rowsMoved >= 3,
-            fadeWhenFlushed = true,
-        )
-    }
-
-    private fun prefetchUpcomingCovers(
-        recyclerView: RecyclerView,
-        dy: Int,
-    ) {
+    private fun prefetchIdleCovers(recyclerView: RecyclerView) {
         val lm = recyclerView.layoutManager as? GridLayoutManager ?: return
         val spanCount = lm.spanCount.coerceAtLeast(1)
-        val anchor =
-            if (dy >= 0) {
-                lm.findLastVisibleItemPosition()
-            } else {
-                lm.findFirstVisibleItemPosition()
-            }
-        if (anchor == RecyclerView.NO_POSITION) return
+        val firstVisible = lm.findFirstVisibleItemPosition()
+        val lastVisible = lm.findLastVisibleItemPosition()
+        if (firstVisible == RecyclerView.NO_POSITION || lastVisible == RecyclerView.NO_POSITION) return
 
         val rowsToPrefetch = 5
-        val count = spanCount * rowsToPrefetch
         val items = adapter.snapshot()
         if (items.isEmpty()) return
 
-        val range =
-            if (dy >= 0) {
-                ((anchor + 1)..(anchor + count))
-            } else {
-                ((anchor - count) until anchor)
-            }
+        val start = firstVisible.coerceAtLeast(0)
+        val end = (lastVisible + spanCount * rowsToPrefetch).coerceAtMost(items.lastIndex)
         val urls =
-            range.asSequence()
-                .filter { it in items.indices }
+            (start..end).asSequence()
                 .map { ImageUrl.cover(items[it].coverUrl) }
                 .toList()
         ImageLoader.prefetch(urls)
