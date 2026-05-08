@@ -380,7 +380,7 @@ internal fun PlayerActivity.updatePlaylistControls() {
     run {
         val enabled = prevEnabled
         binding.btnPrev.isEnabled = enabled
-        binding.btnPrev.alpha = if (enabled) 1.0f else 0.35f
+        binding.btnPrev.alpha = if (enabled) 1.0f else 0.40f
     }
     run {
         val enabled = nextEnabled
