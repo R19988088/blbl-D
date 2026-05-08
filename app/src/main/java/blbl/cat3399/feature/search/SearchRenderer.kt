@@ -608,8 +608,8 @@ class SearchRenderer internal constructor(
     }
 
     fun updateHistoryUi(history: List<String>) {
-        binding.recyclerHot.visibility = if (history.isNotEmpty()) View.VISIBLE else View.INVISIBLE
-        hotAdapter.submit(history)
+        binding.recyclerHot.visibility = View.GONE
+        hotAdapter.submit(emptyList())
     }
 
     fun updateClearHistoryButton(term: String) {
