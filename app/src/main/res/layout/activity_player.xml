@@ -176,7 +176,7 @@
                         android:layout_marginStart="4dp"
                         android:ellipsize="end"
                         android:maxLines="1"
-                        android:text="-娴滅儤顒滈崷銊潎閻?
+                        android:text="-"
                         android:textColor="?android:attr/textColorSecondary"
                         android:textSize="@dimen/player_online_text_size" />
                 </LinearLayout>
