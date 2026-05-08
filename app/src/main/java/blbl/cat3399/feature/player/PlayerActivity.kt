@@ -160,6 +160,8 @@ class PlayerActivity : BaseActivity() {
     internal var scrubbing: Boolean = false
     internal var lastInteractionAtMs: Long = 0L
     private var finishOnBackKeyUp: Boolean = false
+    private var exitMotionStarted: Boolean = false
+    private var finishAfterExitMotion: Boolean = false
     internal var holdPrevSpeed: Float = 1.0f
     internal var holdPrevPlayWhenReady: Boolean = false
     internal var holdScrubPreviewPosMs: Long? = null
@@ -726,7 +728,7 @@ class PlayerActivity : BaseActivity() {
         updateTopBarUi()
         resetBufferingOverlayState()
         binding.tvSeekHint.visibility = View.GONE
-        binding.btnBack.setOnClickListener { finish() }
+        binding.btnBack.setOnClickListener { finishWithExitMotion() }
         // Touch-only back button: keep click, but never allow DPAD focus.
         binding.btnBack.isFocusable = false
         binding.btnBack.isFocusableInTouchMode = false
@@ -1510,7 +1512,7 @@ class PlayerActivity : BaseActivity() {
                     )
                     requestExitCleanup(reason = "back")
                     trace?.log("activity:finish", "via=back")
-                    finish()
+                    finishWithExitMotion()
                 }
                 return true
             }
@@ -1864,6 +1866,10 @@ class PlayerActivity : BaseActivity() {
     }
 
     override fun finish() {
+        if (!finishAfterExitMotion) {
+            finishWithExitMotion()
+            return
+        }
         exitTraceStart("finish()")
         exitTraceLog(
             "finish:call",
@@ -1881,6 +1887,29 @@ class PlayerActivity : BaseActivity() {
         if (exitTraceStartAtMs > 0L) {
             exitTraceLog("finish:afterTransition")
         }
+    }
+
+    private fun finishWithExitMotion() {
+        if (exitMotionStarted) return
+        if (!::binding.isInitialized) {
+            finishAfterExitMotion = true
+            finish()
+            return
+        }
+        exitMotionStarted = true
+        requestExitCleanup(reason = "finish_motion")
+        binding.root.animate().cancel()
+        binding.root.animate()
+            .scaleX(0.94f)
+            .scaleY(0.94f)
+            .alpha(0.35f)
+            .setDuration(300L)
+            .setInterpolator(android.view.animation.DecelerateInterpolator(1.8f))
+            .withEndAction {
+                finishAfterExitMotion = true
+                finish()
+            }
+            .start()
     }
 
     override fun onDestroy() {
