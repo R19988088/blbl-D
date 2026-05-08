@@ -1,6 +1,8 @@
 package blbl.cat3399.core.image
 
 import android.graphics.drawable.ColorDrawable
+import android.os.Handler
+import android.os.Looper
 import android.widget.ImageView
 import blbl.cat3399.R
 import blbl.cat3399.core.net.BiliClient
@@ -15,7 +17,11 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 object ImageLoader {
     private const val FADE_IN_DURATION_MS = 120
+    private const val REQUEST_START_INTERVAL_MS = 83L
     private val placeholder = ColorDrawable(0xFF2A2A2A.toInt())
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val pendingLoads = ArrayDeque<LoadRequest>()
+    private var drainingLoads = false
     private val animatedUrls = object : LinkedHashSet<String>() {
         override fun add(element: String): Boolean {
             val added = super.add(element)
@@ -37,6 +43,40 @@ object ImageLoader {
             return
         }
 
+        if (view.drawable == null) view.setImageDrawable(placeholder)
+        enqueueLoad(view, normalized)
+    }
+
+    private data class LoadRequest(
+        val view: ImageView,
+        val url: String,
+    )
+
+    private fun enqueueLoad(view: ImageView, normalized: String) {
+        pendingLoads.removeAll { it.view == view }
+        pendingLoads.addLast(LoadRequest(view, normalized))
+        drainLoadQueue()
+    }
+
+    private fun drainLoadQueue() {
+        if (drainingLoads) return
+        drainingLoads = true
+        mainHandler.post(object : Runnable {
+            override fun run() {
+                val request = pendingLoads.removeFirstOrNull()
+                if (request == null) {
+                    drainingLoads = false
+                    return
+                }
+                if ((request.view.getTag(R.id.tag_image_loader_url) as? String) == request.url) {
+                    startLoad(request.view, request.url)
+                }
+                mainHandler.postDelayed(this, REQUEST_START_INTERVAL_MS)
+            }
+        })
+    }
+
+    private fun startLoad(view: ImageView, normalized: String) {
         val request =
             Glide.with(view)
                 .load(glideUrl(normalized))
@@ -54,6 +94,7 @@ object ImageLoader {
         view.setTag(R.id.tag_image_loader_url, null)
         view.animate().cancel()
         view.alpha = 1f
+        pendingLoads.removeAll { it.view == view }
         Glide.with(view).clear(view)
         if (view.drawable == null) view.setImageDrawable(placeholder)
     }
