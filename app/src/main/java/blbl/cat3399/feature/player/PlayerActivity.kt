@@ -250,6 +250,7 @@ class PlayerActivity : BaseActivity() {
     internal var currentAid: Long? = null
     internal var currentSeasonId: Long? = null
     internal var currentMainTitle: String? = null
+    internal var currentPlayerCoverUrl: String? = null
     internal var currentPlayerDesc: String? = null
     internal var currentPlayerViewCount: Long? = null
     internal var currentPlayerDanmakuCount: Long? = null
@@ -1540,9 +1541,12 @@ class PlayerActivity : BaseActivity() {
         if (dispatchPlayerCustomShortcutIfNeeded(event)) return true
 
         when (keyCode) {
-            KeyEvent.KEYCODE_MENU,
-            KeyEvent.KEYCODE_SETTINGS,
-            -> {
+            KeyEvent.KEYCODE_MENU -> {
+                showRemoteMenuPopup()
+                return true
+            }
+
+            KeyEvent.KEYCODE_SETTINGS -> {
                 if (menuRevealedPanelSessionActive && isOverlayPanelVisible()) {
                     when {
                         isCommentsPanelVisible() -> hideCommentsPanel(dismissTarget = PanelDismissTarget.Fullscreen)

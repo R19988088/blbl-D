@@ -20,22 +20,20 @@ import blbl.cat3399.core.model.VideoCard
 
 internal fun PlayerActivity.applyOsdButtonsVisibility() {
     val enabled = BiliClient.prefs.playerOsdButtons.toSet()
-    val subtitleSupported = player?.capabilities?.subtitlesSupported ?: true
-
     binding.btnPrev.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_PREV)) View.VISIBLE else View.GONE
     binding.btnPlayPause.visibility = View.VISIBLE
     binding.btnNext.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_NEXT)) View.VISIBLE else View.GONE
-    binding.btnSubtitle.visibility = if (subtitleSupported && enabled.contains(AppPrefs.PLAYER_OSD_BTN_SUBTITLE)) View.VISIBLE else View.GONE
-    binding.btnDanmaku.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_DANMAKU)) View.VISIBLE else View.GONE
-    binding.btnComments.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_COMMENTS)) View.VISIBLE else View.GONE
-    binding.btnDetail.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_DETAIL)) View.VISIBLE else View.GONE
-    binding.btnUp.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_UP)) View.VISIBLE else View.GONE
+    binding.btnSubtitle.visibility = View.GONE
+    binding.btnDanmaku.visibility = View.GONE
+    binding.btnComments.visibility = View.GONE
+    binding.btnDetail.visibility = View.GONE
+    binding.btnUp.visibility = View.GONE
     binding.btnLike.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_LIKE)) View.VISIBLE else View.GONE
     binding.btnCoin.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_COIN)) View.VISIBLE else View.GONE
     binding.btnFav.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_FAV)) View.VISIBLE else View.GONE
-    binding.btnListPanel.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_LIST_PANEL)) View.VISIBLE else View.GONE
-    binding.btnSponsorSubmit.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_SPONSOR_SUBMIT)) View.VISIBLE else View.GONE
-    binding.btnAdvanced.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_ADVANCED)) View.VISIBLE else View.GONE
+    binding.btnListPanel.visibility = View.GONE
+    binding.btnSponsorSubmit.visibility = View.GONE
+    binding.btnAdvanced.visibility = View.GONE
     if (binding.btnLike.visibility != View.VISIBLE) cancelLikeButtonHoldGesture(resetTriggered = true)
 
     updateActionButtonsUi()

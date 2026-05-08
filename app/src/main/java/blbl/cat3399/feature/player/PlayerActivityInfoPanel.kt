@@ -55,6 +55,7 @@ internal fun PlayerActivity.initPlayerInfoPanel() {
 }
 
 internal fun PlayerActivity.resetPlayerInfoPanelState() {
+    currentPlayerCoverUrl = null
     currentPlayerDesc = null
     currentPlayerViewCount = null
     currentPlayerDanmakuCount = null
@@ -68,6 +69,7 @@ internal fun PlayerActivity.resetPlayerInfoPanelState() {
 }
 
 internal fun PlayerActivity.applyPlayerInfoVideoDetail(detail: VideoDetail) {
+    currentPlayerCoverUrl = detail.coverUrl?.trim()?.takeIf { it.isNotBlank() }
     currentPlayerDesc = detail.description?.trim()?.takeIf { it.isNotBlank() }
     currentPlayerViewCount = detail.stat.view
     currentPlayerDanmakuCount = detail.stat.danmaku

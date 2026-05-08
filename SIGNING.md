@@ -1,6 +1,6 @@
 ﻿# Private build signing
 
-GitHub Actions release builds use one fixed private signing key from repository secrets.
+GitHub Actions debug and release builds use one fixed private signing key from repository secrets.
 
 Keep these secrets unchanged to make every future APK upgrade-compatible:
 
