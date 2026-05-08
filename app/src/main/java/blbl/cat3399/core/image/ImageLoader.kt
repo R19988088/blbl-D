@@ -15,6 +15,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 object ImageLoader {
     private const val FADE_IN_DURATION_MS = 120
     private val placeholder = ColorDrawable(0xFF2A2A2A.toInt())
+    // Glide owns request reuse, cancellation, memory cache, and disk cache for cover thumbnails.
     private val requestOptions =
         RequestOptions()
             .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
