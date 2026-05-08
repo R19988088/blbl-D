@@ -28,7 +28,7 @@ import kotlin.math.roundToInt
 object ApkUpdater {
     private const val GITHUB_REPO = "R19988088/blbl-D"
     private const val RELEASES_LATEST_URL = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
-    private const val RELEASE_APK_URL = "https://github.com/$GITHUB_REPO/releases/latest/download/blbl-android-latest-release.apk"
+    private const val RELEASE_APK_URL = "https://github.com/$GITHUB_REPO/releases/latest/download/blbl-D-latest-release.apk"
     private const val CHANGELOG_URL = RELEASES_LATEST_URL
     val TEST_APK_URL: String
         get() = RELEASE_APK_URL
