@@ -37,7 +37,7 @@
         android:textSize="22sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/iv_search"
-        app:layout_constraintEnd_toEndOf="@id/panel_input"
+        app:layout_constraintEnd_toEndOf="@id/panel_keyboard"
         app:layout_constraintStart_toEndOf="@id/iv_search"
         app:layout_constraintTop_toTopOf="@id/iv_search" />
 
@@ -168,6 +168,7 @@
             android:id="@+id/panel_history"
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_marginStart="36dp"
             android:layout_marginEnd="12dp"
             android:layout_weight="0.8"
             android:clipChildren="false"
