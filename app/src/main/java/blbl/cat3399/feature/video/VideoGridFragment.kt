@@ -1,4 +1,4 @@
-﻿package blbl.cat3399.feature.video
+package blbl.cat3399.feature.video
 
 import android.os.Bundle
 import android.os.SystemClock
@@ -13,8 +13,6 @@ import androidx.recyclerview.widget.RecyclerView
 import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApi
 import blbl.cat3399.core.log.AppLog
-import blbl.cat3399.core.image.ImageLoader
-import blbl.cat3399.core.image.ImageUrl
 import blbl.cat3399.core.model.VideoCard
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.paging.PagedGridStateMachine
@@ -72,7 +70,6 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
     private var dpadGridController: DpadGridController? = null
     private var viewportFillMonitor: GridViewportFillMonitor? = null
     private var pendingFocusFirstCardAfterRefresh: Boolean = false
-    private var scrollStartAnchorPosition: Int = RecyclerView.NO_POSITION
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVideoGridBinding.inflate(inflater, container, false)
@@ -121,17 +118,6 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         binding.recycler.clearOnScrollListeners()
         binding.recycler.addOnScrollListener(
             object : RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                        scrollStartAnchorPosition = RecyclerView.NO_POSITION
-                        ImageLoader.setDisplayDeferred(false)
-                        prefetchIdleCovers(recyclerView)
-                    } else {
-                        ImageLoader.setDisplayDeferred(true, fadeWhenFlushed = true)
-                        captureScrollStartAnchor(recyclerView)
-                    }
-                }
-
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dy <= 0) return
                     val s = paging.snapshot()
@@ -246,31 +232,6 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         return true
     }
 
-    private fun captureScrollStartAnchor(recyclerView: RecyclerView) {
-        if (scrollStartAnchorPosition != RecyclerView.NO_POSITION) return
-        val lm = recyclerView.layoutManager as? GridLayoutManager ?: return
-        scrollStartAnchorPosition = lm.findFirstVisibleItemPosition()
-    }
-
-    private fun prefetchIdleCovers(recyclerView: RecyclerView) {
-        val lm = recyclerView.layoutManager as? GridLayoutManager ?: return
-        val spanCount = lm.spanCount.coerceAtLeast(1)
-        val firstVisible = lm.findFirstVisibleItemPosition()
-        val lastVisible = lm.findLastVisibleItemPosition()
-        if (firstVisible == RecyclerView.NO_POSITION || lastVisible == RecyclerView.NO_POSITION) return
-
-        val rowsToPrefetch = 5
-        val items = adapter.snapshot()
-        if (items.isEmpty()) return
-
-        val start = firstVisible.coerceAtLeast(0)
-        val end = (lastVisible + spanCount * rowsToPrefetch).coerceAtMost(items.lastIndex)
-        val urls =
-            (start..end).asSequence()
-                .map { ImageUrl.cover(items[it].coverUrl) }
-                .toList()
-        ImageLoader.prefetch(urls)
-    }
 
     private fun maybeTriggerInitialLoad() {
         if (initialLoadTriggered) return
@@ -356,7 +317,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
             } catch (t: Throwable) {
                 if (t is CancellationException) throw t
                 AppLog.e("VideoGrid", "load failed source=$source rid=$rid page=${startKey.page}", t)
-                context?.let { AppToast.show(it, "鍔犺浇澶辫触锛屽彲鏌ョ湅 Logcat(鏍囩 BLBL)") }
+                context?.let { AppToast.show(it, "闁告梻濮惧ù鍥ㄥ緞鏉堫偉袝闁挎稑鑻ぐ鏌ュ蓟閵壯勭畽 Logcat(闁哄秴娲ㄩ?BLBL)") }
             } finally {
                 if (isRefresh && paging.snapshot().generation == startGen) _binding?.swipeRefresh?.isRefreshing = false
                 AppLog.d(
@@ -665,4 +626,3 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         }
     }
 }
-

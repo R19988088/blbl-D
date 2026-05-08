@@ -69,17 +69,8 @@ class VideoCardAdapter(
     fun append(list: List<VideoCard>) {
         if (list.isEmpty()) return
         val start = items.size
-        items.addAll(list.map { it.asPlaceholderCard() })
+        items.addAll(list)
         notifyItemRangeInserted(start, list.size)
-        android.os.Handler(android.os.Looper.getMainLooper()).post {
-            list.forEachIndexed { index, item ->
-                val targetIndex = start + index
-                if (targetIndex in items.indices && stableKeyFor(items[targetIndex]) == stableKeyFor(item)) {
-                    items[targetIndex] = item
-                }
-            }
-            notifyItemRangeChanged(start, list.size)
-        }
     }
 
     fun snapshot(): List<VideoCard> = items.toList()
@@ -143,24 +134,6 @@ class VideoCardAdapter(
     }
 
     override fun getItemCount(): Int = items.size
-
-    private fun VideoCard.asPlaceholderCard(): VideoCard =
-        copy(
-            title = "",
-            coverUrl = "",
-            durationSec = 0,
-            ownerName = "",
-            ownerFace = null,
-            view = null,
-            danmaku = null,
-            pubDate = null,
-            pubDateText = null,
-            isChargingArc = false,
-            coverLeftBottomText = null,
-            accessBadgeText = null,
-            progressSec = null,
-            progressFinished = false,
-        )
 
     private fun stableKeyFor(item: VideoCard): String = stableIdKey?.invoke(item) ?: item.stableKey()
 
@@ -314,7 +287,6 @@ class VideoCardAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
         private var pointerDownForLongClick: Boolean = false
         private var motionResetToken: Int = 0
-        private var imageBindToken: Int = 0
 
         init {
             binding.root.stateListAnimator = null
@@ -342,11 +314,6 @@ class VideoCardAdapter(
             actionDelegate: VideoCardActionDelegate?,
         ) {
             applyFixedSizing()
-
-            if (item.isPlaceholderCard()) {
-                bindPlaceholder()
-                return
-            }
 
             binding.root.isEnabled = true
             binding.root.isFocusable = true
@@ -405,7 +372,7 @@ class VideoCardAdapter(
                     } else {
                         ""
                     }
-            bindCoverAfterContentFrame(item.coverUrl)
+            ImageLoader.loadInto(binding.ivCover, ImageUrl.cover(item.coverUrl))
 
             applyOverlayTranslations()
             bindActionOverlay(
@@ -448,48 +415,6 @@ class VideoCardAdapter(
             applyFocusMotion(binding.root.hasFocus())
         }
 
-
-        private fun VideoCard.isPlaceholderCard(): Boolean = title.isBlank() && coverUrl.isBlank()
-
-        private fun bindPlaceholder() {
-            imageBindToken++
-            binding.root.isSelected = false
-            binding.root.isEnabled = false
-            binding.root.isFocusable = false
-            binding.root.isClickable = false
-            binding.root.alpha = 1f
-            ImageLoader.clear(binding.ivCover)
-            binding.ivCover.alpha = 0.45f
-            binding.tvCoverLeftBottom.isVisible = false
-            binding.tvProgressLeft.isVisible = false
-            binding.tvProgressTime.isVisible = false
-            binding.progressWatch.isVisible = false
-            binding.tvTitle.text = ""
-            binding.tvSubtitle.text = ""
-            binding.tvPubdate.text = ""
-            binding.llSubtitle.isVisible = false
-            binding.tvDuration.isVisible = false
-            binding.llStats.isVisible = false
-            binding.ivStatPlay.isVisible = false
-            binding.tvView.isVisible = false
-            binding.ivStatDanmaku.isVisible = false
-            binding.tvDanmaku.isVisible = false
-            binding.tvChargeBadge.isVisible = false
-            binding.vActionScrim.isVisible = false
-            binding.llActions.isVisible = false
-            binding.root.setOnClickListener(null)
-            binding.root.setOnLongClickListener(null)
-            binding.root.setOnTouchListener(null)
-            binding.root.onFocusChangeListener = null
-        }
-        private fun bindCoverAfterContentFrame(coverUrl: String) {
-            val token = ++imageBindToken
-            val cover = ImageUrl.cover(coverUrl)
-            binding.ivCover.post {
-                if (token != imageBindToken || bindingAdapterPosition == RecyclerView.NO_POSITION) return@post
-                ImageLoader.loadInto(binding.ivCover, cover)
-            }
-        }
         private fun applyFocusMotion(hasFocus: Boolean) {
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
             val duration = if (refined) 180L else 120L

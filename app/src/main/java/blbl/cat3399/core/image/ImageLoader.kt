@@ -1,262 +1,59 @@
 package blbl.cat3399.core.image
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.drawable.ColorDrawable
 import android.widget.ImageView
-import androidx.collection.LruCache
 import blbl.cat3399.R
-import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.net.BiliClient
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.model.LazyHeaders
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.bumptech.glide.request.RequestOptions
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.WeakHashMap
-import java.util.concurrent.Executors
 
 object ImageLoader {
-    private const val TAG = "ImageLoader"
-    private const val FADE_IN_DURATION_MS = 140L
-    private const val DISPLAY_QUEUE_STEP_MS = 90L
+    private const val FADE_IN_DURATION_MS = 120
     private val placeholder = ColorDrawable(0xFF2A2A2A.toInt())
-    private val inFlight = WeakHashMap<ImageView, Job>()
-    private val pendingDisplay = WeakHashMap<ImageView, Bitmap>()
-    private val displayQueue = ArrayDeque<DisplayRequest>()
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val decodeDispatcher = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
-    private val prefetchInFlight = LinkedHashSet<String>()
-    private var displayDeferred: Boolean = false
-    private var fadeDeferredImages: Boolean = false
-    private var displayQueueRunning: Boolean = false
-
-    private val cache = object : LruCache<String, Bitmap>(maxCacheBytes()) {
-        override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
-    }
+    // Glide owns request reuse, cancellation, memory cache, and disk cache for cover thumbnails.
+    private val requestOptions =
+        RequestOptions()
+            .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+            .dontTransform()
 
     fun loadInto(view: ImageView, url: String?) {
         val normalized = normalizeImageUrl(url)
-
+        view.setTag(R.id.tag_image_loader_url, normalized)
         if (normalized == null) {
-            view.setTag(R.id.tag_image_loader_url, null)
-            inFlight.remove(view)?.cancel()
-            if (view.drawable !== placeholder) view.setImageDrawable(placeholder)
+            clear(view)
             return
         }
 
-        val lastUrl = view.getTag(R.id.tag_image_loader_url) as? String
-        if (lastUrl == normalized) {
-            // If we already have a non-placeholder image for the same URL, keep it to prevent
-            // flicker on rebind (e.g. switching tabs triggers notifyItemRangeChanged).
-            val drawable = view.drawable
-            if (drawable != null && drawable !== placeholder) {
-                inFlight.remove(view)?.cancel()
-                return
-            }
-            // If the same URL is already loading, keep the current placeholder.
-            val inFlightJob = inFlight[view]
-            if (inFlightJob != null && inFlightJob.isActive) return
-        } else {
-            view.setTag(R.id.tag_image_loader_url, normalized)
-            inFlight.remove(view)?.cancel()
-        }
-
-        val cached = cache.get(normalized)
-        if (cached != null) {
-            displayOrDefer(view, normalized, cached)
-            return
-        }
-
-        if (view.drawable !== placeholder) view.setImageDrawable(placeholder)
-        val job = scope.launch {
-            try {
-                val bytes = withContext(Dispatchers.IO) { BiliClient.getBytes(normalized) }
-                val targetSize = viewTargetSize(view)
-                val bmp = withContext(decodeDispatcher) { decodeBitmap(bytes, targetSize) }
-                if (bmp != null) {
-                    cache.put(normalized, bmp)
-                    if ((view.getTag(R.id.tag_image_loader_url) as? String) == normalized) {
-                        displayOrDefer(view, normalized, bmp)
-                    }
-                }
-            } catch (t: Throwable) {
-                AppLog.w(TAG, "load failed url=$normalized", t)
-            }
-        }
-        inFlight[view] = job
+        Glide.with(view)
+            .load(glideUrl(normalized))
+            .apply(requestOptions)
+            .placeholder(placeholder)
+            .error(placeholder)
+            .transition(DrawableTransitionOptions.withCrossFade(FADE_IN_DURATION_MS))
+            .into(view)
     }
 
     fun clear(view: ImageView) {
         view.setTag(R.id.tag_image_loader_url, null)
-        inFlight.remove(view)?.cancel()
-        pendingDisplay.remove(view)
-        displayQueue.removeAll { it.view == view }
-        if (view.drawable !== placeholder) view.setImageDrawable(placeholder)
-    }
-
-    fun prefetch(urls: List<String?>) {
-        urls.asSequence()
-            .mapNotNull(::normalizeImageUrl)
-            .distinct()
-            .filter { cache.get(it) == null && prefetchInFlight.add(it) }
-            .take(24)
-            .forEach { normalized ->
-                scope.launch {
-                    try {
-                        val bytes = withContext(Dispatchers.IO) { BiliClient.getBytes(normalized) }
-                        val bmp = withContext(decodeDispatcher) { decodeBitmap(bytes, null) }
-                        if (bmp != null) cache.put(normalized, bmp)
-                    } catch (t: Throwable) {
-                        AppLog.w(TAG, "prefetch failed url=$normalized", t)
-                    } finally {
-                        prefetchInFlight.remove(normalized)
-                    }
-                }
-            }
-    }
-
-    fun setDisplayDeferred(
-        deferred: Boolean,
-        fadeWhenFlushed: Boolean = deferred,
-    ) {
-        fadeDeferredImages = deferred && fadeWhenFlushed
-        if (displayDeferred == deferred) return
-        displayDeferred = deferred
-        if (!deferred) {
-            flushPendingDisplay()
-            drainDisplayQueue()
-        }
-    }
-
-    private fun displayOrDefer(
-        view: ImageView,
-        normalized: String,
-        bmp: Bitmap,
-    ) {
-        if ((view.getTag(R.id.tag_image_loader_url) as? String) != normalized) return
-        if (displayDeferred) {
-            pendingDisplay[view] = bmp
-        } else {
-            pendingDisplay.remove(view)
-            enqueueDisplay(view, normalized, bmp, fade = false)
-        }
-    }
-
-    private fun flushPendingDisplay() {
-        if (pendingDisplay.isEmpty()) return
-        val pending = pendingDisplay.entries.toList()
-        val shouldFade = fadeDeferredImages
-        fadeDeferredImages = false
-        pendingDisplay.clear()
-        pending.forEach { (view, bmp) ->
-            val normalized = view.getTag(R.id.tag_image_loader_url) as? String ?: return@forEach
-            if (cache.get(normalized) === bmp) enqueueDisplay(view, normalized, bmp, fade = shouldFade)
-        }
-    }
-
-    private data class DisplayRequest(
-        val view: ImageView,
-        val normalized: String,
-        val bmp: Bitmap,
-        val fade: Boolean,
-    )
-
-    private fun enqueueDisplay(
-        view: ImageView,
-        normalized: String,
-        bmp: Bitmap,
-        fade: Boolean,
-    ) {
-        displayQueue.removeAll { it.view == view }
-        displayQueue.addLast(DisplayRequest(view, normalized, bmp, fade))
-        drainDisplayQueue()
-    }
-
-    private fun drainDisplayQueue() {
-        if (displayDeferred || displayQueueRunning || displayQueue.isEmpty()) return
-        displayQueueRunning = true
-        scope.launch {
-            while (!displayDeferred && displayQueue.isNotEmpty()) {
-                val request = displayQueue.removeFirst()
-                if ((request.view.getTag(R.id.tag_image_loader_url) as? String) == request.normalized) {
-                    setImageBitmap(request.view, request.bmp, fade = request.fade)
-                    kotlinx.coroutines.delay(DISPLAY_QUEUE_STEP_MS)
-                }
-            }
-            displayQueueRunning = false
-            if (!displayDeferred && displayQueue.isNotEmpty()) drainDisplayQueue()
-        }
-    }
-
-    private fun setImageBitmap(
-        view: ImageView,
-        bmp: Bitmap,
-        fade: Boolean,
-    ) {
         view.animate().cancel()
-        if (fade) view.alpha = 0.62f
-        view.setImageBitmap(bmp)
-        if (fade) {
-            view.animate()
-                .alpha(1f)
-                .setDuration(FADE_IN_DURATION_MS)
-                .setInterpolator(android.view.animation.DecelerateInterpolator(1.8f))
-                .start()
-        } else {
-            view.alpha = 1f
-        }
+        view.alpha = 1f
+        Glide.with(view).clear(view)
+        if (view.drawable == null) view.setImageDrawable(placeholder)
     }
 
-    private data class TargetSize(
-        val width: Int,
-        val height: Int,
-    )
-
-    private fun viewTargetSize(view: ImageView): TargetSize? {
-        val width = view.width.takeIf { it > 0 } ?: view.measuredWidth.takeIf { it > 0 }
-        val height = view.height.takeIf { it > 0 } ?: view.measuredHeight.takeIf { it > 0 }
-        if (width == null || height == null) return null
-        val density = view.resources.displayMetrics.density
-        val guardScale = if (density >= 2f) 1.25f else 1.5f
-        return TargetSize(
-            width = (width * guardScale).toInt().coerceAtLeast(width),
-            height = (height * guardScale).toInt().coerceAtLeast(height),
-        )
-    }
-
-    private fun decodeBitmap(bytes: ByteArray, targetSize: TargetSize?): Bitmap? {
-        if (targetSize == null) return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-
-        val bounds =
-            BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
-            }
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-            return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        }
-
-        val options =
-            BitmapFactory.Options().apply {
-                inSampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, targetSize)
-            }
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-    }
-
-    private fun calculateInSampleSize(
-        sourceWidth: Int,
-        sourceHeight: Int,
-        targetSize: TargetSize,
-    ): Int {
-        var sample = 1
-        while (sourceWidth / (sample * 2) >= targetSize.width && sourceHeight / (sample * 2) >= targetSize.height) {
-            sample *= 2
-        }
-        return sample
+    private fun glideUrl(url: String): GlideUrl {
+        val userAgent = runCatching { BiliClient.prefs.userAgent }.getOrDefault(BiliClient.APP_CDN_USER_AGENT)
+        val headers =
+            LazyHeaders.Builder()
+                .addHeader("User-Agent", userAgent)
+                .addHeader("Referer", "https://www.bilibili.com/")
+                .build()
+        return GlideUrl(url, headers)
     }
 
     private fun normalizeImageUrl(url: String?): String? {
@@ -275,10 +72,5 @@ object ImageLoader {
                 host == "bilivideo.cn" ||
                 host.endsWith(".bilivideo.cn")
         return if (isBiliCdn) raw.replaceFirst("http://", "https://") else raw
-    }
-
-    private fun maxCacheBytes(): Int {
-        val maxMemory = Runtime.getRuntime().maxMemory().toInt()
-        return maxMemory / 10
     }
 }
