@@ -287,6 +287,7 @@ class VideoCardAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
         private var pointerDownForLongClick: Boolean = false
         private var motionResetToken: Int = 0
+        private var lastFocusMotionState: Boolean? = null
 
         init {
             binding.root.stateListAnimator = null
@@ -304,6 +305,7 @@ class VideoCardAdapter(
             binding.ivCover.scaleY = 1f
             binding.ivCover.translationX = 0f
             binding.ivCover.translationY = 0f
+            lastFocusMotionState = null
         }
 
         fun bind(
@@ -412,10 +414,27 @@ class VideoCardAdapter(
                         }
                     }
                 }
-            applyFocusMotion(binding.root.hasFocus())
+            syncFocusMotionState(binding.root.hasFocus())
+        }
+
+
+        private fun syncFocusMotionState(hasFocus: Boolean) {
+            lastFocusMotionState = hasFocus
+            binding.root.animate().cancel()
+            binding.root.scaleX = if (hasFocus) 1.035f else 1f
+            binding.root.scaleY = if (hasFocus) 1.035f else 1f
+            binding.root.translationX = 0f
+            binding.root.translationY = 0f
+            binding.ivCover.animate().cancel()
+            binding.ivCover.scaleX = 1f
+            binding.ivCover.scaleY = 1f
+            binding.ivCover.translationX = 0f
+            binding.ivCover.translationY = 0f
         }
 
         private fun applyFocusMotion(hasFocus: Boolean) {
+            if (lastFocusMotionState == hasFocus) return
+            lastFocusMotionState = hasFocus
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
             val duration = if (refined) 180L else 120L
             val rootScale = if (hasFocus) 1.035f else 1f
