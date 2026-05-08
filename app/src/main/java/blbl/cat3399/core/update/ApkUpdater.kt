@@ -26,9 +26,11 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 object ApkUpdater {
-    private const val DEBUG_APK_URL = "https://cat3399.top/blbl/blbl-latest-debug.apk"
-    private const val RELEASE_APK_URL = "https://cat3399.top/blbl/blbl-latest-release.apk"
-    private const val CHANGELOG_URL = "https://cat3399.top/blbl/CHANGELOG.md"
+    private const val GITHUB_REPO = "R19988088/blbl-D"
+    private const val RELEASES_LATEST_URL = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
+    private const val DEBUG_APK_URL = "https://github.com/$GITHUB_REPO/releases/latest/download/blbl-android-latest-debug.apk"
+    private const val RELEASE_APK_URL = "https://github.com/$GITHUB_REPO/releases/latest/download/blbl-android-latest-release.apk"
+    private const val CHANGELOG_URL = RELEASES_LATEST_URL
     val TEST_APK_URL: String
         get() = if (BuildConfig.DEBUG) DEBUG_APK_URL else RELEASE_APK_URL
     val TEST_CHANGELOG_URL: String
@@ -136,8 +138,22 @@ object ApkUpdater {
         res.use { r ->
             check(r.isSuccessful) { "HTTP ${r.code} ${r.message}" }
             val body = r.body ?: error("empty body")
-            return parseChangelog(body.string())
+            val raw = body.string()
+            return if (url.contains("api.github.com/repos/") && url.endsWith("/releases/latest")) {
+                parseGitHubReleaseUpdate(raw)
+            } else {
+                parseChangelog(raw)
+            }
         }
+    }
+
+    private fun parseGitHubReleaseUpdate(raw: String): RemoteUpdate {
+        val obj = org.json.JSONObject(raw)
+        val versionName = obj.optString("tag_name").trim().removePrefix("v")
+            .ifBlank { obj.optString("name").trim().removePrefix("v") }
+        check(versionName.isNotBlank()) { "missing GitHub release version" }
+        val changelog = obj.optString("body").trim().ifBlank { "No changelog." }
+        return RemoteUpdate(versionName = versionName, changelog = changelog)
     }
 
     internal fun parseChangelog(raw: String): RemoteUpdate {
@@ -179,7 +195,7 @@ object ApkUpdater {
     fun apkUrlFor(versionName: String): String {
         val cleanVersion = versionName.trim().removePrefix("v")
         val channel = if (BuildConfig.DEBUG) "debug" else "release"
-        return "https://cat3399.top/blbl/blbl-$cleanVersion-$channel.apk"
+        return "https://github.com/$GITHUB_REPO/releases/download/v$cleanVersion/blbl-android-$cleanVersion-$channel.apk"
     }
 
     private data class VersionHeading(

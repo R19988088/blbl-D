@@ -45,7 +45,7 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
           R2_BUCKET: ${{ secrets.R2_BUCKET || vars.R2_BUCKET }}
           R2_PREFIX: ${{ vars.R2_PREFIX || secrets.R2_PREFIX }}
-          VERSION_NAME: ${{ inputs.version_name }}
+          VERSION_NAME: ${{ inputs.version_name || format('0.1.{0}', github.run_number) }}
         run: |
           set -euo pipefail
           if [ -z "${R2_ACCESS_KEY_ID:-}" ] || [ -z "${R2_SECRET_ACCESS_KEY:-}" ] || [ -z "${R2_ACCOUNT_ID:-}" ] || [ -z "${R2_BUCKET:-}" ]; then
@@ -88,8 +88,8 @@ jobs:
       - name: Publish release APK to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION_NAME: ${{ inputs.version_name }}
-          RELEASE_TAG: ${{ startsWith(inputs.version_name, 'v') && inputs.version_name || format('v{0}', inputs.version_name) }}
+          VERSION_NAME: ${{ inputs.version_name || format('0.1.{0}', github.run_number) }}
+          RELEASE_TAG: ${{ startsWith(inputs.version_name || format('0.1.{0}', github.run_number), 'v') && (inputs.version_name || format('0.1.{0}', github.run_number)) || format('v{0}', inputs.version_name || format('0.1.{0}', github.run_number)) }}
           CHANGELOG: ${{ inputs.changelog }}
         run: |
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
@@ -106,3 +106,4 @@ jobs:
             fi
           fi
           gh release upload "$RELEASE_TAG" "app/build/outputs/apk/release/app-release.apk#blbl-android-${VERSION_NAME}-release.apk" --clobber
+          gh release upload "$RELEASE_TAG" "app/build/outputs/apk/release/app-release.apk#blbl-android-latest-release.apk" --clobber

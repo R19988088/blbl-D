@@ -3373,9 +3373,9 @@ class PlayerActivity : BaseActivity() {
 
     internal fun resolutionSubtitle(): String {
         val qn =
-            session.actualQn.takeIf { it > 0 }
-                ?: session.targetQn.takeIf { it > 0 }
-                ?: session.preferredQn
+            session.targetQn.takeIf { it > 0 }
+                ?: session.preferredQn.takeIf { it > 0 }
+                ?: session.actualQn
         return qnLabel(qn)
     }
 
@@ -3405,12 +3405,9 @@ class PlayerActivity : BaseActivity() {
             changed = true
         }
 
-        if (requestedQn > 0 && actualQn > 0 && requestedQn != actualQn) {
-            val fallbackQn = pickQnByQualityOrder(lastAvailableQns, requestedQn).takeIf { it > 0 } ?: actualQn
-            if (session.targetQn != fallbackQn) {
-                session = session.copy(targetQn = fallbackQn)
-                changed = true
-            }
+        if (requestedQn <= 0 && actualQn > 0 && session.targetQn > 0) {
+            session = session.copy(targetQn = 0)
+            changed = true
         }
 
         if (changed) {

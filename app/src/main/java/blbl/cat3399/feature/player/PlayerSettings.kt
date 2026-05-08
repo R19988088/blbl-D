@@ -158,9 +158,9 @@ internal fun PlayerActivity.defaultSubtitleLangCode(): String {
 }
 
 internal fun PlayerActivity.selectedResolutionQn(): Int {
-    return session.actualQn.takeIf { it > 0 }
-        ?: session.targetQn.takeIf { it > 0 }
-        ?: session.preferredQn
+    return session.targetQn.takeIf { it > 0 }
+        ?: session.preferredQn.takeIf { it > 0 }
+        ?: session.actualQn
 }
 
 internal fun PlayerActivity.selectedAudioTrackId(): Int {
