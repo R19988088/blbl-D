@@ -113,6 +113,7 @@ jobs:
           ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
           CLEAN_VERSION="${VERSION_NAME#v}"
+          APK_PATH="app/build/outputs/apk/debug/blbl-D-${CLEAN_VERSION}-debug.apk"
           KEY_PREFIX="${R2_PREFIX:-blbl}"
           KEY_PREFIX="${KEY_PREFIX%/}"
           if [ -n "${KEY_PREFIX}" ]; then
@@ -140,6 +141,8 @@ jobs:
           RELEASE_TAG: ${{ startsWith(inputs.version_name || format('0.1.{0}', github.run_number), 'v') && (inputs.version_name || format('0.1.{0}', github.run_number)) || format('v{0}', inputs.version_name || format('0.1.{0}', github.run_number)) }}
           CHANGELOG: ${{ inputs.changelog }}
         run: |
+          CLEAN_VERSION="${VERSION_NAME#v}"
+          APK_PATH="app/build/outputs/apk/debug/blbl-D-${CLEAN_VERSION}-debug.apk"
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             if [ -n "${CHANGELOG:-}" ]; then
               printf '%s' "$CHANGELOG" > changelog.md
