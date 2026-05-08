@@ -39,10 +39,10 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
           set +e
-          ./gradlew assembleDebug -PversionName=${{ inputs.version_name || format('0.1.{0}', github.run_number) }} -PversionCode=${{ github.run_number }} 2>&1 | tee build-debug.log
+          ./gradlew assembleDebug --stacktrace -PversionName=${{ inputs.version_name || format('0.1.{0}', github.run_number) }} -PversionCode=${{ github.run_number }} 2>&1 | tee build-debug.log
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
-            summary="$(grep -E "^(e: |ERROR:|FAILURE:|\* What went wrong:|Execution failed|Caused by:|> )" build-debug.log | tail -n 25)"
+            summary="$(grep -E "^(e: |ERROR:|FAILURE:|\* What went wrong:|Execution failed|Could not |Caused by:|> )" build-debug.log | tail -n 40)"
             if [ -z "$summary" ]; then
               summary="$(tail -n 40 build-debug.log)"
             fi
