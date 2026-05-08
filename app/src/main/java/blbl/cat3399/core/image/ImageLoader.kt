@@ -37,13 +37,16 @@ object ImageLoader {
 
     fun loadInto(view: ImageView, url: String?) {
         val normalized = normalizeImageUrl(url)
+        val previous = view.getTag(R.id.tag_image_loader_url) as? String
+        if (previous == normalized && normalized != null) return
         view.setTag(R.id.tag_image_loader_url, normalized)
-        if (normalized == null) {
-            clear(view)
-            return
-        }
+        pendingLoads.removeAll { it.view == view }
+        view.animate().cancel()
+        view.alpha = 1f
+        Glide.with(view).clear(view)
+        view.setImageDrawable(placeholder)
+        if (normalized == null) return
 
-        if (view.drawable == null) view.setImageDrawable(placeholder)
         enqueueLoad(view, normalized)
     }
 
@@ -96,7 +99,7 @@ object ImageLoader {
         view.alpha = 1f
         pendingLoads.removeAll { it.view == view }
         Glide.with(view).clear(view)
-        if (view.drawable == null) view.setImageDrawable(placeholder)
+        view.setImageDrawable(placeholder)
     }
 
     private fun glideUrl(url: String): GlideUrl {
