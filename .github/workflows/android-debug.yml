@@ -28,6 +28,33 @@ jobs:
           cache: "gradle"
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
+      - name: Check signing secrets
+        run: |
+          missing=0
+          for name in RELEASE_KEYSTORE_BASE64 RELEASE_STORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error title=Missing signing secret::$name is not set. Add it in repository Settings > Secrets and variables > Actions."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            {
+              echo "## Missing signing secrets"
+              echo ""
+              echo "Debug now uses the fixed private signing key, so these repository secrets are required:"
+              echo ""
+              echo "- RELEASE_KEYSTORE_BASE64"
+              echo "- RELEASE_STORE_PASSWORD"
+              echo "- RELEASE_KEY_ALIAS"
+              echo "- RELEASE_KEY_PASSWORD"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       - name: Decode keystore
         run: |
           mkdir -p keystore
