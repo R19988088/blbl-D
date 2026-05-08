@@ -14,6 +14,7 @@ import blbl.cat3399.core.api.BiliApiException
 import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.model.VideoCard
 import blbl.cat3399.core.net.BiliClient
+import blbl.cat3399.core.tv.BackLongPressRefresh
 import blbl.cat3399.core.tv.RemoteKeys
 import blbl.cat3399.core.ui.AppToast
 import blbl.cat3399.core.ui.BaseActivity
@@ -62,6 +63,7 @@ class TagDetailActivity : BaseActivity() {
     private var dpadGridController: DpadGridController? = null
     private var viewportFillMonitor: GridViewportFillMonitor? = null
     private var upFetchJob: Job? = null
+    private val backLongPressRefresh = BackLongPressRefresh()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -194,15 +196,31 @@ class TagDetailActivity : BaseActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && RemoteKeys.isRefreshKey(event.keyCode)) {
-            if (binding.swipeRefresh.isRefreshing) return true
-            pendingFocusFirstItem = true
-            dpadGridController?.parkFocusForDataSetReset()
-            binding.swipeRefresh.isRefreshing = true
-            resetAndLoad()
+        if (backLongPressRefresh.handle(
+                event = event,
+                onRefresh = { refreshFromKey() },
+                onShortBack = {
+                    finish()
+                    true
+                },
+            )
+        ) {
             return true
         }
+
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && RemoteKeys.isRefreshKey(event.keyCode)) {
+            return refreshFromKey()
+        }
         return super.dispatchKeyEvent(event)
+    }
+
+    private fun refreshFromKey(): Boolean {
+        if (binding.swipeRefresh.isRefreshing) return true
+        pendingFocusFirstItem = true
+        dpadGridController?.parkFocusForDataSetReset()
+        binding.swipeRefresh.isRefreshing = true
+        resetAndLoad()
+        return true
     }
 
     override fun onDestroy() {

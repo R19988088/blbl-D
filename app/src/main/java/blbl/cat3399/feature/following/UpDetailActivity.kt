@@ -19,6 +19,7 @@ import blbl.cat3399.core.api.video.VideoCollectionSection
 import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.model.VideoCard
 import blbl.cat3399.core.net.BiliClient
+import blbl.cat3399.core.tv.BackLongPressRefresh
 import blbl.cat3399.core.tv.RemoteKeys
 import blbl.cat3399.core.ui.ActivityStackLimiter
 import blbl.cat3399.core.ui.AppToast
@@ -75,6 +76,7 @@ class UpDetailActivity : BaseActivity() {
     private var appBarVerticalOffset: Int = 0
     private var pendingFocusHeaderAfterExpand: Boolean = false
     private var tabSwitchRequestToken: Int = 0
+    private val backLongPressRefresh = BackLongPressRefresh()
 
     private val loadedArchiveStableKeys = HashSet<String>()
     private var archiveIsLoadingMore: Boolean = false
@@ -179,10 +181,20 @@ class UpDetailActivity : BaseActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && RemoteKeys.isRefreshKey(event.keyCode)) {
-            if (binding.swipeRefresh.isRefreshing) return true
-            refreshCurrentTab()
+        if (backLongPressRefresh.handle(
+                event = event,
+                onRefresh = { refreshCurrentTabFromKey() },
+                onShortBack = {
+                    finish()
+                    true
+                },
+            )
+        ) {
             return true
+        }
+
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && RemoteKeys.isRefreshKey(event.keyCode)) {
+            return refreshCurrentTabFromKey()
         }
 
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && event.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
@@ -201,6 +213,12 @@ class UpDetailActivity : BaseActivity() {
             return true
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    private fun refreshCurrentTabFromKey(): Boolean {
+        if (binding.swipeRefresh.isRefreshing) return true
+        refreshCurrentTab()
+        return true
     }
 
     private fun setupHeaderButtons() {

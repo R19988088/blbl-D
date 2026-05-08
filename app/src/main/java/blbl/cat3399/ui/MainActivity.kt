@@ -27,6 +27,7 @@ import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.log.CrashTracker
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.prefs.AppPrefs
+import blbl.cat3399.core.tv.BackLongPressRefresh
 import blbl.cat3399.core.tv.RemoteKeys
 import blbl.cat3399.core.ui.AppToast
 import blbl.cat3399.core.ui.BaseActivity
@@ -88,6 +89,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
     private var pendingSidebarCollapseToken: Int = 0
     private var lastBackAtMs: Long = 0L
     private var lastMainFocusAtMs: Long = 0L
+    private val backLongPressRefresh = BackLongPressRefresh()
 
     private data class FocusabilitySnapshot(
         val descendantFocusability: Int,
@@ -163,30 +165,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    if (isUserInfoOverlayVisible()) {
-                        hideUserInfoOverlay()
-                        return
-                    }
-                    if (supportFragmentManager.popBackStackImmediate()) {
-                        return
-                    }
-                    // Sidebar is the primary navigation layer on TV.
-                    // When focus is already in sidebar, Back should enter the app-level exit flow
-                    // (double press to exit) instead of jumping back to the startup page.
-                    val focused = currentFocus
-                    if (focused != null && isInSidebar(focused)) {
-                        if (shouldFinishOnBackPress()) finish()
-                        return
-                    }
-                    val current = currentRootFragment()
-                    val handled = (current as? BackPressHandler)?.handleBackPressed() == true
-                    AppLog.d("Back", "back current=${current?.javaClass?.simpleName} handled=$handled")
-                    if (handled) return
-                    if (!isAtLaunchRoot(current)) {
-                        navAdapter.select(launchNavId, trigger = true)
-                        return
-                    }
-                    if (shouldFinishOnBackPress()) finish()
+                    handleMainBackPressed()
                 }
             },
         )
@@ -352,6 +331,19 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (backLongPressRefresh.handle(
+                event = event,
+                canRefresh = canLongPressBackRefreshCurrentPage(),
+                onRefresh = { dispatchRefreshKeyToCurrentPage() },
+                onShortBack = {
+                    handleMainBackPressed()
+                    true
+                },
+            )
+        ) {
+            return true
+        }
+
         if (isUserInfoOverlayVisible()) {
             return super.dispatchKeyEvent(event)
         }
@@ -426,6 +418,37 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
             }
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    private fun canLongPressBackRefreshCurrentPage(): Boolean {
+        if (isUserInfoOverlayVisible()) return false
+        val focused = currentFocus
+        if (focused != null && isInSidebar(focused)) return false
+        return currentRootFragment()?.let { findRefreshKeyHandler(it) != null } == true
+    }
+
+    private fun handleMainBackPressed() {
+        if (isUserInfoOverlayVisible()) {
+            hideUserInfoOverlay()
+            return
+        }
+        if (supportFragmentManager.popBackStackImmediate()) {
+            return
+        }
+        val focused = currentFocus
+        if (focused != null && isInSidebar(focused)) {
+            if (shouldFinishOnBackPress()) finish()
+            return
+        }
+        val current = currentRootFragment()
+        val handled = (current as? BackPressHandler)?.handleBackPressed() == true
+        AppLog.d("Back", "back current=${current?.javaClass?.simpleName} handled=$handled")
+        if (handled) return
+        if (!isAtLaunchRoot(current)) {
+            navAdapter.select(launchNavId, trigger = true)
+            return
+        }
+        if (shouldFinishOnBackPress()) finish()
     }
 
     private fun dispatchRefreshKeyToCurrentPage(): Boolean {

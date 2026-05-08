@@ -15,6 +15,7 @@ import blbl.cat3399.core.model.Following
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.paging.PagedGridStateMachine
 import blbl.cat3399.core.paging.appliedOrNull
+import blbl.cat3399.core.tv.BackLongPressRefresh
 import blbl.cat3399.core.tv.RemoteKeys
 import blbl.cat3399.core.ui.AppToast
 import blbl.cat3399.core.ui.BaseActivity
@@ -38,6 +39,7 @@ class FollowingListActivity : BaseActivity() {
     private var currentFollowingListOrder: String = BiliClient.prefs.followingListOrder
 
     private var dpadGridController: DpadGridController? = null
+    private val backLongPressRefresh = BackLongPressRefresh()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -135,6 +137,18 @@ class FollowingListActivity : BaseActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (backLongPressRefresh.handle(
+                event = event,
+                onRefresh = { refreshFromBackLongPress() },
+                onShortBack = {
+                    finish()
+                    true
+                },
+            )
+        ) {
+            return true
+        }
+
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && RemoteKeys.isRefreshKey(event.keyCode)) {
             if (binding.loginContainer.isVisible) {
                 AppToast.show(this, "请先登录")
@@ -191,6 +205,17 @@ class FollowingListActivity : BaseActivity() {
                 recycler.findViewHolderForAdapterPosition(position)?.itemView?.requestFocus() ?: recycler.requestFocus()
             }
         }
+    }
+
+    private fun refreshFromBackLongPress(): Boolean {
+        if (binding.loginContainer.isVisible) {
+            binding.btnLogin.requestFocus()
+            return true
+        }
+        if (binding.swipeRefresh.isRefreshing) return true
+        binding.swipeRefresh.isRefreshing = true
+        resetAndLoad()
+        return true
     }
 
     private fun resetAndLoad() {
