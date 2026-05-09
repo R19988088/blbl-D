@@ -98,6 +98,11 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
             adapter =
                 VideoCardAdapter(
                     onClick = { _, pos ->
+                        val card = adapter.snapshot().getOrNull(pos)
+                        if (card?.bvid.isNullOrBlank()) {
+                            AppToast.show(requireContext(), "该视频已失效")
+                            return@VideoCardAdapter
+                        }
                         requireContext().openVideoFromPlaybackHandle(
                             playbackHandle = playbackHandle(),
                             position = pos,
