@@ -1,6 +1,8 @@
 package blbl.cat3399.feature.my
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +13,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import blbl.cat3399.core.api.BiliApi
+import blbl.cat3399.core.image.ImageLoader
 import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.R
 import blbl.cat3399.core.net.BiliClient
@@ -66,6 +69,8 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
     private var pendingFocusFirstItem: Boolean = false
     private var dpadGridController: DpadGridController? = null
     private var viewportFillMonitor: GridViewportFillMonitor? = null
+    private val coverPreloadHandler = Handler(Looper.getMainLooper())
+    private var coverPreloadRunnable: Runnable? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyFavFolderDetailBinding.inflate(inflater, container, false)
@@ -116,11 +121,22 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
         }
         binding.recycler.adapter = adapter
         binding.recycler.setHasFixedSize(true)
-        binding.recycler.layoutManager = GridLayoutManager(requireContext(), spanCountForWidth(resources))
+        val spanCount = spanCountForWidth(resources)
+        binding.recycler.layoutManager = GridLayoutManager(requireContext(), spanCount)
+        binding.recycler.setItemViewCacheSize(spanCount * 3)
         (binding.recycler.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
         binding.recycler.clearOnScrollListeners()
         binding.recycler.addOnScrollListener(
             object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        scheduleNextCoverPreload(recyclerView)
+                    } else {
+                        coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
+                        coverPreloadRunnable = null
+                    }
+                }
+
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dy <= 0) return
                     if (isLoadingMore || endReached) return
@@ -305,6 +321,27 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
         return true
     }
 
+    private fun scheduleNextCoverPreload(recyclerView: RecyclerView) {
+        val lm = recyclerView.layoutManager as? GridLayoutManager ?: return
+        val lastVisible = lm.findLastVisibleItemPosition()
+        if (lastVisible == RecyclerView.NO_POSITION) return
+        coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
+        val expectedBinding = _binding ?: return
+        coverPreloadRunnable =
+            Runnable {
+                if (_binding !== expectedBinding || !isResumed) return@Runnable
+                val covers =
+                    adapter.snapshot()
+                        .asSequence()
+                        .drop(lastVisible + 1)
+                        .take(8)
+                        .map { it.coverUrl }
+                        .toList()
+                ImageLoader.preloadCovers(requireContext(), covers)
+            }
+        coverPreloadHandler.postDelayed(coverPreloadRunnable!!, 120L)
+    }
+
     private fun focusFavoriteTabIfAvailable(): Boolean {
         if (!embeddedInFavoriteTabs) return false
         val tabLayout = parentFragment?.view?.findViewById<com.google.android.material.tabs.TabLayout?>(R.id.tab_layout) ?: return false
@@ -338,6 +375,8 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
         dpadGridController = null
         viewportFillMonitor?.release()
         viewportFillMonitor = null
+        coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
+        coverPreloadRunnable = null
         _binding = null
         super.onDestroyView()
     }
