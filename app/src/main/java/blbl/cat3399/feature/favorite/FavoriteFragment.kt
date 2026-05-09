@@ -35,6 +35,13 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
     private var loadToken: Int = 0
     private var pendingFocusContent: Boolean = false
 
+    private fun focusCurrentContentFromTab(): Boolean {
+        val current = childFragmentManager.findFragmentById(R.id.favorite_container) as? TabContentFocusTarget ?: return false
+        val handled = current.requestFocusPrimaryItemFromTab()
+        if (handled) pendingFocusContent = false
+        return handled
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFavoriteBinding.inflate(inflater, container, false)
         return binding.root
@@ -156,25 +163,13 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
         tabLayout.postIfAlive(isAlive = { _binding === b }) {
             tabLayout.enableDpadTabFocus(selectOnFocusProvider = { BiliClient.prefs.tabSwitchFollowsFocus })
             val tabStrip = tabLayout.getChildAt(0) as? ViewGroup ?: return@postIfAlive
-            tabLayout.installDpadDownToContent()
-            tabStrip.installDpadDownToContent()
             for (i in 0 until tabStrip.childCount) {
-                tabStrip.getChildAt(i).installDpadDownToContent()
-            }
-        }
-    }
-
-    private fun View.installDpadDownToContent() {
-        setOnKeyListener { _, keyCode, event ->
-            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                requestFocusCurrentFolderContent()
-                return@setOnKeyListener true
-            }
-            false
-        }
-        if (this is ViewGroup) {
-            for (i in 0 until childCount) {
-                getChildAt(i).installDpadDownToContent()
+                tabStrip.getChildAt(i).setOnKeyListener { _, keyCode, event ->
+                    if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                        return@setOnKeyListener focusCurrentContentFromTab()
+                    }
+                    false
+                }
             }
         }
     }
