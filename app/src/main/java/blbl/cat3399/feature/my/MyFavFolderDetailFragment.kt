@@ -69,6 +69,7 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyFavFolderDetailBinding.inflate(inflater, container, false)
         binding.btnBack.visibility = if (embeddedInFavoriteTabs) View.GONE else View.VISIBLE
+        binding.tvTitle.visibility = if (embeddedInFavoriteTabs) View.GONE else View.VISIBLE
         return binding.root
     }
 
@@ -167,15 +168,17 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
                 loadMore = { loadNextPage() },
             )
         binding.swipeRefresh.setOnRefreshListener {
-            pendingFocusFirstItem = true
+            pendingFocusFirstItem = !embeddedInFavoriteTabs
             dpadGridController?.parkFocusForDataSetReset()
             resetAndLoad()
         }
 
         if (savedInstanceState == null) {
-            pendingFocusFirstItem = true
-            binding.recycler.requestFocus()
             binding.swipeRefresh.isRefreshing = true
+            if (!embeddedInFavoriteTabs) {
+                pendingFocusFirstItem = true
+                binding.recycler.requestFocus()
+            }
             resetAndLoad()
         }
 
@@ -226,14 +229,13 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
         if (!isResumed) return false
         if (b.swipeRefresh.isRefreshing) return true
         b.swipeRefresh.isRefreshing = true
-        pendingFocusFirstItem = true
+        pendingFocusFirstItem = !embeddedInFavoriteTabs
         dpadGridController?.parkFocusForDataSetReset()
         resetAndLoad()
         return true
     }
 
     private fun resetAndLoad() {
-        pendingFocusFirstItem = true
         dpadGridController?.parkFocusForDataSetReset()
         loadedStableKeys.clear()
         isLoadingMore = false
