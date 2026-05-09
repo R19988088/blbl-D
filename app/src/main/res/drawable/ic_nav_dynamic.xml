@@ -1,31 +1,9 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="20"
-    android:viewportHeight="21">
-    <!-- Stroke-only icon translated from provided SVG -->
+    android:viewportWidth="512"
+    android:viewportHeight="512">
     <path
-        android:pathData="M10 10.743C7.69883 10.743 5.83333 8.87747 5.83333 6.5763C5.83333 4.27512 7.69883 2.40964 10 2.40964V10.743Z"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.6"
-        android:strokeLineJoin="round"
-        android:fillColor="#00000000" />
-    <path
-        android:pathData="M10 10.743C10 13.0441 8.1345 14.9096 5.83333 14.9096C3.53217 14.9096 1.66667 13.0441 1.66667 10.743H10Z"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.6"
-        android:strokeLineJoin="round"
-        android:fillColor="#00000000" />
-    <path
-        android:pathData="M10 10.743C10 8.44182 11.8655 6.57632 14.1667 6.57632C16.4679 6.57632 18.3333 8.44182 18.3333 10.743H10Z"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.6"
-        android:strokeLineJoin="round"
-        android:fillColor="#00000000" />
-    <path
-        android:pathData="M10 10.743C12.3012 10.743 14.1667 12.6085 14.1667 14.9096C14.1667 17.2108 12.3012 19.0763 10 19.0763V10.743Z"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.6"
-        android:strokeLineJoin="round"
-        android:fillColor="#00000000" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M258.6,0c-1.7,0 -3.4,0.1 -5.1,0.5C168,17 115.6,102.3 130.5,189.3c2.9,17 8.4,32.9 15.9,47.4L32,224h-2.6C13.2,224 0,237.2 0,253.4c0,1.7 0.1,3.4 0.5,5.1C17,344 102.3,396.4 189.3,381.5c17,-2.9 32.9,-8.4 47.4,-15.9L224,480v2.6c0,16.2 13.2,29.4 29.4,29.4c1.7,0 3.4,-0.1 5.1,-0.5c85.5,-16.5 137.9,-101.8 123,-188.8c-2.9,-17 -8.4,-32.9 -15.9,-47.4L480,288h2.6c16.2,0 29.4,-13.2 29.4,-29.4c0,-1.7 -0.1,-3.4 -0.5,-5.1c-16.5,-85.5 -101.8,-137.9 -188.8,-123c-17,2.9 -32.9,8.4 -47.4,15.9L288,32v-2.6C288,13.2 274.8,0 258.6,0zM256,224a32,32 0,1 1,0 64a32,32 0,1 1,0 -64z" />
 </vector>
