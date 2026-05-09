@@ -331,6 +331,10 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (AppPopup.consumeBackLikeKeyEventIfNeeded(this, event)) {
+            return true
+        }
+
         if (backLongPressRefresh.handle(
                 event = event,
                 canRefresh = canLongPressBackRefreshCurrentPage(),
@@ -428,6 +432,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
     }
 
     private fun handleMainBackPressed() {
+        if (AppPopup.dismissTopModalIfShowing(this)) return
         if (isUserInfoOverlayVisible()) {
             hideUserInfoOverlay()
             return

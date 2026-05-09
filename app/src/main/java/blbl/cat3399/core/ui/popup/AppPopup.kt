@@ -26,6 +26,17 @@ object AppPopup {
     private const val MAX_DIALOG_HEIGHT_RATIO: Float = 0.90f
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    fun consumeBackLikeKeyEventIfNeeded(activity: ComponentActivity, event: KeyEvent): Boolean {
+        return PopupHost.peek(activity)?.consumeBackLikeKeyEventIfNeeded(event) == true
+    }
+
+    fun dismissTopModalIfShowing(activity: ComponentActivity): Boolean {
+        val host = PopupHost.peek(activity) ?: return false
+        if (!host.hasModalView()) return false
+        host.dismissModal()
+        return true
+    }
+
     fun message(
         context: Context,
         title: CharSequence? = null,

@@ -1,6 +1,8 @@
 package blbl.cat3399.feature.video
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +15,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApi
+import blbl.cat3399.core.image.ImageLoader
 import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.model.VideoCard
 import blbl.cat3399.core.net.BiliClient
@@ -72,6 +75,8 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
     private var viewportFillMonitor: GridViewportFillMonitor? = null
     private var pendingFocusFirstCardAfterRefresh: Boolean = false
     private var lastScrollDy: Int = 0
+    private val coverPreloadHandler = Handler(Looper.getMainLooper())
+    private var coverPreloadRunnable: Runnable? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVideoGridBinding.inflate(inflater, container, false)
@@ -124,8 +129,11 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     if (newState == RecyclerView.SCROLL_STATE_DRAGGING || newState == RecyclerView.SCROLL_STATE_SETTLING) {
                         recyclerView.animate().cancel()
                         recyclerView.translationY = 0f
+                        coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
+                        coverPreloadRunnable = null
                     } else if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                         applyScrollSettleMotion(recyclerView)
+                        scheduleNextCoverPreload(recyclerView)
                     }
                 }
 
@@ -217,7 +225,10 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         actionController: VideoCardActionController,
     ): Boolean {
         val activity = activity as? ComponentActivity ?: return false
-        val actions = actionController.manualActions(card, position).take(3)
+        val actions =
+            actionController.manualActions(card, position)
+                .filter { it.id != VideoCardQuickActionId.OPEN_DETAIL }
+                .take(4)
         activity.showVideoCardRemoteMenuPopup(card, actions) { action ->
             actionController.onActionSelected(card, position, action)
         }
@@ -285,7 +296,10 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
 
     private fun loadNextPage(isRefresh: Boolean = false) {
         val startSnap = paging.snapshot()
-        if (startSnap.isLoading || startSnap.endReached) return
+        if (startSnap.isLoading || startSnap.endReached) {
+            if (isRefresh) _binding?.swipeRefresh?.isRefreshing = false
+            return
+        }
         val startGen = startSnap.generation
         val startKey = startSnap.nextKey
         val startAt = SystemClock.uptimeMillis()
@@ -356,6 +370,27 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                 )
             }
         }
+    }
+
+    private fun scheduleNextCoverPreload(recyclerView: RecyclerView) {
+        val lm = recyclerView.layoutManager as? GridLayoutManager ?: return
+        val lastVisible = lm.findLastVisibleItemPosition()
+        if (lastVisible == RecyclerView.NO_POSITION) return
+        coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
+        val expectedBinding = _binding ?: return
+        coverPreloadRunnable =
+            Runnable {
+                if (_binding !== expectedBinding || !isResumed) return@Runnable
+                val covers =
+                    adapter.snapshot()
+                        .asSequence()
+                        .drop(lastVisible + 1)
+                        .take(8)
+                        .map { it.coverUrl }
+                        .toList()
+                ImageLoader.preloadCovers(requireContext(), covers)
+            }
+        coverPreloadHandler.postDelayed(coverPreloadRunnable!!, 120L)
     }
 
     private fun spanCountForWidth(): Int {
@@ -532,6 +567,8 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         dpadGridController = null
         viewportFillMonitor?.release()
         viewportFillMonitor = null
+        coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
+        coverPreloadRunnable = null
         _binding = null
         super.onDestroyView()
     }

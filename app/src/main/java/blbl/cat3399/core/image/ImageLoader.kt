@@ -108,6 +108,19 @@ object ImageLoader {
         view.setImageDrawable(placeholder)
     }
 
+    fun preloadCovers(context: android.content.Context, urls: List<String?>) {
+        urls.asSequence()
+            .mapNotNull(::normalizeImageUrl)
+            .distinct()
+            .forEach { normalized ->
+                Glide.with(context.applicationContext)
+                    .load(glideUrl(normalized))
+                    .apply(requestOptions)
+                    .signature(ObjectKey(normalized))
+                    .preload()
+            }
+    }
+
     private fun glideUrl(url: String): GlideUrl {
         val userAgent = runCatching { BiliClient.prefs.userAgent }.getOrDefault(BiliClient.APP_CDN_USER_AGENT)
         val headers =

@@ -1,6 +1,8 @@
 ﻿package blbl.cat3399.feature.player
 
+import android.content.Intent
 import android.view.LayoutInflater
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import blbl.cat3399.core.api.BiliApi
 import blbl.cat3399.core.api.BiliApiException
@@ -9,6 +11,7 @@ import blbl.cat3399.core.ui.AppToast
 import blbl.cat3399.core.ui.popup.PopupHandle
 import blbl.cat3399.core.ui.popup.PopupHost
 import blbl.cat3399.databinding.DialogPlayerRemoteMenuBinding
+import blbl.cat3399.feature.following.UpDetailActivity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,6 +37,12 @@ internal fun PlayerActivity.showRemoteMenuPopup() {
         handle?.dismiss()
         blockCurrentUp()
     }
+    dialogBinding.btnExtraAction.text = "进入UP主页"
+    dialogBinding.btnExtraAction.isVisible = true
+    dialogBinding.btnExtraAction.setOnClickListener {
+        handle?.dismiss()
+        openCurrentUpHome()
+    }
 
     handle =
         PopupHost.from(this).showModal(
@@ -47,6 +56,22 @@ internal fun PlayerActivity.showRemoteMenuPopup() {
                 dialogBinding.btnFavorite.post { dialogBinding.btnFavorite.requestFocus() }
             },
         )
+}
+
+private fun PlayerActivity.openCurrentUpHome() {
+    val mid = currentUpMid.takeIf { it > 0L }
+    if (mid == null) {
+        AppToast.show(this, "未获取到 UP 主信息")
+        return
+    }
+    startActivity(
+        Intent(this, UpDetailActivity::class.java)
+            .putExtra(UpDetailActivity.EXTRA_MID, mid)
+            .apply {
+                currentUpName?.takeIf { it.isNotBlank() }?.let { putExtra(UpDetailActivity.EXTRA_NAME, it) }
+                currentUpAvatar?.takeIf { it.isNotBlank() }?.let { putExtra(UpDetailActivity.EXTRA_AVATAR, it) }
+            },
+    )
 }
 
 private fun PlayerActivity.currentUpDisplayText(): String {
