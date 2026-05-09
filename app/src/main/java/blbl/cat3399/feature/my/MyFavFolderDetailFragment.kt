@@ -42,6 +42,7 @@ import blbl.cat3399.feature.video.removeVideoCardAndRestoreFocus
 import blbl.cat3399.feature.video.showVideoCardRemoteMenuPopup
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.ui.RefreshKeyHandler
+import blbl.cat3399.feature.favorite.FavoriteFragment
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -326,7 +327,7 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
         if (next !in 0 until tabLayout.tabCount) return false
         tabLayout.getTabAt(next)?.select() ?: return false
         tabLayout.postIfAttached {
-            (parentFragment as? blbl.cat3399.core.ui.TabContentSwitchFocusHost)?.requestFocusCurrentPagePrimaryItemFromContentSwitch()
+            (parentFragment as? FavoriteFragment)?.requestFocusCurrentFolderContent()
                 ?: tabStrip.getChildAt(next)?.requestFocus()
         }
         return true

@@ -53,6 +53,13 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
         return focusSelectedTab()
     }
 
+    fun requestFocusCurrentFolderContent(): Boolean {
+        pendingFocusContent = true
+        if (focusCurrentContent()) return true
+        binding.favoriteContainer.postIfAlive(isAlive = { _binding != null }) { focusCurrentContent() }
+        return true
+    }
+
     override fun handleRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.favorite_container)
         return (current as? RefreshKeyHandler)?.handleRefreshKey() == true
