@@ -24,6 +24,7 @@ import blbl.cat3399.core.ui.GridViewportFillMonitor
 import blbl.cat3399.core.ui.UiScale
 import blbl.cat3399.core.ui.postIfAttached
 import blbl.cat3399.core.ui.postIfAlive
+import blbl.cat3399.core.ui.requestFocusAdapterPositionReliable
 import blbl.cat3399.core.ui.installGridViewportFillMonitor
 import blbl.cat3399.core.ui.requestFocusFirstItemOrSelfAfterRefresh
 import blbl.cat3399.core.ui.setTextSizePxIfChanged
@@ -214,8 +215,24 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
 
     private fun requestFocusFirstCard(): Boolean {
         pendingFocusFirstItem = true
-        if (!isResumed || _binding == null) return true
-        return maybeFocusFirstItem()
+        val b = _binding ?: return true
+        if (!isResumed) return true
+        if (!::adapter.isInitialized) return false
+
+        val recycler = b.recycler
+        if (adapter.itemCount <= 0) {
+            recycler.requestFocus()
+            return true
+        }
+
+        val isUiAlive = { _binding === b && isResumed }
+        recycler.requestFocusAdapterPositionReliable(
+            position = 0,
+            smoothScroll = false,
+            isAlive = isUiAlive,
+            onFocused = { pendingFocusFirstItem = false },
+        )
+        return true
     }
 
     override fun onResume() {
