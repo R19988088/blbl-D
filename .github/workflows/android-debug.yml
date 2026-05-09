@@ -12,7 +12,7 @@ on:
         default: ""
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-debug:
@@ -132,27 +132,3 @@ jobs:
         with:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/blbl-D-*-debug.apk
-      - name: Publish debug APK to GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION_NAME: ${{ inputs.version_name || format('0.1.{0}', github.run_number) }}
-          RELEASE_TAG: ${{ startsWith(inputs.version_name || format('0.1.{0}', github.run_number), 'v') && (inputs.version_name || format('0.1.{0}', github.run_number)) || format('v{0}', inputs.version_name || format('0.1.{0}', github.run_number)) }}
-          CHANGELOG: ${{ inputs.changelog }}
-        run: |
-          CLEAN_VERSION="${VERSION_NAME#v}"
-          APK_PATH="app/build/outputs/apk/debug/blbl-D-${CLEAN_VERSION}-debug.apk"
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            if [ -n "${CHANGELOG:-}" ]; then
-              printf '%s' "$CHANGELOG" > changelog.md
-              gh release edit "$RELEASE_TAG" --notes-file changelog.md
-            fi
-          else
-            if [ -n "${CHANGELOG:-}" ]; then
-              printf '%s' "$CHANGELOG" > changelog.md
-              gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file changelog.md --target "$GITHUB_SHA"
-            else
-              gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes --target "$GITHUB_SHA"
-            fi
-          fi
-          gh release upload "$RELEASE_TAG" "${APK_PATH}#blbl-D-${VERSION_NAME}-debug.apk" --clobber
-          gh release upload "$RELEASE_TAG" "${APK_PATH}#blbl-D-latest-debug.apk" --clobber
