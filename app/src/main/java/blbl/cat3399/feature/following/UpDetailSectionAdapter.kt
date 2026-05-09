@@ -36,6 +36,7 @@ data class UpDetailSection(
 
 class UpDetailSectionAdapter(
     private val onVideoClick: (section: UpDetailSection, card: VideoCard, index: Int) -> Unit,
+    private val onVideoLongClick: (section: UpDetailSection, card: VideoCard, index: Int) -> Boolean,
     private val onRequestLoadMore: (section: UpDetailSection, requestedNextIndex: Int) -> Unit,
     private val onRequestMoveToTabs: (() -> Boolean)? = null,
 ) : RecyclerView.Adapter<UpDetailSectionAdapter.Vh>() {
@@ -110,7 +111,7 @@ class UpDetailSectionAdapter(
                 parent,
                 false,
             )
-        return Vh(binding, onVideoClick, onRequestLoadMore, onRequestMoveToTabs)
+        return Vh(binding, onVideoClick, onVideoLongClick, onRequestLoadMore, onRequestMoveToTabs)
     }
 
     override fun onBindViewHolder(holder: Vh, position: Int) = holder.bind(items[position])
@@ -120,6 +121,7 @@ class UpDetailSectionAdapter(
     class Vh(
         private val binding: ItemUpSectionBinding,
         private val onVideoClick: (section: UpDetailSection, card: VideoCard, index: Int) -> Unit,
+        private val onVideoLongClick: (section: UpDetailSection, card: VideoCard, index: Int) -> Boolean,
         private val onRequestLoadMore: (section: UpDetailSection, requestedNextIndex: Int) -> Unit,
         private val onRequestMoveToTabs: (() -> Boolean)?,
     ) : RecyclerView.ViewHolder(binding.root) {
@@ -133,7 +135,10 @@ class UpDetailSectionAdapter(
                         val section = boundSection ?: return@VideoCardAdapter
                         onVideoClick(section, card, index)
                     },
-                    onLongClick = null,
+                    onLongClick = { card, index ->
+                        val section = boundSection ?: return@VideoCardAdapter false
+                        onVideoLongClick(section, card, index)
+                    },
                     fixedItemWidthDimenRes = R.dimen.video_detail_section_card_width,
                     fixedItemMarginDimenRes = null,
                 )

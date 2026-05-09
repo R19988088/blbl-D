@@ -8,6 +8,7 @@
     <string name="tab_popular">热门</string>
     <string name="tab_search">搜索</string>
     <string name="tab_category">分类</string>
+    <string name="tab_favorite">收藏</string>
     <string name="tab_dynamic">动态</string>
     <string name="tab_live">直播</string>
     <string name="tab_custom">自定义</string>
@@ -36,6 +37,7 @@
     <string name="my_btn_followed">已追</string>
     <string name="video_card_progress_complete">已看完</string>
     <string name="video_card_action_favorite">添加到收藏</string>
+    <string name="video_card_action_unfavorite">取消收藏</string>
     <string name="video_card_action_watch_later">稍后观看</string>
     <string name="video_card_action_block_up">拉黑UP</string>
     <string name="video_card_action_open_detail">进入详情页</string>
