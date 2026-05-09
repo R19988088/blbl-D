@@ -156,14 +156,25 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
         tabLayout.postIfAlive(isAlive = { _binding === b }) {
             tabLayout.enableDpadTabFocus(selectOnFocusProvider = { BiliClient.prefs.tabSwitchFollowsFocus })
             val tabStrip = tabLayout.getChildAt(0) as? ViewGroup ?: return@postIfAlive
+            tabLayout.installDpadDownToContent()
+            tabStrip.installDpadDownToContent()
             for (i in 0 until tabStrip.childCount) {
-                tabStrip.getChildAt(i).setOnKeyListener { _, keyCode, event ->
-                    if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                        requestFocusCurrentFolderContent()
-                        return@setOnKeyListener true
-                    }
-                    false
-                }
+                tabStrip.getChildAt(i).installDpadDownToContent()
+            }
+        }
+    }
+
+    private fun View.installDpadDownToContent() {
+        setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                requestFocusCurrentFolderContent()
+                return@setOnKeyListener true
+            }
+            false
+        }
+        if (this is ViewGroup) {
+            for (i in 0 until childCount) {
+                getChildAt(i).installDpadDownToContent()
             }
         }
     }
