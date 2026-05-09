@@ -90,16 +90,15 @@ class VideoCardActionController(
             AppToast.show(context, "请先登录后再收藏")
             return
         }
-        val aid = card.aid?.takeIf { it > 0L }
-        if (aid == null) {
-            AppToast.show(context, "未获取到 aid，暂不支持收藏")
-            return
-        }
         val actionKey = buildActionKey(card = card, suffix = "favorite")
         if (!markInFlight(actionKey)) return
 
         scope.launch {
             try {
+                val aid =
+                    withContext(Dispatchers.IO) {
+                        resolveAid(card)
+                    }
                 val folders =
                     withContext(Dispatchers.IO) {
                         BiliApi.favFoldersWithState(upMid = selfMid, rid = aid)
