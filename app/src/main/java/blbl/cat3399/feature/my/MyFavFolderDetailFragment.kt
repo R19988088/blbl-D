@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -31,12 +32,14 @@ import blbl.cat3399.feature.video.VideoCardActionController
 import blbl.cat3399.feature.video.VideoCardAdapter
 import blbl.cat3399.feature.video.VideoCardDismissBehavior
 import blbl.cat3399.feature.video.VideoCardFavoriteActionMode
+import blbl.cat3399.feature.video.VideoCardQuickActionId
 import blbl.cat3399.feature.video.VideoCardVisibilityFilter
 import blbl.cat3399.feature.video.buildPagedVideoCardPlaybackHandle
 import blbl.cat3399.feature.video.defaultVideoCardPlaylistItem
 import blbl.cat3399.feature.video.openVideoDetailFromPlaybackHandle
 import blbl.cat3399.feature.video.openVideoFromPlaybackHandle
 import blbl.cat3399.feature.video.removeVideoCardAndRestoreFocus
+import blbl.cat3399.feature.video.showVideoCardRemoteMenuPopup
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.ui.RefreshKeyHandler
 import kotlinx.coroutines.CancellationException
@@ -100,10 +103,7 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
                             openDetailBeforePlay = BiliClient.prefs.playerOpenDetailBeforePlay,
                         )
                     },
-                    onLongClick = { card, _ ->
-                        openUpDetailFromVideoCard(card)
-                        true
-                    },
+                    onLongClick = { card, pos -> showVideoCardMenu(card, pos, actionController) },
                     actionDelegate = actionController,
                 )
         }
@@ -336,6 +336,22 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
 
     private fun openDetail(position: Int) {
         requireContext().openVideoDetailFromPlaybackHandle(playbackHandle(), position)
+    }
+
+    private fun showVideoCardMenu(
+        card: blbl.cat3399.core.model.VideoCard,
+        position: Int,
+        actionController: VideoCardActionController,
+    ): Boolean {
+        val activity = activity as? ComponentActivity ?: return false
+        val actions =
+            actionController.manualActions(card, position)
+                .filter { it.id != VideoCardQuickActionId.OPEN_DETAIL }
+                .take(4)
+        activity.showVideoCardRemoteMenuPopup(card, actions) { action ->
+            actionController.onActionSelected(card, position, action)
+        }
+        return true
     }
 
     private fun playbackHandle() =
