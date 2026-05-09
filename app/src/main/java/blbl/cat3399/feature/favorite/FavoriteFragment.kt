@@ -50,8 +50,7 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
     }
 
     override fun requestFocusCurrentPagePrimaryItemFromContentSwitch(): Boolean {
-        pendingFocusContent = true
-        return focusCurrentContent()
+        return focusSelectedTab()
     }
 
     override fun handleRefreshKey(): Boolean {
