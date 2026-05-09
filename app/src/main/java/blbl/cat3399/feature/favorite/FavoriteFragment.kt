@@ -122,7 +122,7 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
                 override fun onTabUnselected(tab: TabLayout.Tab) = Unit
 
                 override fun onTabReselected(tab: TabLayout.Tab) {
-                    handleRefreshKey()
+                    requestFocusCurrentFolderContent()
                 }
             },
         )
@@ -159,7 +159,7 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
             for (i in 0 until tabStrip.childCount) {
                 tabStrip.getChildAt(i).setOnKeyListener { _, keyCode, event ->
                     if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                        focusCurrentContent()
+                        requestFocusCurrentFolderContent()
                         return@setOnKeyListener true
                     }
                     false
