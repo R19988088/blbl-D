@@ -14,6 +14,7 @@ import blbl.cat3399.core.prefs.AppPrefs
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.core.ui.TabContentSwitchFocusHost
 import blbl.cat3399.core.ui.enableDpadTabFocus
+import blbl.cat3399.core.ui.findCurrentViewPagerChildFragment
 import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAs
 import blbl.cat3399.core.ui.postDelayedIfAlive
 import blbl.cat3399.core.ui.postIfAlive
@@ -25,7 +26,7 @@ import blbl.cat3399.ui.SidebarFocusHost
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 
-class CustomPageFragment : Fragment(), TabContentSwitchFocusHost, BackPressHandler {
+class CustomPageFragment : Fragment(), TabContentSwitchFocusHost, BackPressHandler, RefreshKeyHandler {
     private var _binding: FragmentCustomPageBinding? = null
     private val binding get() = _binding!!
 
@@ -214,9 +215,18 @@ class CustomPageFragment : Fragment(), TabContentSwitchFocusHost, BackPressHandl
             }.also { b.viewPager.registerOnPageChangeCallback(it) }
     }
 
+    private fun refreshCurrentPageStrict(): Boolean {
+        val page = findCurrentViewPagerChildFragment(binding.viewPager) ?: return false
+        return (page as? RefreshKeyHandler)?.handleRefreshKey() == true
+    }
+
     private fun refreshCurrentPageFromTabReselect(): Boolean {
         val page = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
         return page.handleRefreshKey()
+    }
+
+    override fun handleRefreshKey(): Boolean {
+        return refreshCurrentPageStrict() || refreshCurrentPageFromTabReselect()
     }
 
     private fun focusCurrentPagePrimaryItemFromTab(): Boolean {

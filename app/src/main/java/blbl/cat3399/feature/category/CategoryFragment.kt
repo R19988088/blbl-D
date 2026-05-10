@@ -15,6 +15,7 @@ import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.model.Zone
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.ui.enableDpadTabFocus
+import blbl.cat3399.core.ui.findCurrentViewPagerChildFragment
 import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAs
 import blbl.cat3399.core.ui.postDelayedIfAlive
 import blbl.cat3399.core.ui.postIfAlive
@@ -25,7 +26,7 @@ import blbl.cat3399.feature.video.VideoGridTabSwitchFocusHost
 import blbl.cat3399.ui.BackPressHandler
 import blbl.cat3399.ui.SidebarFocusHost
 
-class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler {
+class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler, RefreshKeyHandler {
     private var _binding: FragmentCategoryBinding? = null
     private val binding get() = _binding!!
     private var mediator: TabLayoutMediator? = null
@@ -131,9 +132,18 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
         }
     }
 
+    private fun refreshCurrentPageStrict(): Boolean {
+        val page = findCurrentViewPagerChildFragment(binding.viewPager) ?: return false
+        return (page as? RefreshKeyHandler)?.handleRefreshKey() == true
+    }
+
     private fun refreshCurrentPageFromTabReselect(): Boolean {
         val pageFragment = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
         return pageFragment.handleRefreshKey()
+    }
+
+    override fun handleRefreshKey(): Boolean {
+        return refreshCurrentPageStrict() || refreshCurrentPageFromTabReselect()
     }
 
     private fun focusCurrentPageFirstCardFromTab(): Boolean {

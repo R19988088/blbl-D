@@ -94,6 +94,7 @@ import blbl.cat3399.feature.player.engine.IjkPlayerPluginUi
 import blbl.cat3399.feature.player.engine.PlayerEngineKind
 import blbl.cat3399.feature.player.engine.PlaybackSource
 import blbl.cat3399.feature.settings.SettingsActivity
+import blbl.cat3399.core.tv.isTvDevice
 import blbl.cat3399.feature.video.VideoDetailActivity
 import blbl.cat3399.databinding.ActivityPlayerBinding
 import kotlinx.coroutines.CancellationException
@@ -2191,6 +2192,10 @@ class PlayerActivity : BaseActivity() {
 
     internal fun restoreBrightnessFromAudioOnlyOnInteraction() {
         if (!audioOnlyModeEnabled) return
+        if (isTvDevice()) {
+            // TV: always restore to full brightness
+            audioOnlyRestoreBrightness = 1.0f
+        }
         setAudioOnlyModeEnabled(enabled = false, animated = true, announce = false)
     }
 
