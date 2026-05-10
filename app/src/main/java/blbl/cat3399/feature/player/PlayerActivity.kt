@@ -733,6 +733,7 @@ class PlayerActivity : BaseActivity() {
                 },
             )
         setContentView(binding.root)
+        binding.audioOnlyDimOverlay.bringToFront()
         Immersive.apply(this, prefs.fullscreenEnabled)
         PlayerUiMode.applyVideo(this, binding)
         ensureBottomBarConstraintSets()
@@ -1577,7 +1578,7 @@ class PlayerActivity : BaseActivity() {
 
         if (event.action != KeyEvent.ACTION_DOWN) return super.dispatchKeyEvent(event)
 
-        if (isInteractionKey(keyCode)) restoreBrightnessFromAudioOnlyOnInteraction()
+        if (isInteractionKey(keyCode) && !isAudioOnlyToggleKeyForFocusedView(keyCode)) restoreBrightnessFromAudioOnlyOnInteraction()
         if (isInteractionKey(keyCode)) noteUserInteraction()
 
         if (dispatchPlayerCustomShortcutIfNeeded(event)) return true
@@ -2098,6 +2099,7 @@ class PlayerActivity : BaseActivity() {
         window.attributes = attrs
         val startOverlayAlpha = binding.audioOnlyDimOverlay.alpha
         val targetOverlayAlpha = ((1.0f - safeTarget).coerceIn(0f, 0.85f))
+        binding.audioOnlyDimOverlay.bringToFront()
         binding.audioOnlyDimOverlay.visibility = if (targetOverlayAlpha > 0f || startOverlayAlpha > 0f) View.VISIBLE else View.GONE
         if (!animated || kotlin.math.abs(startBrightness - safeTarget) < 0.01f) {
             attrs.screenBrightness = safeTarget
@@ -2137,9 +2139,11 @@ class PlayerActivity : BaseActivity() {
     }
 
     internal fun refreshPlayerControlsFocusOrder() {
+        val subtitleFocusable = binding.btnSubtitle.visibility == View.VISIBLE && binding.btnSubtitle.isEnabled
+        binding.btnNext.nextFocusRightId = if (subtitleFocusable) binding.btnSubtitle.id else binding.btnAudioOnly.id
         binding.btnSubtitle.nextFocusLeftId = binding.btnNext.id
         binding.btnSubtitle.nextFocusRightId = binding.btnAudioOnly.id
-        binding.btnAudioOnly.nextFocusLeftId = binding.btnSubtitle.id
+        binding.btnAudioOnly.nextFocusLeftId = if (subtitleFocusable) binding.btnSubtitle.id else binding.btnNext.id
         binding.btnAudioOnly.nextFocusRightId = binding.btnRemoteMenu.id
         binding.btnRemoteMenu.nextFocusLeftId = binding.btnAudioOnly.id
         binding.btnRemoteMenu.nextFocusRightId = binding.btnResolution.id
@@ -2186,6 +2190,14 @@ class PlayerActivity : BaseActivity() {
     internal fun restoreBrightnessFromAudioOnlyOnInteraction() {
         if (!audioOnlyModeEnabled) return
         setAudioOnlyModeEnabled(enabled = false, animated = true, announce = false)
+    }
+
+    private fun isAudioOnlyToggleKeyForFocusedView(keyCode: Int): Boolean {
+        if (currentFocus != binding.btnAudioOnly) return false
+        return keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+            keyCode == KeyEvent.KEYCODE_ENTER ||
+            keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER ||
+            keyCode == KeyEvent.KEYCODE_BUTTON_A
     }
 
     internal fun shouldShowOsdOnPlaybackToggle(): Boolean {
@@ -2582,6 +2594,7 @@ class PlayerActivity : BaseActivity() {
             binding.btnSubtitle.alpha = 1.0f
             binding.btnSubtitle.imageTintList =
                 ContextCompat.getColorStateList(this, blbl.cat3399.R.color.player_button_tint)
+            refreshPlayerControlsFocusOrder()
             return
         }
         if (!subtitleAvailable) {
@@ -2589,6 +2602,7 @@ class PlayerActivity : BaseActivity() {
             binding.btnSubtitle.alpha = 0.35f
             binding.btnSubtitle.imageTintList =
                 ContextCompat.getColorStateList(this, blbl.cat3399.R.color.player_button_tint)
+            refreshPlayerControlsFocusOrder()
             return
         }
 
@@ -2601,6 +2615,7 @@ class PlayerActivity : BaseActivity() {
                 blbl.cat3399.R.color.player_button_tint
             }
         binding.btnSubtitle.imageTintList = ContextCompat.getColorStateList(this, colorRes)
+        refreshPlayerControlsFocusOrder()
     }
 
     internal fun toggleSubtitles(exo: ExoPlayer) {

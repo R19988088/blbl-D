@@ -43,6 +43,20 @@
         app:layout_constraintStart_toStartOf="@id/player_view"
         app:layout_constraintTop_toTopOf="@id/player_view" />
 
+    <View
+        android:id="@+id/audio_only_dim_overlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:alpha="0"
+        android:background="#FF000000"
+        android:clickable="false"
+        android:focusable="false"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/player_view"
+        app:layout_constraintEnd_toEndOf="@id/player_view"
+        app:layout_constraintStart_toStartOf="@id/player_view"
+        app:layout_constraintTop_toTopOf="@id/player_view" />
+
     <ViewStub
         android:id="@+id/player_touch_overlay_stub"
         android:layout_width="0dp"
