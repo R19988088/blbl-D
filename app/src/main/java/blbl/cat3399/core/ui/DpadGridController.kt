@@ -129,8 +129,8 @@ internal class DpadGridController(
     private var pendingFocusAfterLoadMoreTargetPos: Int = RecyclerView.NO_POSITION
     private val focusRetryDelayMillis: Long = 16L
     private val focusRetryMaxAttempts: Int = 30
-    private val edgeScrollSettleDelayMillis: Long = 220L
-    private val edgeScrollInterpolator = DecelerateInterpolator(1.8f)
+    private val edgeScrollSettleDelayMillis: Long = 180L
+    private val edgeScrollInterpolator = DecelerateInterpolator(1.5f)
     private var focusParkedDescendantFocusability: Int? = null
     private val focusProtectWindowMs: Long = 500L
     private var lastVerticalNavAtMs: Long = 0L
