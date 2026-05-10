@@ -141,6 +141,7 @@ private class VodPlayerTouchHost(
     }
 
     override fun noteUserInteractionFromTouch() {
+        playerActivity.restoreBrightnessFromAudioOnlyOnInteraction()
         playerActivity.noteUserInteraction()
     }
 

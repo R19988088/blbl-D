@@ -7,6 +7,7 @@ class BackLongPressRefresh(
 ) {
     private var backDown: Boolean = false
     private var refreshTriggered: Boolean = false
+    private var backDownAtMs: Long = 0L
 
     fun handle(
         event: KeyEvent,
@@ -21,15 +22,24 @@ class BackLongPressRefresh(
 
         return when (event.action) {
             KeyEvent.ACTION_DOWN -> {
-                backDown = true
-                if (!refreshTriggered && event.eventTime - event.downTime >= longPressMs) {
+                if (!backDown) {
+                    backDown = true
+                    backDownAtMs = event.downTime.takeIf { it > 0L } ?: event.eventTime
+                }
+                val heldLongEnough =
+                    event.repeatCount > 0 ||
+                        event.eventTime - backDownAtMs >= longPressMs
+                if (!refreshTriggered && heldLongEnough) {
                     refreshTriggered = onRefresh()
                 }
                 true
             }
 
             KeyEvent.ACTION_UP -> {
-                val shouldRefresh = backDown && !refreshTriggered && event.eventTime - event.downTime >= longPressMs
+                val shouldRefresh =
+                    backDown &&
+                        !refreshTriggered &&
+                        event.eventTime - backDownAtMs >= longPressMs
                 if (shouldRefresh) refreshTriggered = onRefresh()
                 val handled = if (refreshTriggered) true else onShortBack()
                 reset()
@@ -43,6 +53,7 @@ class BackLongPressRefresh(
     fun reset() {
         backDown = false
         refreshTriggered = false
+        backDownAtMs = 0L
     }
 
     companion object {

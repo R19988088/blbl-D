@@ -1577,6 +1577,7 @@ class PlayerActivity : BaseActivity() {
 
         if (event.action != KeyEvent.ACTION_DOWN) return super.dispatchKeyEvent(event)
 
+        if (isInteractionKey(keyCode)) restoreBrightnessFromAudioOnlyOnInteraction()
         if (isInteractionKey(keyCode)) noteUserInteraction()
 
         if (dispatchPlayerCustomShortcutIfNeeded(event)) return true
@@ -2180,6 +2181,11 @@ class PlayerActivity : BaseActivity() {
             }
         }
         updateAudioOnlyButtonUi()
+    }
+
+    internal fun restoreBrightnessFromAudioOnlyOnInteraction() {
+        if (!audioOnlyModeEnabled) return
+        setAudioOnlyModeEnabled(enabled = false, animated = true, announce = false)
     }
 
     internal fun shouldShowOsdOnPlaybackToggle(): Boolean {
