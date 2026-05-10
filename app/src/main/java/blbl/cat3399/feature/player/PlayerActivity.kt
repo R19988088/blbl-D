@@ -227,6 +227,7 @@ class PlayerActivity : BaseActivity() {
     internal var keySeekHoldDetectJob: kotlinx.coroutines.Job? = null
     internal var keySeekPendingKeyCode: Int = 0
     internal var keySeekPendingDirection: Int = 0
+    internal var pendingCenterKeyAction: Int = 0
     internal var seekOsdToken: Long = 0L
     internal var transientSeekOsdVisible: Boolean = false
     internal var bottomBarFullConstraints: ConstraintSet? = null
@@ -240,6 +241,12 @@ class PlayerActivity : BaseActivity() {
     internal enum class PanelDismissTarget {
         ResumeOsd,
         Fullscreen,
+    }
+
+    internal enum class PendingCenterKeyAction {
+        None,
+        TogglePlayPause,
+        ShowControls,
     }
 
     internal var osdMode: OsdMode = OsdMode.Hidden
@@ -1498,6 +1505,30 @@ class PlayerActivity : BaseActivity() {
         }
 
         if (event.action == KeyEvent.ACTION_UP) {
+            if (isConfirmHoldKey(keyCode)) {
+                val pendingCenterAction = consumePendingCenterKeyAction()
+                if (holdSeekJob != null) {
+                    stopHoldSeek()
+                    return true
+                }
+                when (pendingCenterAction) {
+                    PendingCenterKeyAction.TogglePlayPause -> {
+                        binding.btnPlayPause.performClick()
+                        if (osdMode != OsdMode.Hidden) {
+                            focusFirstControl()
+                        }
+                        return true
+                    }
+
+                    PendingCenterKeyAction.ShowControls -> {
+                        setControlsVisible(true)
+                        focusFirstControl()
+                        return true
+                    }
+
+                    PendingCenterKeyAction.None -> Unit
+                }
+            }
             if (
                 keyCode == KeyEvent.KEYCODE_BACK ||
                 keyCode == KeyEvent.KEYCODE_ESCAPE ||
@@ -1667,22 +1698,23 @@ class PlayerActivity : BaseActivity() {
             KeyEvent.KEYCODE_NUMPAD_ENTER,
             KeyEvent.KEYCODE_BUTTON_A,
             -> {
+                if (!isSidePanelVisible() && !hasControlsFocus()) {
+                    if (event.repeatCount > 0) {
+                        clearPendingCenterKeyAction()
+                        startHoldSeek(direction = +1, showControls = false)
+                        return true
+                    }
+                    if (osdMode == OsdMode.Hidden) {
+                        setPendingCenterKeyAction(PendingCenterKeyAction.TogglePlayPause)
+                        return true
+                    }
+                    setPendingCenterKeyAction(PendingCenterKeyAction.ShowControls)
+                    return true
+                }
                 if (!isSidePanelVisible() && binding.seekProgress.isFocused) {
                     if (event.repeatCount == 0) {
                         togglePlayPauseFromUser()
                     }
-                    return true
-                }
-                if (!isSidePanelVisible() && !hasControlsFocus()) {
-                    if (osdMode == OsdMode.Hidden) {
-                        binding.btnPlayPause.performClick()
-                        if (osdMode != OsdMode.Hidden) {
-                            focusFirstControl()
-                        }
-                        return true
-                    }
-                    setControlsVisible(true)
-                    focusFirstControl()
                     return true
                 }
                 if (osdMode == OsdMode.Hidden && !isSidePanelVisible()) {
@@ -1777,6 +1809,7 @@ class PlayerActivity : BaseActivity() {
     override fun onStop() {
         touchController?.onStop()
         cancelDeferredKeySeekPreview()
+        clearPendingCenterKeyAction()
         exitTraceStopAtMs = SystemClock.elapsedRealtime()
         if (exitCleanupRequested || isFinishing) {
             exitTraceStart("onStop")
