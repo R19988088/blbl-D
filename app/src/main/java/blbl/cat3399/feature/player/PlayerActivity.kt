@@ -2151,9 +2151,11 @@ class PlayerActivity : BaseActivity() {
 
     internal fun onPlayerBrightnessChangedByUser(appliedBrightness: Float) {
         if (!audioOnlyModeEnabled) return
-        audioOnlyRestoreBrightness =
-            (appliedBrightness / AUDIO_ONLY_DIM_FACTOR)
-                .coerceIn(TOUCH_GESTURE_MIN_BRIGHTNESS, 1.0f)
+        if (audioOnlyRestoreBrightness == null) {
+            audioOnlyRestoreBrightness =
+                (appliedBrightness / AUDIO_ONLY_DIM_FACTOR)
+                    .coerceIn(TOUCH_GESTURE_MIN_BRIGHTNESS, 1.0f)
+        }
     }
 
     internal fun setAudioOnlyModeEnabled(enabled: Boolean, animated: Boolean = true, announce: Boolean = true) {
