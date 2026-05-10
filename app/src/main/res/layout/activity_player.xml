@@ -43,6 +43,20 @@
         app:layout_constraintStart_toStartOf="@id/player_view"
         app:layout_constraintTop_toTopOf="@id/player_view" />
 
+    <View
+        android:id="@+id/audio_only_dim_overlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:alpha="0"
+        android:background="#FF000000"
+        android:clickable="false"
+        android:focusable="false"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/player_view"
+        app:layout_constraintEnd_toEndOf="@id/player_view"
+        app:layout_constraintStart_toStartOf="@id/player_view"
+        app:layout_constraintTop_toTopOf="@id/player_view" />
+
     <ViewStub
         android:id="@+id/player_touch_overlay_stub"
         android:layout_width="0dp"
@@ -419,14 +433,14 @@
                 android:layout_marginEnd="?attr/playerOsdGap"
                 android:background="?attr/blblFocusBgRound"
                 android:contentDescription="@string/app_name"
-            android:focusable="true"
-            android:nextFocusLeft="@id/btn_play_pause"
-            android:nextFocusRight="@id/btn_remote_menu"
-            android:nextFocusUp="@id/seek_progress"
-            android:padding="?attr/playerOsdPadTransport"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_player_next"
-            app:tint="@color/player_button_tint" />
+                android:focusable="true"
+                android:nextFocusLeft="@id/btn_play_pause"
+                android:nextFocusRight="@id/btn_subtitle"
+                android:nextFocusUp="@id/seek_progress"
+                android:padding="?attr/playerOsdPadTransport"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_player_next"
+                app:tint="@color/player_button_tint" />
 
             <ImageButton
                 android:id="@+id/btn_subtitle"

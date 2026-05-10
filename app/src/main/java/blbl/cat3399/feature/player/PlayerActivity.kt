@@ -6,6 +6,8 @@ import android.content.Intent
 import android.net.Uri
 import android.app.Activity
 import android.app.Application
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.graphics.SurfaceTexture
 import android.os.Bundle
@@ -734,6 +736,7 @@ class PlayerActivity : BaseActivity() {
         Immersive.apply(this, prefs.fullscreenEnabled)
         PlayerUiMode.applyVideo(this, binding)
         ensureBottomBarConstraintSets()
+        refreshPlayerControlsFocusOrder()
 
         binding.bottomBar.visibility = View.GONE
         binding.progressPersistentBottom.max = SEEK_MAX
@@ -2089,22 +2092,38 @@ class PlayerActivity : BaseActivity() {
         val safeTarget = targetBrightness.coerceIn(TOUCH_GESTURE_MIN_BRIGHTNESS, 1.0f)
         brightnessAnimator?.cancel()
         val startBrightness = readResolvedPlayerBrightness()
+        val attrs = window.attributes
+        attrs.screenBrightness = startBrightness
+        window.attributes = attrs
+        val startOverlayAlpha = binding.audioOnlyDimOverlay.alpha
+        val targetOverlayAlpha = ((1.0f - safeTarget).coerceIn(0f, 0.85f))
+        binding.audioOnlyDimOverlay.visibility = if (targetOverlayAlpha > 0f || startOverlayAlpha > 0f) View.VISIBLE else View.GONE
         if (!animated || kotlin.math.abs(startBrightness - safeTarget) < 0.01f) {
-            val attrs = window.attributes
             attrs.screenBrightness = safeTarget
             window.attributes = attrs
+            binding.audioOnlyDimOverlay.alpha = targetOverlayAlpha
+            binding.audioOnlyDimOverlay.visibility = if (targetOverlayAlpha > 0f) View.VISIBLE else View.GONE
             return
         }
         brightnessAnimator =
-            ValueAnimator.ofFloat(startBrightness, safeTarget).apply {
+            ValueAnimator.ofFloat(0f, 1f).apply {
                 duration = 320L
                 interpolator = FastOutSlowInInterpolator()
                 addUpdateListener { animator ->
-                    val value = (animator.animatedValue as? Float) ?: safeTarget
-                    val attrs = window.attributes
-                    attrs.screenBrightness = value
+                    val fraction = (animator.animatedValue as? Float) ?: 1f
+                    val brightnessValue = startBrightness + (safeTarget - startBrightness) * fraction
+                    val overlayValue = startOverlayAlpha + (targetOverlayAlpha - startOverlayAlpha) * fraction
+                    attrs.screenBrightness = brightnessValue
                     window.attributes = attrs
+                    binding.audioOnlyDimOverlay.alpha = overlayValue
                 }
+                addListener(
+                    object : AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: Animator) {
+                            binding.audioOnlyDimOverlay.visibility = if (targetOverlayAlpha > 0f) View.VISIBLE else View.GONE
+                        }
+                    },
+                )
                 start()
             }
     }
@@ -2114,6 +2133,15 @@ class PlayerActivity : BaseActivity() {
         binding.btnAudioOnly.imageTintList = ContextCompat.getColorStateList(this, tintRes)
         binding.btnAudioOnly.isEnabled = true
         binding.btnAudioOnly.alpha = 1.0f
+    }
+
+    internal fun refreshPlayerControlsFocusOrder() {
+        binding.btnSubtitle.nextFocusLeftId = binding.btnNext.id
+        binding.btnSubtitle.nextFocusRightId = binding.btnAudioOnly.id
+        binding.btnAudioOnly.nextFocusLeftId = binding.btnSubtitle.id
+        binding.btnAudioOnly.nextFocusRightId = binding.btnRemoteMenu.id
+        binding.btnRemoteMenu.nextFocusLeftId = binding.btnAudioOnly.id
+        binding.btnRemoteMenu.nextFocusRightId = binding.btnResolution.id
     }
 
     internal fun onPlayerBrightnessChangedByUser(appliedBrightness: Float) {

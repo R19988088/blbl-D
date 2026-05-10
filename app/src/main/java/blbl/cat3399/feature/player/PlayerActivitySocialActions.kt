@@ -39,6 +39,7 @@ internal fun PlayerActivity.applyOsdButtonsVisibility() {
     binding.btnAdvanced.visibility = View.GONE
     if (binding.btnLike.visibility != View.VISIBLE) cancelLikeButtonHoldGesture(resetTriggered = true)
 
+    refreshPlayerControlsFocusOrder()
     updateActionButtonsUi()
     updatePlaylistControls()
 
