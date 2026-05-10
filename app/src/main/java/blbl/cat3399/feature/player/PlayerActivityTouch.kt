@@ -632,6 +632,7 @@ internal class PlayerTouchController(
         val attrs = activity.window.attributes
         attrs.screenBrightness = brightness
         activity.window.attributes = attrs
+        (activity as? PlayerActivity)?.onPlayerBrightnessChangedByUser(brightness)
         val percent = (brightness * 100f).roundToInt().coerceIn(0, 100)
         host.showTouchHint(activity.getString(R.string.player_touch_brightness_fmt, percent), hold = true)
     }

@@ -25,6 +25,7 @@ internal fun PlayerActivity.applyOsdButtonsVisibility() {
     binding.btnNext.visibility = if (enabled.contains(AppPrefs.PLAYER_OSD_BTN_NEXT)) View.VISIBLE else View.GONE
     binding.btnResolution.visibility = View.VISIBLE
     binding.btnSubtitle.visibility = View.VISIBLE
+    binding.btnAudioOnly.visibility = View.VISIBLE
     binding.btnRemoteMenu.visibility = View.VISIBLE
     binding.btnDanmaku.visibility = View.GONE
     binding.btnComments.visibility = View.GONE
@@ -50,6 +51,7 @@ internal fun PlayerActivity.applyOsdButtonsVisibility() {
 
 internal fun PlayerActivity.updateActionButtonsUi() {
     binding.btnResolution.text = qnLabel(selectedResolutionQn())
+    updateAudioOnlyButtonUi()
     updateLikeButtonUi()
     updateCoinButtonUi()
     updateFavButtonUi()

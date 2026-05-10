@@ -437,11 +437,27 @@
                 android:contentDescription="@string/player_btn_subtitle"
                 android:focusable="true"
                 android:nextFocusLeft="@id/btn_next"
-                android:nextFocusRight="@id/btn_remote_menu"
+                android:nextFocusRight="@id/btn_audio_only"
                 android:nextFocusUp="@id/seek_progress"
                 android:padding="?attr/playerOsdPadNormal"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_player_subtitle"
+                app:tint="@color/player_button_tint" />
+
+            <ImageButton
+                android:id="@+id/btn_audio_only"
+                android:layout_width="?attr/playerOsdButtonTargetSize"
+                android:layout_height="?attr/playerOsdButtonTargetSize"
+                android:layout_marginEnd="?attr/playerOsdGap"
+                android:background="?attr/blblFocusBgRound"
+                android:contentDescription="@string/player_btn_audio_only"
+                android:focusable="true"
+                android:nextFocusLeft="@id/btn_subtitle"
+                android:nextFocusRight="@id/btn_remote_menu"
+                android:nextFocusUp="@id/seek_progress"
+                android:padding="?attr/playerOsdPadNormal"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_player_audio_only"
                 app:tint="@color/player_button_tint" />
 
             <ImageButton
@@ -452,7 +468,7 @@
                 android:background="?attr/blblFocusBgRound"
                 android:contentDescription="@string/app_name"
                 android:focusable="true"
-                android:nextFocusLeft="@id/btn_next"
+                android:nextFocusLeft="@id/btn_audio_only"
                 android:nextFocusRight="@id/btn_resolution"
                 android:nextFocusUp="@id/seek_progress"
                 android:padding="?attr/playerOsdPadNormal"

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.app.Activity
 import android.app.Application
+import android.animation.ValueAnimator
 import android.graphics.SurfaceTexture
 import android.os.Bundle
 import android.os.Looper
@@ -23,6 +24,7 @@ import android.widget.FrameLayout
 import android.widget.SeekBar
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.C
 import androidx.media3.common.Format
@@ -231,6 +233,9 @@ class PlayerActivity : BaseActivity() {
     internal var seekOsdToken: Long = 0L
     internal var transientSeekOsdVisible: Boolean = false
     internal var bottomBarFullConstraints: ConstraintSet? = null
+    internal var audioOnlyModeEnabled: Boolean = false
+    internal var audioOnlyRestoreBrightness: Float? = null
+    internal var brightnessAnimator: ValueAnimator? = null
 
     internal enum class OsdMode {
         Hidden,
@@ -1947,6 +1952,9 @@ class PlayerActivity : BaseActivity() {
 
     override fun onDestroy() {
         val t0 = SystemClock.elapsedRealtime()
+        setAudioOnlyModeEnabled(enabled = false, animated = false, announce = false)
+        brightnessAnimator?.cancel()
+        brightnessAnimator = null
         exitTraceDestroyAtMs = t0
         if (exitCleanupRequested || isFinishing || exitTraceStartAtMs > 0L) {
             exitTraceStart("onDestroy")
@@ -2062,6 +2070,90 @@ class PlayerActivity : BaseActivity() {
         openUpQuickCardProfile()
     }
 
+    internal fun readResolvedPlayerBrightness(): Float {
+        val fromWindow = window.attributes.screenBrightness
+        if (fromWindow >= 0f) {
+            return fromWindow.coerceIn(TOUCH_GESTURE_MIN_BRIGHTNESS, 1.0f)
+        }
+        val fromSystem =
+            runCatching {
+                android.provider.Settings.System.getInt(contentResolver, android.provider.Settings.System.SCREEN_BRIGHTNESS)
+            }.getOrNull()
+        if (fromSystem != null) {
+            return (fromSystem / 255f).coerceIn(TOUCH_GESTURE_MIN_BRIGHTNESS, 1.0f)
+        }
+        return 0.5f
+    }
+
+    internal fun animatePlayerBrightnessTo(targetBrightness: Float, animated: Boolean) {
+        val safeTarget = targetBrightness.coerceIn(TOUCH_GESTURE_MIN_BRIGHTNESS, 1.0f)
+        brightnessAnimator?.cancel()
+        val startBrightness = readResolvedPlayerBrightness()
+        if (!animated || kotlin.math.abs(startBrightness - safeTarget) < 0.01f) {
+            val attrs = window.attributes
+            attrs.screenBrightness = safeTarget
+            window.attributes = attrs
+            return
+        }
+        brightnessAnimator =
+            ValueAnimator.ofFloat(startBrightness, safeTarget).apply {
+                duration = 320L
+                interpolator = FastOutSlowInInterpolator()
+                addUpdateListener { animator ->
+                    val value = (animator.animatedValue as? Float) ?: safeTarget
+                    val attrs = window.attributes
+                    attrs.screenBrightness = value
+                    window.attributes = attrs
+                }
+                start()
+            }
+    }
+
+    internal fun updateAudioOnlyButtonUi() {
+        val tintRes = if (audioOnlyModeEnabled) R.color.blbl_blue else R.color.blbl_text
+        binding.btnAudioOnly.imageTintList = ContextCompat.getColorStateList(this, tintRes)
+        binding.btnAudioOnly.isEnabled = true
+        binding.btnAudioOnly.alpha = 1.0f
+    }
+
+    internal fun onPlayerBrightnessChangedByUser(appliedBrightness: Float) {
+        if (!audioOnlyModeEnabled) return
+        audioOnlyRestoreBrightness =
+            (appliedBrightness / AUDIO_ONLY_DIM_FACTOR)
+                .coerceIn(TOUCH_GESTURE_MIN_BRIGHTNESS, 1.0f)
+    }
+
+    internal fun setAudioOnlyModeEnabled(enabled: Boolean, animated: Boolean = true, announce: Boolean = true) {
+        if (enabled == audioOnlyModeEnabled && (!enabled || audioOnlyRestoreBrightness != null)) {
+            if (enabled) {
+                val restoreBrightness = audioOnlyRestoreBrightness ?: readResolvedPlayerBrightness()
+                val targetBrightness = (restoreBrightness * AUDIO_ONLY_DIM_FACTOR).coerceAtLeast(TOUCH_GESTURE_MIN_BRIGHTNESS)
+                animatePlayerBrightnessTo(targetBrightness, animated)
+            }
+            updateAudioOnlyButtonUi()
+            return
+        }
+        if (enabled) {
+            val restoreBrightness = audioOnlyRestoreBrightness ?: readResolvedPlayerBrightness()
+            audioOnlyRestoreBrightness = restoreBrightness
+            audioOnlyModeEnabled = true
+            val targetBrightness = (restoreBrightness * AUDIO_ONLY_DIM_FACTOR).coerceAtLeast(TOUCH_GESTURE_MIN_BRIGHTNESS)
+            animatePlayerBrightnessTo(targetBrightness, animated)
+            if (announce) {
+                showSeekHint(getString(R.string.player_audio_only_on), hold = false)
+            }
+        } else {
+            val restoreBrightness = audioOnlyRestoreBrightness ?: readResolvedPlayerBrightness()
+            audioOnlyModeEnabled = false
+            audioOnlyRestoreBrightness = null
+            animatePlayerBrightnessTo(restoreBrightness, animated)
+            if (announce) {
+                showSeekHint(getString(R.string.player_audio_only_off), hold = false)
+            }
+        }
+        updateAudioOnlyButtonUi()
+    }
+
     internal fun shouldShowOsdOnPlaybackToggle(): Boolean {
         if (isSidePanelVisible()) return true
         if (osdMode != OsdMode.Hidden) return true
@@ -2095,6 +2187,10 @@ class PlayerActivity : BaseActivity() {
 
         binding.btnAdvanced.setOnClickListener {
             toggleSettingsPanel()
+        }
+        binding.btnAudioOnly.setOnClickListener {
+            setAudioOnlyModeEnabled(!audioOnlyModeEnabled, animated = true, announce = true)
+            setControlsVisible(true)
         }
 
         installLikeButtonHoldInteraction()
@@ -3624,6 +3720,7 @@ class PlayerActivity : BaseActivity() {
         internal const val KEY_STEP_SEEK_COMMIT_DELAY_MS = 450L
         internal const val KEY_SCRUB_END_DELAY_MS = 800L
         internal const val KEY_SEEK_BUFFERING_POST_COMMIT_GRACE_MS = 250L
+        private const val AUDIO_ONLY_DIM_FACTOR = 0.15f
         private const val DANMAKU_DEFAULT_SEGMENT_MS = 6 * 60 * 1000
         private const val DANMAKU_PREFETCH_SEGMENTS = 2
         private const val DANMAKU_PREFETCH_INTERVAL_MS = 1_000L
