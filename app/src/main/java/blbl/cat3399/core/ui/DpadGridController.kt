@@ -7,6 +7,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
+import android.view.animation.DecelerateInterpolator
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -128,6 +129,8 @@ internal class DpadGridController(
     private var pendingFocusAfterLoadMoreTargetPos: Int = RecyclerView.NO_POSITION
     private val focusRetryDelayMillis: Long = 16L
     private val focusRetryMaxAttempts: Int = 30
+    private val edgeScrollSettleDelayMillis: Long = 220L
+    private val edgeScrollInterpolator = DecelerateInterpolator(1.8f)
     private var focusParkedDescendantFocusability: Int? = null
     private val focusProtectWindowMs: Long = 500L
     private var lastVerticalNavAtMs: Long = 0L
@@ -667,7 +670,6 @@ internal class DpadGridController(
 
         if (recyclerView.canScrollVertically(1)) {
             val dy = (rootItem.height * config.scrollOnDownEdgeFactor).toInt().coerceAtLeast(1)
-            recyclerView.scrollBy(0, dy)
             val adapter = recyclerView.adapter
             val itemCount = adapter?.itemCount ?: 0
             val spanCount = spanCountForLayoutManager()
@@ -681,11 +683,11 @@ internal class DpadGridController(
                         else -> null
                     }
                 }
-            recyclerView.postIfAlive(
-                isAlive = { installed && recyclerView.isAttachedToWindow && config.isEnabled() },
-            ) {
-                if (tryFocusNextDownFromCurrent()) return@postIfAlive
-                if (candidatePos != null) focusAdapterPosition(candidatePos)
+            smoothScrollDownEdge(dy) {
+                if (tryFocusNextDownFromCurrent(requireFullyVisible = true)) return@smoothScrollDownEdge
+                if (candidatePos != null) {
+                    focusAdapterPositionIfReady(candidatePos)
+                }
             }
             return true
         }
@@ -717,11 +719,8 @@ internal class DpadGridController(
                     .takeIf { it > 0 }
                     ?: (recyclerView.height.takeIf { it > 0 }?.div(2) ?: 1)
             val dy = (base * config.scrollOnDownEdgeFactor).toInt().coerceAtLeast(1)
-            recyclerView.scrollBy(0, dy)
-            recyclerView.postIfAlive(
-                isAlive = { installed && recyclerView.isAttachedToWindow && config.isEnabled() },
-            ) {
-                tryFocusNextDownFromCurrent()
+            smoothScrollDownEdge(dy) {
+                tryFocusNextDownFromCurrent(requireFullyVisible = true)
             }
             return true
         }
@@ -871,17 +870,72 @@ internal class DpadGridController(
         }
     }
 
-    private fun tryFocusNextDownFromCurrent(): Boolean {
+    private fun smoothScrollDownEdge(dy: Int, afterSettled: () -> Unit) {
+        if (dy <= 0) {
+            afterSettled()
+            return
+        }
+
+        recyclerView.stopScroll()
+        recyclerView.smoothScrollBy(
+            0,
+            dy,
+            edgeScrollInterpolator,
+            edgeScrollSettleDelayMillis.toInt(),
+        )
+        runAfterScrollSettled(afterSettled)
+    }
+
+    private fun runAfterScrollSettled(action: () -> Unit) {
+        var delivered = false
+        lateinit var listener: RecyclerView.OnScrollListener
+        fun deliver() {
+            if (delivered) return
+            delivered = true
+            recyclerView.removeOnScrollListener(listener)
+            if (installed && recyclerView.isAttachedToWindow && config.isEnabled()) {
+                action()
+            }
+        }
+
+        listener =
+            object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        deliver()
+                    }
+                }
+            }
+        recyclerView.addOnScrollListener(listener)
+        recyclerView.postDelayedIfAlive(
+            delayMillis = edgeScrollSettleDelayMillis + 64L,
+            isAlive = { installed && recyclerView.isAttachedToWindow && config.isEnabled() },
+        ) {
+            deliver()
+        }
+    }
+
+    private fun tryFocusNextDownFromCurrent(requireFullyVisible: Boolean = false): Boolean {
         if (!config.isEnabled()) return false
         val focused = recyclerView.findFocus() ?: return false
         if (!FocusTreeUtils.isDescendantOf(focused, recyclerView)) return false
         val itemView = recyclerView.findContainingItemView(focused) ?: return false
         val next = FocusFinder.getInstance().findNextFocus(recyclerView, itemView, View.FOCUS_DOWN)
         if (next != null && FocusTreeUtils.isDescendantOf(next, recyclerView)) {
+            if (requireFullyVisible) {
+                val nextItem = recyclerView.findContainingItemView(next) ?: next
+                if (!isFullyVisibleInRecycler(nextItem)) return false
+            }
             next.requestFocus()
             return true
         }
         return false
+    }
+
+    private fun focusAdapterPositionIfReady(position: Int): Boolean {
+        val itemView = recyclerView.findViewHolderForAdapterPosition(position)?.itemView ?: return false
+        if (!isFullyVisibleInRecycler(itemView)) return false
+        return itemView.requestFocus()
     }
 
     private fun focusAdapterPosition(position: Int): Boolean {
@@ -981,6 +1035,14 @@ internal class DpadGridController(
         val childTop = itemView.top
         val childBottom = itemView.bottom
         return childBottom > parentTop && childTop < parentBottom
+    }
+
+    private fun isFullyVisibleInRecycler(itemView: View): Boolean {
+        val parentH = recyclerView.height
+        if (parentH <= 0) return false
+        val parentTop = recyclerView.paddingTop
+        val parentBottom = parentH - recyclerView.paddingBottom
+        return itemView.top >= parentTop && itemView.bottom <= parentBottom
     }
 
     private fun spanCountForLayoutManager(): Int? {

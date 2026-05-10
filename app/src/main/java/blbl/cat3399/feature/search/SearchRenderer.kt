@@ -262,12 +262,12 @@ class SearchRenderer internal constructor(
         val input = binding.tvQuery
 
         input.setOnEditorActionListener { _, actionId, _ ->
-            // Keep IME/voice completion on the in-page search button.
-            // Hardware DPAD/ENTER should not trigger search directly on the input.
+            // IME/voice "Search" should submit immediately without forcing an extra click on
+            // the in-page search button below.
             val isImeSearchAction = actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
             if (imeEditMode && isImeSearchAction) {
                 exitImeEditMode()
-                focusSearchButton()
+                interactor.performSearch()
                 true
             } else {
                 false

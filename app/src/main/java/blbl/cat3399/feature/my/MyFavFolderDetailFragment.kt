@@ -1,15 +1,19 @@
 package blbl.cat3399.feature.my
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import blbl.cat3399.core.api.BiliApi
+import blbl.cat3399.core.image.ImageLoader
 import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.R
 import blbl.cat3399.core.net.BiliClient
@@ -18,7 +22,9 @@ import blbl.cat3399.core.ui.BackButtonSizingHelper
 import blbl.cat3399.core.ui.DpadGridController
 import blbl.cat3399.core.ui.GridViewportFillMonitor
 import blbl.cat3399.core.ui.UiScale
+import blbl.cat3399.core.ui.postIfAttached
 import blbl.cat3399.core.ui.postIfAlive
+import blbl.cat3399.core.ui.requestFocusAdapterPositionReliable
 import blbl.cat3399.core.ui.installGridViewportFillMonitor
 import blbl.cat3399.core.ui.requestFocusFirstItemOrSelfAfterRefresh
 import blbl.cat3399.core.ui.setTextSizePxIfChanged
@@ -29,17 +35,22 @@ import blbl.cat3399.feature.player.VideoCardPlaylistPage
 import blbl.cat3399.feature.video.VideoCardActionController
 import blbl.cat3399.feature.video.VideoCardAdapter
 import blbl.cat3399.feature.video.VideoCardDismissBehavior
+import blbl.cat3399.feature.video.VideoCardFavoriteActionMode
+import blbl.cat3399.feature.video.VideoCardQuickActionId
 import blbl.cat3399.feature.video.VideoCardVisibilityFilter
 import blbl.cat3399.feature.video.buildPagedVideoCardPlaybackHandle
 import blbl.cat3399.feature.video.defaultVideoCardPlaylistItem
 import blbl.cat3399.feature.video.openVideoDetailFromPlaybackHandle
 import blbl.cat3399.feature.video.openVideoFromPlaybackHandle
 import blbl.cat3399.feature.video.removeVideoCardAndRestoreFocus
+import blbl.cat3399.feature.video.showVideoCardRemoteMenuPopup
+import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.ui.RefreshKeyHandler
+import blbl.cat3399.feature.favorite.FavoriteFragment
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
+class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocusTarget {
     private var _binding: FragmentMyFavFolderDetailBinding? = null
     private val binding get() = _binding!!
 
@@ -49,6 +60,7 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
 
     private val mediaId: Long by lazy { requireArguments().getLong(ARG_MEDIA_ID) }
     private val title: String by lazy { requireArguments().getString(ARG_TITLE).orEmpty() }
+    private val embeddedInFavoriteTabs: Boolean by lazy { requireArguments().getBoolean(ARG_EMBEDDED_IN_FAVORITE_TABS, false) }
 
     private val loadedStableKeys = HashSet<String>()
     private var isLoadingMore: Boolean = false
@@ -58,9 +70,13 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
     private var pendingFocusFirstItem: Boolean = false
     private var dpadGridController: DpadGridController? = null
     private var viewportFillMonitor: GridViewportFillMonitor? = null
+    private val coverPreloadHandler = Handler(Looper.getMainLooper())
+    private var coverPreloadRunnable: Runnable? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyFavFolderDetailBinding.inflate(inflater, container, false)
+        binding.btnBack.visibility = if (embeddedInFavoriteTabs) View.GONE else View.VISIBLE
+        binding.tvTitle.visibility = if (embeddedInFavoriteTabs) View.GONE else View.VISIBLE
         return binding.root
     }
 
@@ -84,30 +100,44 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
                             isAlive = { _binding != null && isResumed },
                         )
                     },
+                    favoriteActionMode = VideoCardFavoriteActionMode.REMOVE,
                 )
             adapter =
                 VideoCardAdapter(
                     onClick = { _, pos ->
+                        val card = adapter.snapshot().getOrNull(pos)
+                        if (card?.bvid.isNullOrBlank()) {
+                            AppToast.show(requireContext(), "该视频已失效")
+                            return@VideoCardAdapter
+                        }
                         requireContext().openVideoFromPlaybackHandle(
                             playbackHandle = playbackHandle(),
                             position = pos,
                             openDetailBeforePlay = BiliClient.prefs.playerOpenDetailBeforePlay,
                         )
                     },
-                    onLongClick = { card, _ ->
-                        openUpDetailFromVideoCard(card)
-                        true
-                    },
+                    onLongClick = { card, pos -> showVideoCardMenu(card, pos, actionController) },
                     actionDelegate = actionController,
                 )
         }
         binding.recycler.adapter = adapter
         binding.recycler.setHasFixedSize(true)
-        binding.recycler.layoutManager = GridLayoutManager(requireContext(), spanCountForWidth(resources))
+        val spanCount = spanCountForWidth(resources)
+        binding.recycler.layoutManager = GridLayoutManager(requireContext(), spanCount)
+        binding.recycler.setItemViewCacheSize(spanCount * 3)
         (binding.recycler.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
         binding.recycler.clearOnScrollListeners()
         binding.recycler.addOnScrollListener(
             object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        scheduleNextCoverPreload(recyclerView)
+                    } else {
+                        coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
+                        coverPreloadRunnable = null
+                    }
+                }
+
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dy <= 0) return
                     if (isLoadingMore || endReached) return
@@ -126,16 +156,20 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
                 callbacks =
                     object : DpadGridController.Callbacks {
                         override fun onTopEdge(): Boolean {
+                            if (embeddedInFavoriteTabs) return focusFavoriteTabIfAvailable()
                             binding.btnBack.requestFocus()
                             return true
                         }
 
                         override fun onLeftEdge(): Boolean {
+                            if (embeddedInFavoriteTabs) return switchFavoriteTabPrevious()
                             binding.btnBack.requestFocus()
                             return true
                         }
 
-                        override fun onRightEdge() = Unit
+                        override fun onRightEdge() {
+                            if (embeddedInFavoriteTabs) switchFavoriteTabNext()
+                        }
 
                         override fun canLoadMore(): Boolean = !endReached
 
@@ -157,18 +191,48 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
                 loadMore = { loadNextPage() },
             )
         binding.swipeRefresh.setOnRefreshListener {
-            pendingFocusFirstItem = true
+            pendingFocusFirstItem = !embeddedInFavoriteTabs
             dpadGridController?.parkFocusForDataSetReset()
             resetAndLoad()
         }
 
         if (savedInstanceState == null) {
-            pendingFocusFirstItem = true
-            binding.recycler.requestFocus()
             binding.swipeRefresh.isRefreshing = true
+            if (!embeddedInFavoriteTabs) {
+                pendingFocusFirstItem = true
+                binding.recycler.requestFocus()
+            }
             resetAndLoad()
         }
 
+    }
+
+    override fun requestFocusPrimaryItemFromTab(): Boolean = requestFocusFirstCard()
+
+    override fun requestFocusPrimaryItemFromContentSwitch(): Boolean = requestFocusFirstCard()
+
+    override fun requestFocusPrimaryItemFromBackToTab0(): Boolean = requestFocusFirstCard()
+
+    private fun requestFocusFirstCard(): Boolean {
+        pendingFocusFirstItem = true
+        val b = _binding ?: return true
+        if (!isResumed) return true
+        if (!::adapter.isInitialized) return false
+
+        val recycler = b.recycler
+        if (adapter.itemCount <= 0) {
+            recycler.requestFocus()
+            return true
+        }
+
+        val isUiAlive = { _binding === b && isResumed }
+        recycler.requestFocusAdapterPositionReliable(
+            position = 0,
+            smoothScroll = false,
+            isAlive = isUiAlive,
+            onFocused = { pendingFocusFirstItem = false },
+        )
+        return true
     }
 
     override fun onResume() {
@@ -204,14 +268,13 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
         if (!isResumed) return false
         if (b.swipeRefresh.isRefreshing) return true
         b.swipeRefresh.isRefreshing = true
-        pendingFocusFirstItem = true
+        pendingFocusFirstItem = !embeddedInFavoriteTabs
         dpadGridController?.parkFocusForDataSetReset()
         resetAndLoad()
         return true
     }
 
     private fun resetAndLoad() {
-        pendingFocusFirstItem = true
         dpadGridController?.parkFocusForDataSetReset()
         loadedStableKeys.clear()
         isLoadingMore = false
@@ -261,9 +324,9 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
         }
     }
 
-    private fun maybeFocusFirstItem() {
-        if (!pendingFocusFirstItem) return
-        if (_binding == null) return
+    private fun maybeFocusFirstItem(): Boolean {
+        if (!pendingFocusFirstItem) return false
+        if (_binding == null) return false
         val recycler = binding.recycler
         val isUiAlive = { _binding != null && isResumed }
         recycler.requestFocusFirstItemOrSelfAfterRefresh(
@@ -272,6 +335,56 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
             isAlive = isUiAlive,
             onDone = { pendingFocusFirstItem = false },
         )
+        return true
+    }
+
+    private fun scheduleNextCoverPreload(recyclerView: RecyclerView) {
+        val lm = recyclerView.layoutManager as? GridLayoutManager ?: return
+        val lastVisible = lm.findLastVisibleItemPosition()
+        if (lastVisible == RecyclerView.NO_POSITION) return
+        coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
+        val expectedBinding = _binding ?: return
+        coverPreloadRunnable =
+            Runnable {
+                if (_binding !== expectedBinding || !isResumed) return@Runnable
+                val covers =
+                    adapter.snapshot()
+                        .asSequence()
+                        .drop(lastVisible + 1)
+                        .take(8)
+                        .map { it.coverUrl }
+                        .toList()
+                ImageLoader.preloadCovers(requireContext(), covers)
+            }
+        coverPreloadHandler.postDelayed(coverPreloadRunnable!!, 120L)
+    }
+
+    private fun focusFavoriteTabIfAvailable(): Boolean {
+        if (!embeddedInFavoriteTabs) return false
+        val tabLayout = parentFragment?.view?.findViewById<com.google.android.material.tabs.TabLayout?>(R.id.tab_layout) ?: return false
+        val tabStrip = tabLayout.getChildAt(0) as? ViewGroup ?: return false
+        val pos = tabLayout.selectedTabPosition.takeIf { it >= 0 } ?: 0
+        tabStrip.getChildAt(pos)?.requestFocus() ?: return false
+        return true
+    }
+
+    private fun switchFavoriteTabNext(): Boolean = switchFavoriteTab(delta = 1)
+
+    private fun switchFavoriteTabPrevious(): Boolean = switchFavoriteTab(delta = -1)
+
+    private fun switchFavoriteTab(delta: Int): Boolean {
+        if (!embeddedInFavoriteTabs) return false
+        val tabLayout = parentFragment?.view?.findViewById<com.google.android.material.tabs.TabLayout?>(R.id.tab_layout) ?: return false
+        val tabStrip = tabLayout.getChildAt(0) as? ViewGroup ?: return false
+        val cur = tabLayout.selectedTabPosition.takeIf { it >= 0 } ?: 0
+        val next = cur + delta
+        if (next !in 0 until tabLayout.tabCount) return false
+        tabLayout.getTabAt(next)?.select() ?: return false
+        tabLayout.postIfAttached {
+            (parentFragment as? FavoriteFragment)?.requestFocusCurrentFolderContent()
+                ?: tabStrip.getChildAt(next)?.requestFocus()
+        }
+        return true
     }
 
     override fun onDestroyView() {
@@ -279,12 +392,30 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
         dpadGridController = null
         viewportFillMonitor?.release()
         viewportFillMonitor = null
+        coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
+        coverPreloadRunnable = null
         _binding = null
         super.onDestroyView()
     }
 
     private fun openDetail(position: Int) {
         requireContext().openVideoDetailFromPlaybackHandle(playbackHandle(), position)
+    }
+
+    private fun showVideoCardMenu(
+        card: blbl.cat3399.core.model.VideoCard,
+        position: Int,
+        actionController: VideoCardActionController,
+    ): Boolean {
+        val activity = activity as? ComponentActivity ?: return false
+        val actions =
+            actionController.manualActions(card, position)
+                .filter { it.id != VideoCardQuickActionId.OPEN_DETAIL }
+                .take(4)
+        activity.showVideoCardRemoteMenuPopup(card, actions) { action ->
+            actionController.onActionSelected(card, position, action)
+        }
+        return true
     }
 
     private fun playbackHandle() =
@@ -308,11 +439,18 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler {
         private const val ARG_MEDIA_ID = "media_id"
         private const val ARG_TITLE = "title"
 
-        fun newInstance(mediaId: Long, title: String): MyFavFolderDetailFragment =
+        private const val ARG_EMBEDDED_IN_FAVORITE_TABS = "embedded_in_favorite_tabs"
+
+        fun newInstance(
+            mediaId: Long,
+            title: String,
+            embeddedInFavoriteTabs: Boolean = false,
+        ): MyFavFolderDetailFragment =
             MyFavFolderDetailFragment().apply {
                 arguments = Bundle().apply {
                     putLong(ARG_MEDIA_ID, mediaId)
                     putString(ARG_TITLE, title)
+                    putBoolean(ARG_EMBEDDED_IN_FAVORITE_TABS, embeddedInFavoriteTabs)
                 }
             }
     }

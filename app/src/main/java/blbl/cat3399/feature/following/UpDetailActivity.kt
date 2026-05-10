@@ -41,6 +41,7 @@ import blbl.cat3399.feature.player.buildFreshVideoCardPlaylistContinuation
 import blbl.cat3399.feature.video.VideoCardActionController
 import blbl.cat3399.feature.video.VideoCardAdapter
 import blbl.cat3399.feature.video.VideoCardDismissBehavior
+import blbl.cat3399.feature.video.VideoCardQuickActionId
 import blbl.cat3399.feature.video.VideoCardVisibilityFilter
 import blbl.cat3399.feature.video.buildPagedVideoCardPlaybackHandle
 import blbl.cat3399.feature.video.buildVideoCardPlaybackHandle
@@ -48,6 +49,7 @@ import blbl.cat3399.feature.video.defaultVideoCardPlaylistItem
 import blbl.cat3399.feature.video.openVideoDetailFromPlaybackHandle
 import blbl.cat3399.feature.video.openVideoFromPlaybackHandle
 import blbl.cat3399.feature.video.removeVideoCardAndRestoreFocus
+import blbl.cat3399.feature.video.showVideoCardRemoteMenuPopup
 import com.google.android.material.R as MaterialR
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.tabs.TabLayout
@@ -347,6 +349,18 @@ class UpDetailActivity : BaseActivity() {
                         position = index,
                         openDetailBeforePlay = BiliClient.prefs.playerOpenDetailBeforePlay,
                     )
+                },
+                onVideoLongClick = { _, card, index ->
+                    showVideoCardRemoteMenuPopup(
+                        card = card,
+                        actions =
+                            archiveActionController.manualActions(card, index)
+                                .filter { it.id != VideoCardQuickActionId.OPEN_DETAIL },
+                        onActionSelected = { action ->
+                            archiveActionController.onActionSelected(card, index, action)
+                        },
+                    )
+                    true
                 },
                 onRequestLoadMore = { section, requestedNextIndex ->
                     onSectionLoadMoreRequested(section, requestedNextIndex)

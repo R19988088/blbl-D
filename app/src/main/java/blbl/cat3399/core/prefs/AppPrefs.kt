@@ -1265,7 +1265,7 @@ class AppPrefs(context: Context) {
         const val PLAYER_HOLD_SEEK_MODE_SPEED = "speed"
         const val PLAYER_HOLD_SEEK_MODE_SCRUB = "scrub"
         const val PLAYER_HOLD_SEEK_MODE_SCRUB_FIXED_TIME = "scrub_fixed_time"
-        const val PLAYER_HOLD_SEEK_SPEED_DEFAULT = 3.0f
+        const val PLAYER_HOLD_SEEK_SPEED_DEFAULT = 1.5f
         val PLAYER_HOLD_SCRUB_SECONDS_OPTIONS: Set<Int> = linkedSetOf(5, 8, 10, 12, 15, 17, 20, 22, 25, 27, 30)
         const val PLAYER_HOLD_SCRUB_SECONDS_DEFAULT = 10
 

@@ -398,6 +398,35 @@ internal fun PlayerActivity.clearKeySeekPending() {
     keySeekPendingDirection = 0
 }
 
+internal fun PlayerActivity.isConfirmHoldKey(keyCode: Int): Boolean {
+    return when (keyCode) {
+        KeyEvent.KEYCODE_DPAD_CENTER,
+        KeyEvent.KEYCODE_ENTER,
+        KeyEvent.KEYCODE_NUMPAD_ENTER,
+        KeyEvent.KEYCODE_BUTTON_A,
+        -> true
+
+        else -> false
+    }
+}
+
+internal fun PlayerActivity.clearPendingCenterKeyAction() {
+    pendingCenterKeyAction = PlayerActivity.PendingCenterKeyAction.None.ordinal
+}
+
+internal fun PlayerActivity.setPendingCenterKeyAction(action: PlayerActivity.PendingCenterKeyAction) {
+    pendingCenterKeyAction = action.ordinal
+}
+
+internal fun PlayerActivity.consumePendingCenterKeyAction(): PlayerActivity.PendingCenterKeyAction {
+    val action =
+        PlayerActivity.PendingCenterKeyAction.entries.getOrElse(pendingCenterKeyAction) {
+            PlayerActivity.PendingCenterKeyAction.None
+        }
+    clearPendingCenterKeyAction()
+    return action
+}
+
 internal fun PlayerActivity.beginKeySeekPending(keyCode: Int, direction: Int, showControls: Boolean) {
     clearKeySeekPending()
     keySeekPendingKeyCode = keyCode

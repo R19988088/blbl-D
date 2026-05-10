@@ -179,6 +179,7 @@ object AppPopup {
         items: List<String>,
         checkedIndex: Int,
         cancelable: Boolean = true,
+        negativeText: CharSequence? = null,
         onDismiss: (() -> Unit)? = null,
         onRestoreFocus: (() -> Boolean)? = null,
         onPicked: (index: Int, label: String) -> Unit,
@@ -225,7 +226,17 @@ object AppPopup {
                     title = title,
                     contentView = view,
                     cancelable = cancelable,
-                    actions = emptyList(),
+                    actions =
+                        negativeText
+                            ?.let { text ->
+                                listOf(
+                                    PopupAction(
+                                        role = PopupActionRole.NEGATIVE,
+                                        text = text,
+                                    ),
+                                )
+                            }
+                            .orEmpty(),
                     preferredActionRole = null,
                     autoFocus = false,
                     onModalAttached = { modalRoot ->

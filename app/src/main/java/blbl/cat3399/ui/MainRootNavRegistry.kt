@@ -11,6 +11,7 @@ import blbl.cat3399.feature.category.CategoryFragment
 import blbl.cat3399.feature.custom.CustomPageFragment
 import blbl.cat3399.feature.custom.CustomPageTabRegistry
 import blbl.cat3399.feature.dynamic.DynamicFragment
+import blbl.cat3399.feature.favorite.FavoriteFragment
 import blbl.cat3399.feature.home.HomeFragment
 import blbl.cat3399.feature.live.LiveFragment
 import blbl.cat3399.feature.my.MyFragment
@@ -59,6 +60,14 @@ object MainRootNavRegistry {
                 isEnabled = { BiliClient.prefs.mainVisiblePages.contains(AppPrefs.MAIN_VISIBLE_PAGE_CATEGORY) },
                 matchesFragment = { it is CategoryFragment },
                 fragmentFactory = { CategoryFragment.newInstance() },
+            ),
+            RootNavSpec(
+                navId = SidebarNavAdapter.ID_FAVORITE,
+                key = "favorite",
+                titleRes = R.string.tab_favorite,
+                iconRes = R.drawable.ic_action_fav,
+                matchesFragment = { it is FavoriteFragment },
+                fragmentFactory = { FavoriteFragment.newInstance() },
             ),
             RootNavSpec(
                 navId = SidebarNavAdapter.ID_DYNAMIC,

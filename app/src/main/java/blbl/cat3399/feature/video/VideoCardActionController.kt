@@ -28,6 +28,11 @@ sealed interface VideoCardDismissBehavior {
     ) : VideoCardDismissBehavior
 }
 
+enum class VideoCardFavoriteActionMode {
+    ADD,
+    REMOVE,
+}
+
 class VideoCardActionController(
     private val context: Context,
     private val scope: CoroutineScope,
@@ -36,6 +41,7 @@ class VideoCardActionController(
     private val onOpenUp: (VideoCard) -> Unit,
     private val onCardRemoved: (String) -> Unit = {},
     private val longPressActionProvider: () -> String = { BiliClient.prefs.videoCardLongPressAction },
+    private val favoriteActionMode: VideoCardFavoriteActionMode = VideoCardFavoriteActionMode.ADD,
 ) : VideoCardActionDelegate {
     private val inFlightActionKeys = HashSet<String>()
 
@@ -49,7 +55,7 @@ class VideoCardActionController(
         position: Int,
     ): List<VideoCardQuickAction> {
         return listOf(
-            VideoCardQuickAction.favorite(context.getString(R.string.video_card_action_favorite)),
+            VideoCardQuickAction.favorite(context.getString(favoriteActionLabelRes())),
             VideoCardQuickAction.watchLater(context.getString(R.string.video_card_action_watch_later)),
             VideoCardQuickAction.blockUp(context.getString(R.string.video_card_action_block_up)),
             VideoCardQuickAction.openDetail(context.getString(R.string.video_card_action_open_detail)),
@@ -64,7 +70,7 @@ class VideoCardActionController(
         action: VideoCardQuickAction,
     ) {
         when (action.id) {
-            VideoCardQuickActionId.FAVORITE -> openFavoriteFolders(card)
+            VideoCardQuickActionId.FAVORITE -> handleFavoriteAction(card)
             VideoCardQuickActionId.WATCH_LATER -> addToWatchLater(card)
             VideoCardQuickActionId.BLOCK_UP -> blockUp(card)
             VideoCardQuickActionId.OPEN_DETAIL -> openDetail(card, position)
@@ -84,16 +90,15 @@ class VideoCardActionController(
             AppToast.show(context, "请先登录后再收藏")
             return
         }
-        val aid = card.aid?.takeIf { it > 0L }
-        if (aid == null) {
-            AppToast.show(context, "未获取到 aid，暂不支持收藏")
-            return
-        }
         val actionKey = buildActionKey(card = card, suffix = "favorite")
         if (!markInFlight(actionKey)) return
 
         scope.launch {
             try {
+                val aid =
+                    withContext(Dispatchers.IO) {
+                        resolveAid(card)
+                    }
                 val folders =
                     withContext(Dispatchers.IO) {
                         BiliApi.favFoldersWithState(upMid = selfMid, rid = aid)
@@ -113,6 +118,7 @@ class VideoCardActionController(
                     title = "选择收藏夹",
                     items = labels,
                     checkedIndex = 0,
+                    negativeText = "撤销",
                 ) { index, _ ->
                     val picked = folders.getOrNull(index) ?: return@singleChoice
                     val nextSelected = initial.toMutableSet()
@@ -305,6 +311,20 @@ class VideoCardActionController(
             VideoCardDismissBehavior.LocalNotInterested -> R.string.video_card_action_not_interested
             VideoCardDismissBehavior.DeleteHistory -> R.string.video_card_action_delete_history
             else -> R.string.video_card_action_delete
+        }
+    }
+
+    private fun handleFavoriteAction(card: VideoCard) {
+        when (favoriteActionMode) {
+            VideoCardFavoriteActionMode.ADD -> openFavoriteFolders(card)
+            VideoCardFavoriteActionMode.REMOVE -> dismissCard(card)
+        }
+    }
+
+    private fun favoriteActionLabelRes(): Int {
+        return when (favoriteActionMode) {
+            VideoCardFavoriteActionMode.ADD -> R.string.video_card_action_favorite
+            VideoCardFavoriteActionMode.REMOVE -> R.string.video_card_action_unfavorite
         }
     }
 

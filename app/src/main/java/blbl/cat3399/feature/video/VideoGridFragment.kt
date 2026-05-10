@@ -132,7 +132,6 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                         coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
                         coverPreloadRunnable = null
                     } else if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                        applyScrollSettleMotion(recyclerView)
                         scheduleNextCoverPreload(recyclerView)
                     }
                 }
@@ -233,24 +232,6 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
             actionController.onActionSelected(card, position, action)
         }
         return true
-    }
-
-
-    private fun applyScrollSettleMotion(recyclerView: RecyclerView) {
-        val direction = when {
-            lastScrollDy > 0 -> -1f
-            lastScrollDy < 0 -> 1f
-            else -> 0f
-        }
-        if (direction == 0f) return
-        val offset = (recyclerView.resources.displayMetrics.density * 6f).coerceAtLeast(4f) * direction
-        recyclerView.animate().cancel()
-        recyclerView.translationY = offset
-        recyclerView.animate()
-            .translationY(0f)
-            .setDuration(200L)
-            .setInterpolator(DecelerateInterpolator(1.35f))
-            .start()
     }
 
     override fun onResume() {
