@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 
 fun Fragment.findCurrentViewPagerChildFragment(viewPager: ViewPager2): Fragment? {
+    childFragmentManager.fragments.firstOrNull { it.isResumed }?.let { return it }
     val adapter = viewPager.adapter as? FragmentStateAdapter
     if (adapter != null) {
         val itemId = adapter.getItemId(viewPager.currentItem)
@@ -30,6 +31,7 @@ fun Fragment.findCurrentViewPagerChildFragment(viewPager: ViewPager2): Fragment?
 inline fun <reified T> Fragment.findCurrentViewPagerChildFragmentAs(viewPager: ViewPager2): T? {
     val current = findCurrentViewPagerChildFragment(viewPager)
     if (current is T) return current
+    childFragmentManager.fragments.firstOrNull { it.isResumed && it is T }?.let { return it as T }
     return childFragmentManager.fragments.firstOrNull { it.isVisible && it is T } as? T
 }
 
