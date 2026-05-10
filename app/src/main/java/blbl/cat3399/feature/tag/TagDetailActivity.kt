@@ -208,9 +208,6 @@ class TagDetailActivity : BaseActivity() {
             return true
         }
 
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && RemoteKeys.isRefreshKey(event.keyCode)) {
-            return refreshFromKey()
-        }
         return super.dispatchKeyEvent(event)
     }
 

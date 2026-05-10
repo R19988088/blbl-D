@@ -365,10 +365,6 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         }
 
         if (event.action == KeyEvent.ACTION_DOWN) {
-            if (event.repeatCount == 0 && RemoteKeys.isRefreshKey(event.keyCode)) {
-                if (dispatchRefreshKeyToCurrentPage()) return true
-            }
-
             val focused = currentFocus
             if (focused == null && isNavKey(event.keyCode)) {
                 // During adapter updates, focus can be temporarily lost. If we were in main very
@@ -463,6 +459,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
     }
 
     private fun findRefreshKeyHandler(fragment: Fragment): RefreshKeyHandler? {
+        (fragment as? RefreshKeyHandler)?.let { return it }
         return findRefreshKeyHandler(fragment, preferResumed = true) ?: findRefreshKeyHandler(fragment, preferResumed = false)
     }
 

@@ -195,10 +195,6 @@ class UpDetailActivity : BaseActivity() {
             return true
         }
 
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && RemoteKeys.isRefreshKey(event.keyCode)) {
-            return refreshCurrentTabFromKey()
-        }
-
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && event.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
             val focused = currentFocus
             if (focused != null && FocusTreeUtils.isDescendantOf(focused, binding.recycler)) {

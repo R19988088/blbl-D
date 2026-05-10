@@ -149,17 +149,6 @@ class FollowingListActivity : BaseActivity() {
             return true
         }
 
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && RemoteKeys.isRefreshKey(event.keyCode)) {
-            if (binding.loginContainer.isVisible) {
-                AppToast.show(this, "请先登录")
-                binding.btnLogin.requestFocus()
-                return true
-            }
-            if (binding.swipeRefresh.isRefreshing) return true
-            binding.swipeRefresh.isRefreshing = true
-            resetAndLoad()
-            return true
-        }
         if (event.action == KeyEvent.ACTION_DOWN && currentFocus == null && isNavKey(event.keyCode)) {
             ensureInitialFocus()
             return true
