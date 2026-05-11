@@ -25,7 +25,7 @@ import blbl.cat3399.ui.RefreshKeyHandler
 import blbl.cat3399.ui.SidebarFocusHost
 import com.google.android.material.tabs.TabLayout
 
-class HomeFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler {
+class HomeFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler, RefreshKeyHandler {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private var mediator: TabLayoutMediator? = null
@@ -213,7 +213,7 @@ class HomeFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler {
         return true
     }
 
-    fun handleRefreshKey(): Boolean {
+    override fun handleRefreshKey(): Boolean {
         return refreshCurrentPageStrict() || refreshCurrentPageFromTabReselect()
     }
 

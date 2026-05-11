@@ -46,7 +46,6 @@ import blbl.cat3399.core.update.ApkUpdater
 import blbl.cat3399.databinding.ActivityMainBinding
 import blbl.cat3399.databinding.DialogUserInfoBinding
 import blbl.cat3399.feature.following.FollowingListActivity
-import blbl.cat3399.feature.home.HomeFragment
 import blbl.cat3399.feature.login.QrLoginActivity
 import blbl.cat3399.feature.player.engine.IjkPlayerPlugin
 import blbl.cat3399.feature.player.engine.IjkPlayerPluginUi
@@ -459,7 +458,6 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
 
     private fun dispatchRefreshKeyToCurrentPage(): Boolean {
         val root = currentRootFragment() ?: return false
-        if (root is HomeFragment && root.handleRefreshKey()) return true
         val handler = findRefreshKeyHandler(root)
         if (handler != null && handler.handleRefreshKey()) return true
         return triggerSwipeRefresh(root.requireView())

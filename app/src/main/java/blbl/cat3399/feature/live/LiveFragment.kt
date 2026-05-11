@@ -26,7 +26,7 @@ import blbl.cat3399.ui.SidebarFocusHost
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 
-class LiveFragment : Fragment(), LiveGridTabSwitchFocusHost, BackPressHandler, LiveNavigator {
+class LiveFragment : Fragment(), LiveGridTabSwitchFocusHost, BackPressHandler, LiveNavigator, RefreshKeyHandler {
     private var _binding: FragmentLiveBinding? = null
     private val binding get() = _binding!!
 
@@ -124,6 +124,10 @@ class LiveFragment : Fragment(), LiveGridTabSwitchFocusHost, BackPressHandler, L
         val page = currentPageFragment() ?: return false
         val handler = page as? RefreshKeyHandler ?: return false
         return handler.handleRefreshKey()
+    }
+
+    override fun handleRefreshKey(): Boolean {
+        return refreshCurrentPageFromTabReselect()
     }
 
     private fun setTabs(list: List<LiveTab>, force: Boolean = false) {

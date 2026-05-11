@@ -23,10 +23,11 @@ import blbl.cat3399.core.ui.UiScale
 import blbl.cat3399.core.ui.postIfAlive
 import blbl.cat3399.core.ui.installGridViewportFillMonitor
 import blbl.cat3399.databinding.FragmentLiveAreaDetailBinding
+import blbl.cat3399.ui.RefreshKeyHandler
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-class LiveAreaDetailFragment : Fragment() {
+class LiveAreaDetailFragment : Fragment(), RefreshKeyHandler {
     private var _binding: FragmentLiveAreaDetailBinding? = null
     private val binding get() = _binding!!
 
@@ -280,6 +281,15 @@ class LiveAreaDetailFragment : Fragment() {
         dpadGridController?.clearPendingFocusAfterLoadMore()
         adapter.submit(emptyList())
         loadNextPage(isRefresh = true)
+    }
+
+    override fun handleRefreshKey(): Boolean {
+        if (!isResumed) return false
+        val b = _binding ?: return false
+        if (b.swipeRefresh.isRefreshing) return true
+        b.swipeRefresh.isRefreshing = true
+        resetAndLoad()
+        return true
     }
 
     private fun clearPendingRestore() {
