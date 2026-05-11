@@ -19,8 +19,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import java.lang.reflect.Field
 import blbl.cat3399.BuildConfig
 import blbl.cat3399.R
 import blbl.cat3399.core.account.AccountSessionStore
@@ -426,9 +424,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         if (isUserInfoOverlayVisible()) return false
         val focused = currentFocus
         if (focused != null && isInSidebar(focused)) return false
-        return currentRootFragment()?.let { root ->
-            findRefreshKeyHandler(root) != null || findSwipeRefreshLayout(root.requireView()) != null
-        } == true
+        return currentRootFragment()?.let { findRefreshKeyHandler(it) != null } == true
     }
 
     private fun handleMainBackPressed() {
@@ -461,25 +457,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         if ((root as? RefreshKeyHandler)?.handleRefreshKey() == true) return true
         val handler = findRefreshKeyHandler(root)
         if (handler != null && handler != root && handler.handleRefreshKey()) return true
-        return triggerSwipeRefresh(root.requireView())
-    }
-
-    private fun triggerSwipeRefresh(root: View): Boolean {
-        val swipeRefresh = findSwipeRefreshLayout(root) ?: return false
-        if (!swipeRefresh.isEnabled || !swipeRefresh.isShown) return false
-        val listener = swipeRefreshOnRefreshListenerField?.get(swipeRefresh) as? SwipeRefreshLayout.OnRefreshListener ?: return false
-        if (!swipeRefresh.isRefreshing) swipeRefresh.isRefreshing = true
-        listener.onRefresh()
-        return true
-    }
-
-    private fun findSwipeRefreshLayout(root: View): SwipeRefreshLayout? {
-        if (root is SwipeRefreshLayout) return root
-        val group = root as? ViewGroup ?: return null
-        for (index in 0 until group.childCount) {
-            findSwipeRefreshLayout(group.getChildAt(index))?.let { return it }
-        }
-        return null
+        return false
     }
 
     private fun findRefreshKeyHandler(fragment: Fragment): RefreshKeyHandler? {
@@ -1512,9 +1490,5 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         private const val STATE_KEY_ROOT_NAV_ID = "MainActivity.rootNavId"
         private const val BACK_DOUBLE_PRESS_WINDOW_MS = 1_500L
         private const val SIDEBAR_COLLAPSE_ARM_TIMEOUT_MS = 1_000L
-        private val swipeRefreshOnRefreshListenerField: Field? =
-            runCatching {
-                SwipeRefreshLayout::class.java.getDeclaredField("mListener").apply { isAccessible = true }
-            }.getOrNull()
     }
 }
