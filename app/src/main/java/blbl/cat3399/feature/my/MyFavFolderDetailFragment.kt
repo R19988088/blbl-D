@@ -191,9 +191,7 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
                 loadMore = { loadNextPage() },
             )
         binding.swipeRefresh.setOnRefreshListener {
-            pendingFocusFirstItem = !embeddedInFavoriteTabs
-            dpadGridController?.parkFocusForDataSetReset()
-            resetAndLoad()
+            handleFullRefreshKey()
         }
 
         if (savedInstanceState == null) {
@@ -264,9 +262,17 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
     }
 
     override fun handleRefreshKey(): Boolean {
+        return refreshFromKey(force = false)
+    }
+
+    override fun handleFullRefreshKey(): Boolean {
+        return refreshFromKey(force = true)
+    }
+
+    private fun refreshFromKey(force: Boolean): Boolean {
         val b = _binding ?: return false
         if (!isResumed) return false
-        if (b.swipeRefresh.isRefreshing) return true
+        if (!force && b.swipeRefresh.isRefreshing) return true
         b.swipeRefresh.isRefreshing = true
         pendingFocusFirstItem = !embeddedInFavoriteTabs
         dpadGridController?.parkFocusForDataSetReset()

@@ -215,6 +215,11 @@ class HomeFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler, 
         return refreshCurrentPageStrict()
     }
 
+    override fun handleFullRefreshKey(): Boolean {
+        val page = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
+        return page.handleFullRefreshKey()
+    }
+
     override fun onDestroyView() {
         pageCallback?.let { binding.viewPager.unregisterOnPageChangeCallback(it) }
         pageCallback = null

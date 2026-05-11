@@ -130,6 +130,12 @@ class LiveFragment : Fragment(), LiveGridTabSwitchFocusHost, BackPressHandler, L
         return refreshCurrentPageFromTabReselect()
     }
 
+    override fun handleFullRefreshKey(): Boolean {
+        val page = currentPageFragment() ?: return false
+        val handler = page as? RefreshKeyHandler ?: return false
+        return handler.handleFullRefreshKey()
+    }
+
     private fun setTabs(list: List<LiveTab>, force: Boolean = false) {
         if (_binding == null) return
         val next = list.ifEmpty { LiveTabs.defaultVisibleTabs(isLoggedIn = BiliClient.cookies.hasSessData()) }

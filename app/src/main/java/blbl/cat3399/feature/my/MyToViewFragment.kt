@@ -135,9 +135,7 @@ class MyToViewFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHandler {
                     ),
             ).also { it.install() }
         binding.swipeRefresh.setOnRefreshListener {
-            pendingFocusFirstItemAfterRefresh = true
-            dpadGridController?.parkFocusForDataSetReset()
-            reload()
+            handleFullRefreshKey()
         }
     }
 
@@ -150,9 +148,17 @@ class MyToViewFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHandler {
     }
 
     override fun handleRefreshKey(): Boolean {
+        return refreshFromKey(force = false)
+    }
+
+    override fun handleFullRefreshKey(): Boolean {
+        return refreshFromKey(force = true)
+    }
+
+    private fun refreshFromKey(force: Boolean): Boolean {
         val b = _binding ?: return false
         if (!isResumed) return false
-        if (b.swipeRefresh.isRefreshing) return true
+        if (!force && b.swipeRefresh.isRefreshing) return true
         b.swipeRefresh.isRefreshing = true
         pendingFocusFirstItemAfterRefresh = true
         dpadGridController?.parkFocusForDataSetReset()

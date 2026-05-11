@@ -182,7 +182,7 @@ class PgcRecommendGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTa
             },
         )
 
-        binding.swipeRefresh.setOnRefreshListener { resetAndLoad(fromUserRefresh = true) }
+        binding.swipeRefresh.setOnRefreshListener { handleFullRefreshKey() }
     }
 
     override fun onResume() {
@@ -194,9 +194,17 @@ class PgcRecommendGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTa
     }
 
     override fun handleRefreshKey(): Boolean {
+        return refreshFromKey(force = false)
+    }
+
+    override fun handleFullRefreshKey(): Boolean {
+        return refreshFromKey(force = true)
+    }
+
+    private fun refreshFromKey(force: Boolean): Boolean {
         val b = _binding ?: return false
         if (!isResumed) return false
-        if (b.swipeRefresh.isRefreshing) return true
+        if (!force && b.swipeRefresh.isRefreshing) return true
         b.swipeRefresh.isRefreshing = true
         resetAndLoad(fromUserRefresh = true)
         return true

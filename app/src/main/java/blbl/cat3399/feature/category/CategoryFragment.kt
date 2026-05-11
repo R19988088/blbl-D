@@ -144,6 +144,11 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
         return refreshCurrentPageStrict()
     }
 
+    override fun handleFullRefreshKey(): Boolean {
+        val pageFragment = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
+        return pageFragment.handleFullRefreshKey()
+    }
+
     private fun focusCurrentPageFirstCardFromTab(): Boolean {
         val pageFragment = findCurrentViewPagerChildFragmentAs<TabContentFocusTarget>(binding.viewPager) ?: return false
         return pageFragment.requestFocusPrimaryItemFromTab()

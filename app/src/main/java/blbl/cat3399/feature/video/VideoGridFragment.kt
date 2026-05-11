@@ -197,9 +197,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
             )
 
         binding.swipeRefresh.setOnRefreshListener {
-            pendingFocusFirstCardAfterRefresh = true
-            dpadGridController?.parkFocusForDataSetReset()
-            resetAndLoad()
+            handleFullRefreshKey()
         }
 
         if (preDrawListener == null) {
@@ -244,16 +242,23 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
     }
 
     override fun handleRefreshKey(): Boolean {
+        return refreshFromKey(force = false)
+    }
+
+    override fun handleFullRefreshKey(): Boolean {
+        return refreshFromKey(force = true)
+    }
+
+    private fun refreshFromKey(force: Boolean): Boolean {
         val b = _binding ?: return false
         if (!isResumed) return false
-        if (b.swipeRefresh.isRefreshing) return true
+        if (!force && b.swipeRefresh.isRefreshing) return true
         pendingFocusFirstCardAfterRefresh = true
         dpadGridController?.parkFocusForDataSetReset()
         b.swipeRefresh.isRefreshing = true
         resetAndLoad()
         return true
     }
-
 
     private fun maybeTriggerInitialLoad() {
         if (initialLoadTriggered) return

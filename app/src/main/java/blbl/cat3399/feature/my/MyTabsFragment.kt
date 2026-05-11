@@ -124,6 +124,11 @@ class MyTabsFragment : Fragment(), MyTabContentSwitchFocusHost, BackPressHandler
         return refreshCurrentPageFromTabReselect()
     }
 
+    override fun handleFullRefreshKey(): Boolean {
+        val target = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
+        return target.handleFullRefreshKey()
+    }
+
     private fun focusCurrentPageFirstItem(): Boolean {
         val byTag = findCurrentViewPagerChildFragment(binding.viewPager)
         val target = byTag as? MyTabSwitchFocusTarget

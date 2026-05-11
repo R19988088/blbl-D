@@ -238,9 +238,7 @@ class DynamicFragment : Fragment(), RefreshKeyHandler, BackPressHandler {
         )
 
         binding.swipeRefresh.setOnRefreshListener {
-            pendingFocusFirstFeedCardAfterRefresh = true
-            parkFocusForDataSetReset(followingListController, dynamicGridController)
-            loadAll(resetFeed = true)
+            handleFullRefreshKey()
         }
         binding.swipeRefresh.isRefreshing = true
         loadAll(resetFeed = true)
@@ -605,6 +603,14 @@ class DynamicFragment : Fragment(), RefreshKeyHandler, BackPressHandler {
     }
 
     override fun handleRefreshKey(): Boolean {
+        return refreshFromKey(force = false)
+    }
+
+    override fun handleFullRefreshKey(): Boolean {
+        return refreshFromKey(force = true)
+    }
+
+    private fun refreshFromKey(force: Boolean): Boolean {
         if (!isResumed) return false
         if (!loggedIn) {
             AppToast.show(requireContext(), "请先登录")
@@ -613,7 +619,7 @@ class DynamicFragment : Fragment(), RefreshKeyHandler, BackPressHandler {
         }
 
         val b = _binding ?: return false
-        if (b.swipeRefresh.isRefreshing) return true
+        if (!force && b.swipeRefresh.isRefreshing) return true
         pendingFocusFirstFeedCardAfterRefresh = true
         parkFocusForDataSetReset(followingListController, dynamicGridController)
         b.swipeRefresh.isRefreshing = true

@@ -52,6 +52,11 @@ class MyFragment : Fragment(), BackPressHandler, MyNavigator, TabContentSwitchFo
         return (current as? RefreshKeyHandler)?.handleRefreshKey() == true
     }
 
+    override fun handleFullRefreshKey(): Boolean {
+        val current = childFragmentManager.findFragmentById(R.id.my_container)
+        return (current as? RefreshKeyHandler)?.handleFullRefreshKey() == true
+    }
+
     override fun requestFocusCurrentPagePrimaryItemFromContentSwitch(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.my_container) as? TabContentSwitchFocusHost ?: return false
         return current.requestFocusCurrentPagePrimaryItemFromContentSwitch()

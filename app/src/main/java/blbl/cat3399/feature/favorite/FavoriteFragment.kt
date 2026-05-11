@@ -72,6 +72,11 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
         return (current as? RefreshKeyHandler)?.handleRefreshKey() == true
     }
 
+    override fun handleFullRefreshKey(): Boolean {
+        val current = childFragmentManager.findFragmentById(R.id.favorite_container)
+        return (current as? RefreshKeyHandler)?.handleFullRefreshKey() == true
+    }
+
     override fun handleBackPressed(): Boolean {
         val b = _binding ?: return false
         if (b.tabLayout.hasFocus()) {

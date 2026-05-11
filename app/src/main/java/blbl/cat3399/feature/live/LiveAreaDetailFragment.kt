@@ -154,7 +154,7 @@ class LiveAreaDetailFragment : Fragment(), RefreshKeyHandler {
                 loadMore = { loadNextPage() },
             )
 
-        binding.swipeRefresh.setOnRefreshListener { resetAndLoad() }
+        binding.swipeRefresh.setOnRefreshListener { handleFullRefreshKey() }
 
         if (savedInstanceState == null) {
             pendingFocusFirstItem = true
@@ -284,9 +284,17 @@ class LiveAreaDetailFragment : Fragment(), RefreshKeyHandler {
     }
 
     override fun handleRefreshKey(): Boolean {
+        return refreshFromKey(force = false)
+    }
+
+    override fun handleFullRefreshKey(): Boolean {
+        return refreshFromKey(force = true)
+    }
+
+    private fun refreshFromKey(force: Boolean): Boolean {
         if (!isResumed) return false
         val b = _binding ?: return false
-        if (b.swipeRefresh.isRefreshing) return true
+        if (!force && b.swipeRefresh.isRefreshing) return true
         b.swipeRefresh.isRefreshing = true
         resetAndLoad()
         return true
