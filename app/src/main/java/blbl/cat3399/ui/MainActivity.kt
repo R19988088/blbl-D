@@ -461,8 +461,9 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
     }
 
     private fun findRefreshKeyHandler(fragment: Fragment): RefreshKeyHandler? {
-        (fragment as? RefreshKeyHandler)?.let { return it }
-        return findRefreshKeyHandler(fragment, preferResumed = true) ?: findRefreshKeyHandler(fragment, preferResumed = false)
+        return findRefreshKeyHandler(fragment, preferResumed = true)
+            ?: findRefreshKeyHandler(fragment, preferResumed = false)
+            ?: fragment as? RefreshKeyHandler
     }
 
     private fun findRefreshKeyHandler(fragment: Fragment, preferResumed: Boolean): RefreshKeyHandler? {
