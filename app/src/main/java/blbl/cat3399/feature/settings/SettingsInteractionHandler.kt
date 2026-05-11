@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import blbl.cat3399.R
 import blbl.cat3399.BuildConfig
+import blbl.cat3399.core.api.BiliApi
 import blbl.cat3399.core.io.CreateDocumentRequest
 import blbl.cat3399.core.io.DocumentExporter
 import blbl.cat3399.core.log.AppLog
@@ -948,6 +949,10 @@ class SettingsInteractionHandler(
                 ) { prefs.mainVisiblePages = it }
             }
 
+            SettingId.FavoriteVisibleFolders -> {
+                showFavoriteVisibleFoldersDialog(sectionIndex = state.currentSectionIndex, focusId = entry.id)
+            }
+
             SettingId.UiScaleFactor -> {
                 val factors = (70..140 step 5).map { it / 100f }
                 val items = factors.map { SettingsText.uiScaleFactorText(it) }
@@ -1853,6 +1858,42 @@ class SettingsInteractionHandler(
                 renderer.showSection(sectionIndex, focusId = focusId)
             },
         )
+    }
+
+    private fun showFavoriteVisibleFoldersDialog(sectionIndex: Int, focusId: SettingId) {
+        if (!BiliClient.cookies.hasSessData()) {
+            AppToast.show(activity, "请先登录")
+            return
+        }
+        AppToast.show(activity, "正在加载收藏夹")
+        activity.lifecycleScope.launch {
+            try {
+                val mid = BiliClient.prefs.appAuthSession?.mid?.takeIf { it > 0L }
+                    ?: BiliClient.cookies.getCookieValue("DedeUserID")?.trim()?.toLongOrNull()?.takeIf { it > 0L }
+                    ?: withContext(Dispatchers.IO) {
+                        BiliApi.nav().optJSONObject("data")?.optLong("mid") ?: 0L
+                    }
+                if (mid <= 0L) {
+                    AppToast.show(activity, "未获取到账号信息")
+                    return@launch
+                }
+                val folders = withContext(Dispatchers.IO) { BiliApi.favFolders(upMid = mid) }
+                if (folders.isEmpty()) {
+                    AppToast.show(activity, "未获取到收藏夹")
+                    return@launch
+                }
+                showVisibleTabsDialog(
+                    sectionIndex = sectionIndex,
+                    focusId = focusId,
+                    title = "收藏夹显示管理",
+                    options = folders.map { it.mediaId.toString() to it.title.ifBlank { activity.getString(R.string.my_fav_default_title) } },
+                    selectedKeys = BiliClient.prefs.favoriteVisibleFolderIds,
+                ) { BiliClient.prefs.favoriteVisibleFolderIds = it }
+            } catch (t: Throwable) {
+                if (t is CancellationException) throw t
+                AppToast.show(activity, "加载收藏夹失败")
+            }
+        }
     }
 
     private fun showPlayerOsdButtonsDialog(sectionIndex: Int, focusId: SettingId) {

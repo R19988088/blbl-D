@@ -458,8 +458,9 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
 
     private fun dispatchRefreshKeyToCurrentPage(): Boolean {
         val root = currentRootFragment() ?: return false
+        if ((root as? RefreshKeyHandler)?.handleRefreshKey() == true) return true
         val handler = findRefreshKeyHandler(root)
-        if (handler != null && handler.handleRefreshKey()) return true
+        if (handler != null && handler != root && handler.handleRefreshKey()) return true
         return triggerSwipeRefresh(root.requireView())
     }
 

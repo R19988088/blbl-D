@@ -41,6 +41,9 @@ enum class SettingId(
     MainLiveVisibleTabs("main_live_visible_tabs"),
     MainMyVisibleTabs("main_my_visible_tabs"),
 
+    // 个人设置
+    FavoriteVisibleFolders("favorite_visible_folders"),
+
     // 播放设置
     PlayerPreferredQn("player_preferred_qn"),
     PlayerPreferredQnPortrait("player_preferred_qn_portrait"),

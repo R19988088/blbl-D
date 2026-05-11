@@ -44,6 +44,7 @@ class SettingsActivity : BaseActivity() {
         listOf(
             "通用设置",
             "页面设置",
+            "个人设置",
             "播放设置",
             "弹幕设置",
             "关于应用",

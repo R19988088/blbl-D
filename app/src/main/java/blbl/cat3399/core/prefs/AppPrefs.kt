@@ -110,6 +110,10 @@ class AppPrefs(context: Context) {
         get() = loadStringList(KEY_MAIN_VISIBLE_PAGES).takeIf { it.isNotEmpty() } ?: DEFAULT_MAIN_VISIBLE_PAGES
         set(value) = saveStringList(KEY_MAIN_VISIBLE_PAGES, normalizeStringList(value).ifEmpty { DEFAULT_MAIN_VISIBLE_PAGES })
 
+    var favoriteVisibleFolderIds: List<String>
+        get() = loadStringList(KEY_FAVORITE_VISIBLE_FOLDER_IDS)
+        set(value) = saveStringList(KEY_FAVORITE_VISIBLE_FOLDER_IDS, normalizeStringList(value))
+
     var followingListOrder: String
         get() {
             val raw = prefs.getString(KEY_FOLLOWING_LIST_ORDER, FOLLOWING_LIST_ORDER_FOLLOW_TIME) ?: FOLLOWING_LIST_ORDER_FOLLOW_TIME
@@ -1047,6 +1051,7 @@ class AppPrefs(context: Context) {
         private const val KEY_MAIN_LIVE_VISIBLE_TABS = "main_live_visible_tabs"
         private const val KEY_MAIN_MY_VISIBLE_TABS = "main_my_visible_tabs"
         private const val KEY_MAIN_VISIBLE_PAGES = "main_visible_pages"
+        private const val KEY_FAVORITE_VISIBLE_FOLDER_IDS = "favorite_visible_folder_ids"
         private const val KEY_FOLLOWING_LIST_ORDER = "following_list_order"
         private const val KEY_DYNAMIC_FOLLOWING_RECENT_UPDATE_DOT_ENABLED = "dynamic_following_recent_update_dot_enabled"
         private const val KEY_AUTO_UPDATE_CHECK_ENABLED = "auto_update_check_enabled"

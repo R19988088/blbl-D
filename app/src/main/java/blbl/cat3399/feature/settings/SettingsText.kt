@@ -134,6 +134,10 @@ object SettingsText {
         )
     }
 
+    fun favoriteVisibleFoldersText(selectedKeys: List<String>): String {
+        return if (selectedKeys.isEmpty()) "全部" else "已选择 ${selectedKeys.size} 项"
+    }
+
     private fun visibleTabsText(options: List<Pair<String, String>>, selectedKeys: List<String>): String {
         val selected = selectedKeys.takeIf { it.isNotEmpty() }?.toSet()
         val labels =

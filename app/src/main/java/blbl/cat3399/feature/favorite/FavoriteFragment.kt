@@ -94,7 +94,7 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
                     AppToast.show(requireContext(), "请先登录后查看收藏")
                     return@launch
                 }
-                val nextFolders = BiliApi.favFolders(upMid = mid)
+                val nextFolders = applyVisibleFolderPrefs(BiliApi.favFolders(upMid = mid))
                 if (token != loadToken || _binding == null) return@launch
                 if (nextFolders.isEmpty()) {
                     AppToast.show(requireContext(), "未获取到收藏夹")
@@ -136,6 +136,11 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
         b.tabLayout.getTabAt(selectedIndex)?.select()
         installTabFocusHandlers()
         showSelectedFolder()
+    }
+
+    private fun applyVisibleFolderPrefs(allFolders: List<FavFolder>): List<FavFolder> {
+        val selected = BiliClient.prefs.favoriteVisibleFolderIds.takeIf { it.isNotEmpty() }?.toSet() ?: return allFolders
+        return allFolders.filter { it.mediaId.toString() in selected }.ifEmpty { allFolders }
     }
 
     private fun showSelectedFolder() {

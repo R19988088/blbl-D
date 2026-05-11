@@ -291,6 +291,16 @@ class SettingsRenderer(
                     ),
                 )
 
+            "个人设置" ->
+                listOf(
+                    SettingEntry(
+                        SettingId.FavoriteVisibleFolders,
+                        "收藏夹显示管理",
+                        SettingsText.favoriteVisibleFoldersText(prefs.favoriteVisibleFolderIds),
+                        "管理登录后首页收藏页面显示的收藏夹分类",
+                    ),
+                )
+
             "播放设置" ->
                 listOf(
                     SettingEntry(SettingId.PlayerPreferredQn, "默认画质", SettingsText.qnText(prefs.playerPreferredQn), null),
