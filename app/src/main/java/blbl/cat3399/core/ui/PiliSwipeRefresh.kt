@@ -11,7 +11,6 @@ import java.util.WeakHashMap
 import kotlin.math.roundToInt
 
 object PiliSwipeRefresh {
-    private const val REFRESH_DRAG_PERCENTAGE = 0.25f
     private const val REFRESH_DISPLACEMENT_DP = 40f
     private val configuredHeights = WeakHashMap<SwipeRefreshLayout, Int>()
 
@@ -59,9 +58,9 @@ object PiliSwipeRefresh {
     }
 
     private fun configure(refresh: SwipeRefreshLayout) {
-        val height = refresh.height.takeIf { it > 0 } ?: refresh.resources.displayMetrics.heightPixels
-        if (configuredHeights[refresh] == height) return
-        configuredHeights[refresh] = height
+        val triggerDistance = REFRESH_DISPLACEMENT_DP.dp(refresh).coerceAtLeast(1)
+        if (configuredHeights[refresh] == triggerDistance) return
+        configuredHeights[refresh] = triggerDistance
 
         val context = refresh.context
         val accent = ThemeColor.resolve(context, R.attr.blblAccent, R.color.blbl_blue)
@@ -74,7 +73,6 @@ object PiliSwipeRefresh {
             REFRESH_DISPLACEMENT_DP.dp(refresh),
         )
 
-        val triggerDistance = (height * REFRESH_DRAG_PERCENTAGE).roundToInt().coerceAtLeast(1)
         refresh.setDistanceToTriggerSync(triggerDistance)
     }
 

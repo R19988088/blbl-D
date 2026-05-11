@@ -342,7 +342,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
             } catch (t: Throwable) {
                 if (t is CancellationException) throw t
                 AppLog.e("VideoGrid", "load failed source=$source rid=$rid page=${startKey.page}", t)
-                context?.let { AppToast.show(it, "闁告梻濮惧ù鍥ㄥ緞鏉堫偉袝闁挎稑鑻ぐ鏌ュ蓟閵壯勭畽 Logcat(闁哄秴娲ㄩ?BLBL)") }
+                context?.let { AppToast.show(it, "加载失败，可查看 Logcat(标签 BLBL)") }
             } finally {
                 if (isRefresh && paging.snapshot().generation == startGen) _binding?.swipeRefresh?.isRefreshing = false
                 AppLog.d(
