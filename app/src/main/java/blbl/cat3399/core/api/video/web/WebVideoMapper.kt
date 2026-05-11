@@ -148,12 +148,15 @@ internal class WebVideoMapper(
         data: JSONObject,
         request: VideoRegionLatestRequest,
     ): VideoCardPage<VideoRegionLatestRequest> {
-        return parseArchiveListPage(
-            data = data,
+        val list = data.optJSONArray("list") ?: JSONArray()
+        val items = parseVideoCards(list)
+        return VideoCardPage(
+            source = source,
             request = request,
-            fallbackPage = request.pn,
-            fallbackPageSize = request.ps,
-            useLengthFallback = true,
+            items = items,
+            page = 1,
+            hasMore = false,
+            total = items.size,
         )
     }
 

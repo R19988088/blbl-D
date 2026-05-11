@@ -596,7 +596,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                 val res = BiliApi.regionLatestPage(rid = rid, pn = key.page, ps = ps)
                 FetchedPage(
                     items = res.items,
-                    nextKey = key.copy(page = key.page + 1),
+                    nextKey = key.copy(page = 1),
                     hasMore = res.hasMore,
                 )
             }
