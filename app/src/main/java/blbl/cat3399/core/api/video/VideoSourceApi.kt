@@ -11,9 +11,9 @@ import blbl.cat3399.core.api.video.app.AppVideoApi
 import blbl.cat3399.core.api.video.web.WebVideoApi
 
 data class VideoRecommendRequest(
-    val freshIdx: Int = 1,
+    val freshIdx: Int = 0,
     val ps: Int = 20,
-    val fetchRow: Int = 1,
+    val fetchRow: Int = 0,
 )
 
 data class VideoRecommendPage(

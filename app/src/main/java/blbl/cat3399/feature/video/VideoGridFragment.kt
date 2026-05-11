@@ -65,7 +65,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
     private val searchKeyword: String by lazy { requireArguments().getString(ARG_SEARCH_KEYWORD).orEmpty().trim() }
 
     private val loadedStableKeys = HashSet<String>()
-    private val paging = PagedGridStateMachine(initialKey = PagingKey(page = 1, recommendFetchRow = 1))
+    private val paging = PagedGridStateMachine(initialKey = PagingKey(page = 1, recommendFetchRow = 0))
 
     private var pendingFocusFirstCardFromTab: Boolean = false
     private var pendingFocusFirstCardFromContentSwitch: Boolean = false
@@ -556,6 +556,9 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
 
     private suspend fun fetchVisiblePage(key: PagingKey): FetchedPage {
         val ps = 24
+        if (key.page <= 1) {
+            return fetchRawPage(key, ps)
+        }
         var currentKey = key
         while (true) {
             val rawPage = fetchRawPage(currentKey, ps)
@@ -583,7 +586,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     nextKey =
                         key.copy(
                             page = key.page + 1,
-                            recommendFetchRow = key.recommendFetchRow + items.size,
+                            recommendFetchRow = key.recommendFetchRow + 1,
                         ),
                     hasMore = items.isNotEmpty(),
                 )

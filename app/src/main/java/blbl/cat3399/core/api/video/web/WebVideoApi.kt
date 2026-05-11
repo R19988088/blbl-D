@@ -95,9 +95,11 @@ internal class WebVideoApi(
                 params =
                     mapOf(
                         "ps" to request.ps.toString(),
+                        "version" to "1",
+                        "homepage_ver" to "1",
                         "fresh_idx" to request.freshIdx.toString(),
-                        "fresh_idx_1h" to request.freshIdx.toString(),
-                        "fetch_row" to request.fetchRow.toString(),
+                        "brush" to request.freshIdx.toString(),
+                        "fresh_type" to "4",
                         "feed_version" to "V8",
                     ),
                 keys = keys,
