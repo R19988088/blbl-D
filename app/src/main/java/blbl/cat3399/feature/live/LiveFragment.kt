@@ -14,7 +14,7 @@ import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.prefs.AppPrefs
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.core.ui.enableDpadTabFocus
-import blbl.cat3399.core.ui.findCurrentViewPagerChildFragment
+import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentStrict
 import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAs
 import blbl.cat3399.core.ui.postDelayedIfAlive
 import blbl.cat3399.core.ui.postIfAlive
@@ -117,7 +117,7 @@ class LiveFragment : Fragment(), LiveGridTabSwitchFocusHost, BackPressHandler, L
     }
 
     private fun currentPageFragment(): Fragment? {
-        return findCurrentViewPagerChildFragment(binding.viewPager)
+        return findCurrentViewPagerChildFragmentStrict(binding.viewPager)
     }
 
     private fun refreshCurrentPageFromTabReselect(): Boolean {

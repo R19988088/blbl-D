@@ -424,7 +424,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         if (isUserInfoOverlayVisible()) return false
         val focused = currentFocus
         if (focused != null && isInSidebar(focused)) return false
-        return currentRootFragment()?.let { findRefreshKeyHandler(it) != null } == true
+        return currentRootFragment() is RefreshKeyHandler
     }
 
     private fun handleMainBackPressed() {
@@ -454,28 +454,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
 
     private fun dispatchRefreshKeyToCurrentPage(): Boolean {
         val root = currentRootFragment() ?: return false
-        if ((root as? RefreshKeyHandler)?.handleRefreshKey() == true) return true
-        val handler = findRefreshKeyHandler(root)
-        if (handler != null && handler != root && handler.handleRefreshKey()) return true
-        return false
-    }
-
-    private fun findRefreshKeyHandler(fragment: Fragment): RefreshKeyHandler? {
-        return findRefreshKeyHandler(fragment, preferResumed = true)
-            ?: findRefreshKeyHandler(fragment, preferResumed = false)
-            ?: fragment as? RefreshKeyHandler
-    }
-
-    private fun findRefreshKeyHandler(fragment: Fragment, preferResumed: Boolean): RefreshKeyHandler? {
-        if (!fragment.isAdded) return null
-
-        fragment.childFragmentManager.fragments.asReversed().forEach { child ->
-            val found = findRefreshKeyHandler(child, preferResumed)
-            if (found != null) return found
-        }
-
-        val active = if (preferResumed) fragment.isResumed else fragment.isVisible
-        return if (active && fragment is RefreshKeyHandler) fragment else null
+        return (root as? RefreshKeyHandler)?.handleRefreshKey() == true
     }
 
     private fun initUserInfoOverlay() {

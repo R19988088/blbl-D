@@ -7,7 +7,7 @@ import androidx.viewpager2.widget.ViewPager2
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 
-fun Fragment.findCurrentViewPagerChildFragment(viewPager: ViewPager2): Fragment? {
+fun Fragment.findCurrentViewPagerChildFragmentStrict(viewPager: ViewPager2): Fragment? {
     val adapter = viewPager.adapter as? FragmentStateAdapter
     if (adapter != null) {
         val itemId = adapter.getItemId(viewPager.currentItem)
@@ -24,6 +24,15 @@ fun Fragment.findCurrentViewPagerChildFragment(viewPager: ViewPager2): Fragment?
             FocusTreeUtils.isDescendantOf(fragmentView, currentPageView)
         }?.let { return it }
     }
+    return null
+}
+
+inline fun <reified T> Fragment.findCurrentViewPagerChildFragmentAsStrict(viewPager: ViewPager2): T? {
+    return findCurrentViewPagerChildFragmentStrict(viewPager) as? T
+}
+
+fun Fragment.findCurrentViewPagerChildFragment(viewPager: ViewPager2): Fragment? {
+    findCurrentViewPagerChildFragmentStrict(viewPager)?.let { return it }
     childFragmentManager.fragments.firstOrNull { it.isResumed }?.let { return it }
     return childFragmentManager.fragments.firstOrNull { it.isVisible }
 }

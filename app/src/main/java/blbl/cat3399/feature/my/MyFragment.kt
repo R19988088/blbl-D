@@ -12,8 +12,9 @@ import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.ui.TabContentSwitchFocusHost
 import blbl.cat3399.databinding.FragmentMyContainerBinding
 import blbl.cat3399.ui.BackPressHandler
+import blbl.cat3399.ui.RefreshKeyHandler
 
-class MyFragment : Fragment(), BackPressHandler, MyNavigator, TabContentSwitchFocusHost {
+class MyFragment : Fragment(), BackPressHandler, MyNavigator, TabContentSwitchFocusHost, RefreshKeyHandler {
     private var _binding: FragmentMyContainerBinding? = null
     private val binding get() = _binding!!
 
@@ -44,6 +45,11 @@ class MyFragment : Fragment(), BackPressHandler, MyNavigator, TabContentSwitchFo
         if (childFragmentManager.popBackStackImmediate()) return true
         val current = childFragmentManager.findFragmentById(R.id.my_container)
         return (current as? BackPressHandler)?.handleBackPressed() == true
+    }
+
+    override fun handleRefreshKey(): Boolean {
+        val current = childFragmentManager.findFragmentById(R.id.my_container)
+        return (current as? RefreshKeyHandler)?.handleRefreshKey() == true
     }
 
     override fun requestFocusCurrentPagePrimaryItemFromContentSwitch(): Boolean {
