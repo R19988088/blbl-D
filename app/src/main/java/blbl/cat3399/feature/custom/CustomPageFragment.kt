@@ -15,7 +15,6 @@ import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.core.ui.TabContentSwitchFocusHost
 import blbl.cat3399.core.ui.enableDpadTabFocus
 import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAs
-import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAsStrict
 import blbl.cat3399.core.ui.postDelayedIfAlive
 import blbl.cat3399.core.ui.postIfAlive
 import blbl.cat3399.core.ui.requestFocusSelectedTab
@@ -220,7 +219,7 @@ class CustomPageFragment : Fragment(), TabContentSwitchFocusHost, BackPressHandl
     }
 
     private fun refreshCurrentPageFromTabReselect(): Boolean {
-        val page = findCurrentViewPagerChildFragmentAsStrict<RefreshKeyHandler>(binding.viewPager) ?: return false
+        val page = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
         return page.handleRefreshKey()
     }
 

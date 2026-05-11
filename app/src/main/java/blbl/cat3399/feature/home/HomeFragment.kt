@@ -14,7 +14,6 @@ import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.core.ui.enableDpadTabFocus
 import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAs
-import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAsStrict
 import blbl.cat3399.core.ui.postDelayedIfAlive
 import blbl.cat3399.core.ui.postIfAlive
 import blbl.cat3399.core.ui.requestFocusSelectedTab
@@ -70,7 +69,7 @@ class HomeFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler, 
     }
 
     private fun refreshCurrentPageFromTabReselect(): Boolean {
-        val page = findCurrentViewPagerChildFragmentAsStrict<RefreshKeyHandler>(binding.viewPager) ?: return false
+        val page = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
         return page.handleRefreshKey()
     }
 
