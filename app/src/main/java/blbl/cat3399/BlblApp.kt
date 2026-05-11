@@ -7,6 +7,7 @@ import blbl.cat3399.core.log.CrashTracker
 import blbl.cat3399.core.emote.ReplyEmotePanelRepository
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.net.WebCookieMaintainer
+import blbl.cat3399.core.ui.PiliSwipeRefresh
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,6 +27,7 @@ class BlblApp : Application() {
         )
         AppLog.i("BlblApp", "onCreate")
         BiliClient.init(this)
+        PiliSwipeRefresh.install(this)
         appScope.launch {
             runCatching { WebCookieMaintainer.ensureDailyMaintenance() }
                 .onFailure { AppLog.w("BlblApp", "daily maintenance failed", it) }

@@ -11,6 +11,7 @@
     <item name="tag_player_list_panel_base_metrics" type="id" />
     <item name="tag_player_side_panels_base_metrics" type="id" />
     <item name="tag_player_subtitle_base_padding" type="id" />
+    <item name="tag_pili_swipe_refresh_global_layout" type="id" />
     <item name="tag_user_scale_tab_custom_view" type="id" />
     <item name="tag_user_scale_tab_text_appearance_res" type="id" />
 </resources>
