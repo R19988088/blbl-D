@@ -237,8 +237,12 @@ class MyBangumiFollowFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHa
                     paging.loadNextPage(
                         isRefresh = isRefresh,
                         fetch = { page ->
-                            val nav = BiliApi.nav()
-                            val mid = nav.optJSONObject("data")?.optLong("mid") ?: 0L
+                            val mid = BiliClient.prefs.appAuthSession?.mid?.takeIf { it > 0L }
+                                ?: BiliClient.cookies.getCookieValue("DedeUserID")?.trim()?.toLongOrNull()?.takeIf { it > 0L }
+                                ?: run {
+                                    val nav = BiliApi.nav()
+                                    nav.optJSONObject("data")?.optLong("mid") ?: 0L
+                                }
                             if (mid <= 0) error("invalid mid")
 
                             val res = BiliApi.bangumiFollowList(vmid = mid, type = type, pn = page, ps = 15)

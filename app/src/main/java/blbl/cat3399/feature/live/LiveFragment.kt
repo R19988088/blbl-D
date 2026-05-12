@@ -127,12 +127,16 @@ class LiveFragment : Fragment(), LiveGridTabSwitchFocusHost, BackPressHandler, L
     }
 
     override fun handleRefreshKey(): Boolean {
-        return refreshCurrentPageFromTabReselect()
+        if (refreshCurrentPageFromTabReselect()) return true
+        val handler = childFragmentManager.fragments.firstOrNull { it.isVisible } as? RefreshKeyHandler
+        return handler?.handleRefreshKey() == true
     }
 
     override fun handleFullRefreshKey(): Boolean {
-        val page = currentPageFragment() ?: return false
-        val handler = page as? RefreshKeyHandler ?: return false
+        val page = currentPageFragment()
+        val handler = (page as? RefreshKeyHandler)
+            ?: childFragmentManager.fragments.firstOrNull { it.isVisible && it !== page } as? RefreshKeyHandler
+            ?: return false
         return handler.handleFullRefreshKey()
     }
 

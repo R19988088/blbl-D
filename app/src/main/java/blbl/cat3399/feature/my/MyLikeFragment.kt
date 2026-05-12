@@ -218,8 +218,12 @@ class MyLikeFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHandler {
         val token = ++requestToken
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val nav = BiliApi.nav()
-                val mid = nav.optJSONObject("data")?.optLong("mid") ?: 0L
+                val mid = BiliClient.prefs.appAuthSession?.mid?.takeIf { it > 0L }
+                    ?: BiliClient.cookies.getCookieValue("DedeUserID")?.trim()?.toLongOrNull()?.takeIf { it > 0L }
+                    ?: run {
+                        val nav = BiliApi.nav()
+                        nav.optJSONObject("data")?.optLong("mid") ?: 0L
+                    }
                 if (mid <= 0L) error("invalid mid")
                 val list = BiliApi.spaceLikeVideoList(vmid = mid)
                 if (token != requestToken) return@launch

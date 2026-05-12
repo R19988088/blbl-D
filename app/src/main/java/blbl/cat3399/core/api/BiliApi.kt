@@ -46,6 +46,8 @@ import blbl.cat3399.core.util.parseBangumiRedirectUrl
 import blbl.cat3399.proto.dm.DmSegMobileReply
 import blbl.cat3399.proto.dmview.DmWebViewReply
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -630,11 +632,18 @@ object BiliApi {
         if (missingIndices.isEmpty()) return folders
 
         val enriched = folders.toMutableList()
-        for (idx in missingIndices) {
-            val f = folders[idx]
-            val info = runCatching { favFolderInfo(f.mediaId) }.getOrNull()
-            if (info != null && !info.coverUrl.isNullOrBlank()) {
-                enriched[idx] = f.copy(coverUrl = info.coverUrl)
+        coroutineScope {
+            val results = missingIndices.map { idx ->
+                val f = folders[idx]
+                async(Dispatchers.IO) {
+                    idx to runCatching { favFolderInfo(f.mediaId) }.getOrNull()
+                }
+            }
+            for (deferred in results) {
+                val (idx, info) = deferred.await()
+                if (info != null && !info.coverUrl.isNullOrBlank()) {
+                    enriched[idx] = folders[idx].copy(coverUrl = info.coverUrl)
+                }
             }
         }
         return enriched

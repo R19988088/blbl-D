@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.SimpleItemAnimator
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import blbl.cat3399.core.api.BiliApi
 import blbl.cat3399.core.log.AppLog
+import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.ui.AppToast
 import blbl.cat3399.core.ui.DpadGridController
 import blbl.cat3399.core.ui.FocusTreeUtils
@@ -162,8 +163,12 @@ class MyFavFoldersFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHandl
         val token = ++requestToken
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val nav = BiliApi.nav()
-                val mid = nav.optJSONObject("data")?.optLong("mid") ?: 0L
+                val mid = BiliClient.prefs.appAuthSession?.mid?.takeIf { it > 0L }
+                    ?: BiliClient.cookies.getCookieValue("DedeUserID")?.trim()?.toLongOrNull()?.takeIf { it > 0L }
+                    ?: run {
+                        val nav = BiliApi.nav()
+                        nav.optJSONObject("data")?.optLong("mid") ?: 0L
+                    }
                 if (mid <= 0) error("invalid mid")
                 val folders = BiliApi.favFolders(upMid = mid)
                 if (token != requestToken) return@launch

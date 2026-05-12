@@ -74,7 +74,9 @@ class HomeFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler, 
     }
 
     private fun refreshCurrentPageStrict(): Boolean {
-        return refreshCurrentPageFromTabReselect()
+        if (refreshCurrentPageFromTabReselect()) return true
+        val page = childFragmentManager.fragments.firstOrNull { it.isVisible } as? RefreshKeyHandler
+        return page?.handleRefreshKey() == true
     }
 
     private fun focusSelectedTab(): Boolean {
@@ -216,7 +218,9 @@ class HomeFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler, 
     }
 
     override fun handleFullRefreshKey(): Boolean {
-        val page = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
+        val page = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager)
+            ?: childFragmentManager.fragments.firstOrNull { it.isVisible } as? RefreshKeyHandler
+            ?: return false
         return page.handleFullRefreshKey()
     }
 

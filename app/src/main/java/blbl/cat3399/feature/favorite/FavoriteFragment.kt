@@ -69,12 +69,16 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
 
     override fun handleRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.favorite_container)
-        return (current as? RefreshKeyHandler)?.handleRefreshKey() == true
+        if ((current as? RefreshKeyHandler)?.handleRefreshKey() == true) return true
+        loadFolders()
+        return true
     }
 
     override fun handleFullRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.favorite_container)
-        return (current as? RefreshKeyHandler)?.handleFullRefreshKey() == true
+        if ((current as? RefreshKeyHandler)?.handleFullRefreshKey() == true) return true
+        loadFolders()
+        return true
     }
 
     override fun handleBackPressed(): Boolean {
@@ -94,7 +98,12 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
         val token = ++loadToken
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val mid = BiliApi.nav().optJSONObject("data")?.optLong("mid") ?: 0L
+                val mid = BiliClient.prefs.appAuthSession?.mid?.takeIf { it > 0L }
+                    ?: BiliClient.cookies.getCookieValue("DedeUserID")?.trim()?.toLongOrNull()?.takeIf { it > 0L }
+                    ?: run {
+                        val nav = BiliApi.nav()
+                        nav.optJSONObject("data")?.optLong("mid") ?: 0L
+                    }
                 if (mid <= 0L || !BiliClient.cookies.hasSessData()) {
                     AppToast.show(requireContext(), "请先登录后查看收藏")
                     return@launch
