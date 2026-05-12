@@ -69,14 +69,18 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
 
     override fun handleRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.favorite_container)
-        if ((current as? RefreshKeyHandler)?.handleRefreshKey() == true) return true
+        val handled = (current as? RefreshKeyHandler)?.handleRefreshKey() == true
+        AppToast.showDebug(requireContext(), "收藏刷新: page=${current?.javaClass?.simpleName ?: "null"} handled=$handled")
+        if (handled) return true
         loadFolders()
         return true
     }
 
     override fun handleFullRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.favorite_container)
-        if ((current as? RefreshKeyHandler)?.handleFullRefreshKey() == true) return true
+        val handled = (current as? RefreshKeyHandler)?.handleFullRefreshKey() == true
+        AppToast.showDebug(requireContext(), "收藏长按刷新: page=${current?.javaClass?.simpleName ?: "null"} handled=$handled")
+        if (handled) return true
         loadFolders()
         return true
     }

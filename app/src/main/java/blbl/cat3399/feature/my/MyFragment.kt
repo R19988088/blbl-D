@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import blbl.cat3399.R
 import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.net.BiliClient
+import blbl.cat3399.core.ui.AppToast
 import blbl.cat3399.core.ui.TabContentSwitchFocusHost
 import blbl.cat3399.databinding.FragmentMyContainerBinding
 import blbl.cat3399.ui.BackPressHandler
@@ -49,14 +50,18 @@ class MyFragment : Fragment(), BackPressHandler, MyNavigator, TabContentSwitchFo
 
     override fun handleRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.my_container)
-        if ((current as? RefreshKeyHandler)?.handleRefreshKey() == true) return true
+        val handled = (current as? RefreshKeyHandler)?.handleRefreshKey() == true
+        AppToast.showDebug(requireContext(), "我的容器刷新: page=${current?.javaClass?.simpleName ?: "null"} handled=$handled")
+        if (handled) return true
         showRootForLoginState()
         return true
     }
 
     override fun handleFullRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.my_container)
-        if ((current as? RefreshKeyHandler)?.handleFullRefreshKey() == true) return true
+        val handled = (current as? RefreshKeyHandler)?.handleFullRefreshKey() == true
+        AppToast.showDebug(requireContext(), "我的容器长按刷新: page=${current?.javaClass?.simpleName ?: "null"} handled=$handled")
+        if (handled) return true
         showRootForLoginState()
         return true
     }

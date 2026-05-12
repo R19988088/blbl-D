@@ -11,6 +11,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.prefs.AppPrefs
 import blbl.cat3399.core.net.BiliClient
+import blbl.cat3399.core.ui.AppToast
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.core.ui.enableDpadTabFocus
 import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAs
@@ -69,8 +70,10 @@ class HomeFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler, 
     }
 
     private fun refreshCurrentPageFromTabReselect(): Boolean {
-        val page = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
-        return page.handleRefreshKey()
+        val page = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager)
+        val handled = page?.handleRefreshKey() == true
+        AppToast.showDebug(requireContext(), "首页刷新: page=${page?.javaClass?.simpleName ?: "null"} handled=$handled")
+        return handled
     }
 
     private fun refreshCurrentPageStrict(): Boolean {

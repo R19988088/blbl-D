@@ -338,7 +338,10 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         if (backLongPressRefresh.handle(
                 event = event,
                 canRefresh = canLongPressBackRefreshCurrentPage(),
-                onRefresh = { dispatchFullRefreshKeyToCurrentPage() },
+                onRefresh = {
+                    dispatchFullRefreshKeyToCurrentPage()
+                    true
+                },
                 onShortBack = {
                     handleMainBackPressed()
                     true
@@ -454,12 +457,20 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
 
     private fun dispatchRefreshKeyToCurrentPage(): Boolean {
         val root = currentRootFragment() ?: return false
-        return (root as? RefreshKeyHandler)?.handleRefreshKey() == true
+        val handled = (root as? RefreshKeyHandler)?.handleRefreshKey() == true
+        AppToast.showDebug(this, "刷新调试: ${root.javaClass.simpleName}.refresh handled=$handled")
+        return handled
     }
 
     private fun dispatchFullRefreshKeyToCurrentPage(): Boolean {
-        val root = currentRootFragment() ?: return false
-        return (root as? RefreshKeyHandler)?.handleFullRefreshKey() == true
+        val root = currentRootFragment()
+        val handler = root as? RefreshKeyHandler
+        val handled = handler?.handleFullRefreshKey() == true
+        AppToast.showDebug(
+            this,
+            "长按返回刷新: root=${root?.javaClass?.simpleName ?: "null"} handler=${handler != null} handled=$handled",
+        )
+        return handled
     }
 
     private fun initUserInfoOverlay() {

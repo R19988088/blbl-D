@@ -12,6 +12,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.prefs.AppPrefs
+import blbl.cat3399.core.ui.AppToast
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.core.ui.enableDpadTabFocus
 import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentStrict
@@ -121,9 +122,11 @@ class LiveFragment : Fragment(), LiveGridTabSwitchFocusHost, BackPressHandler, L
     }
 
     private fun refreshCurrentPageFromTabReselect(): Boolean {
-        val page = currentPageFragment() ?: return false
-        val handler = page as? RefreshKeyHandler ?: return false
-        return handler.handleRefreshKey()
+        val page = currentPageFragment()
+        val handler = page as? RefreshKeyHandler
+        val handled = handler?.handleRefreshKey() == true
+        AppToast.showDebug(requireContext(), "直播刷新: page=${page?.javaClass?.simpleName ?: "null"} handler=${handler != null} handled=$handled")
+        return handled
     }
 
     override fun handleRefreshKey(): Boolean {

@@ -35,11 +35,15 @@ object AppToast {
         showInternal(context = context, text = text, durationMs = DURATION_LONG_MS)
     }
 
-    private fun showInternal(context: Context, text: CharSequence, durationMs: Long) {
+    fun showDebug(context: Context, text: CharSequence) {
+        showInternal(context = context, text = text, durationMs = DURATION_LONG_MS, textSizeSp = 10f)
+    }
+
+    private fun showInternal(context: Context, text: CharSequence, durationMs: Long, textSizeSp: Float? = null) {
         if (text.isBlank()) return
 
         if (Looper.myLooper() != Looper.getMainLooper()) {
-            mainHandler.post { showInternal(context = context, text = text, durationMs = durationMs) }
+            mainHandler.post { showInternal(context = context, text = text, durationMs = durationMs, textSizeSp = textSizeSp) }
             return
         }
 
@@ -66,6 +70,7 @@ object AppToast {
 
         val tvText = view.findViewById<TextView>(R.id.tv_text)
         tvText.text = text
+        if (textSizeSp != null) tvText.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp)
         tvText.maxWidth =
             (root.context.resources.displayMetrics.widthPixels * 0.70f)
                 .toInt()
@@ -155,4 +160,3 @@ object AppToast {
         return current as? Activity
     }
 }
-
