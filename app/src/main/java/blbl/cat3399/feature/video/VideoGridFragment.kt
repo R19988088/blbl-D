@@ -292,7 +292,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                 RefreshDebugOverlay.log(
                     context = it,
                     pageName = "VideoGridFragment",
-                    message = "skip refresh=$isRefresh loading=${startSnap.isLoading} end=${startSnap.endReached} total=${debugItemCount()}",
+                    message = "skip r=$isRefresh load=${startSnap.isLoading} end=${startSnap.endReached} total=${debugItemCount()}",
                 )
             }
             if (isRefresh) _binding?.swipeRefresh?.isRefreshing = false
@@ -309,7 +309,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
             RefreshDebugOverlay.log(
                 context = it,
                 pageName = "VideoGridFragment",
-                message = "start refresh=$isRefresh source=$source rid=$rid page=${startKey.page} total=${debugItemCount()}",
+                message = "start r=$isRefresh src=$source p=${startKey.page} total=${debugItemCount()}",
             )
         }
         viewLifecycleOwner.lifecycleScope.launch {
@@ -333,7 +333,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                         RefreshDebugOverlay.log(
                             context = it,
                             pageName = "VideoGridFragment",
-                            message = "result=${result.javaClass.simpleName} refresh=$isRefresh page=${startKey.page} total=${debugItemCount()}",
+                            message = "result=${result.javaClass.simpleName} r=$isRefresh p=${startKey.page} total=${debugItemCount()}",
                         )
                     }
                     return@launch
@@ -377,7 +377,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     RefreshDebugOverlay.log(
                         context = it,
                         pageName = "VideoGridFragment",
-                        message = "ok refresh=${applied.isRefresh} page=${startKey.page} add=${applied.items.size} total=${adapter.itemCount} cost=${SystemClock.uptimeMillis() - startAt}ms",
+                        message = "ok r=${applied.isRefresh} p=${startKey.page} add=${applied.items.size} total=${adapter.itemCount} cost=${SystemClock.uptimeMillis() - startAt}ms",
                     )
                 }
             } catch (t: Throwable) {
@@ -387,7 +387,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     RefreshDebugOverlay.log(
                         context = it,
                         pageName = "VideoGridFragment",
-                        message = "fail page=${startKey.page} ${t.javaClass.simpleName}: ${t.message?.take(80).orEmpty()}",
+                        message = "fail p=${startKey.page} ${t.javaClass.simpleName}: ${t.message?.take(48).orEmpty()}",
                     )
                 }
                 context?.let { AppToast.show(it, "加载失败，可查看 Logcat(标签 BLBL)") }
@@ -398,7 +398,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     RefreshDebugOverlay.log(
                         context = it,
                         pageName = "VideoGridFragment",
-                        message = "end refresh=$isRefresh next=${snap.nextKey.page} loading=${snap.isLoading} end=${snap.endReached} total=${debugItemCount()}",
+                        message = "end r=$isRefresh next=${snap.nextKey.page} load=${snap.isLoading} end=${snap.endReached} total=${debugItemCount()}",
                     )
                 }
                 AppLog.d(

@@ -33,6 +33,6 @@ object RefreshDebugOverlay {
     private fun appendAndShow(context: Context, line: String) {
         lines.addLast(line)
         while (lines.size > MAX_LINES) lines.removeFirst()
-        AppToast.showDebug(context, "REFRESH DEBUG\n${lines.joinToString("\n")}")
+        AppToast.showDebug(context, "REFRESH\n${lines.joinToString("\n")}")
     }
 }

@@ -84,9 +84,13 @@ object AppToast {
 
         val tvText = view.findViewById<TextView>(R.id.tv_text)
         tvText.text = text
-        if (textSizeSp != null) tvText.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp)
+        if (textSizeSp != null) {
+            tvText.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp)
+            tvText.maxLines = 12
+            tvText.ellipsize = null
+        }
         tvText.maxWidth =
-            (root.context.resources.displayMetrics.widthPixels * if (alignRight) 0.46f else 0.70f)
+            (root.context.resources.displayMetrics.widthPixels * if (alignRight) 0.62f else 0.70f)
                 .toInt()
                 .coerceAtLeast(dp(root.context, 200f))
 
