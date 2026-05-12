@@ -36,7 +36,7 @@ object AppToast {
     }
 
     fun showDebug(context: Context, text: CharSequence) {
-        showInternal(context = context, text = text, durationMs = DURATION_LONG_MS, textSizeSp = 10f, alignRight = true)
+        showInternal(context = context, text = text, durationMs = 8_000L, textSizeSp = 9f, alignRight = true)
     }
 
     private fun showInternal(
@@ -86,7 +86,7 @@ object AppToast {
         tvText.text = text
         if (textSizeSp != null) tvText.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp)
         tvText.maxWidth =
-            (root.context.resources.displayMetrics.widthPixels * 0.70f)
+            (root.context.resources.displayMetrics.widthPixels * if (alignRight) 0.46f else 0.70f)
                 .toInt()
                 .coerceAtLeast(dp(root.context, 200f))
 

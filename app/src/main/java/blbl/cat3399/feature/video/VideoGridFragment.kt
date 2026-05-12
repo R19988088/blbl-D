@@ -283,9 +283,18 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         loadNextPage(isRefresh = true)
     }
 
+    private fun debugItemCount(): Int = if (::adapter.isInitialized) adapter.itemCount else -1
+
     private fun loadNextPage(isRefresh: Boolean = false) {
         val startSnap = paging.snapshot()
         if (startSnap.isLoading || startSnap.endReached) {
+            context?.let {
+                RefreshDebugOverlay.log(
+                    context = it,
+                    pageName = "VideoGridFragment",
+                    message = "skip refresh=$isRefresh loading=${startSnap.isLoading} end=${startSnap.endReached} total=${debugItemCount()}",
+                )
+            }
             if (isRefresh) _binding?.swipeRefresh?.isRefreshing = false
             return
         }
@@ -296,6 +305,13 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
             "VideoGrid",
             "loadNextPage start source=$source rid=$rid page=${startKey.page} refresh=$isRefresh t=$startAt",
         )
+        context?.let {
+            RefreshDebugOverlay.log(
+                context = it,
+                pageName = "VideoGridFragment",
+                message = "start refresh=$isRefresh source=$source rid=$rid page=${startKey.page} total=${debugItemCount()}",
+            )
+        }
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val result =
@@ -311,7 +327,17 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                         },
                     )
 
-                val applied = result.appliedOrNull() ?: return@launch
+                val applied = result.appliedOrNull()
+                if (applied == null) {
+                    context?.let {
+                        RefreshDebugOverlay.log(
+                            context = it,
+                            pageName = "VideoGridFragment",
+                            message = "result=${result.javaClass.simpleName} refresh=$isRefresh page=${startKey.page} total=${debugItemCount()}",
+                        )
+                    }
+                    return@launch
+                }
                 applied.items.forEach { loadedStableKeys.add(it.stableKey()) }
                 if (applied.isRefresh) {
                     adapter.submit(applied.items)
@@ -347,12 +373,34 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     "VideoGrid",
                     "load ok source=$source rid=$rid page=${startKey.page} add=${applied.items.size} total=${adapter.itemCount} cost=${SystemClock.uptimeMillis() - startAt}ms",
                 )
+                context?.let {
+                    RefreshDebugOverlay.log(
+                        context = it,
+                        pageName = "VideoGridFragment",
+                        message = "ok refresh=${applied.isRefresh} page=${startKey.page} add=${applied.items.size} total=${adapter.itemCount} cost=${SystemClock.uptimeMillis() - startAt}ms",
+                    )
+                }
             } catch (t: Throwable) {
                 if (t is CancellationException) throw t
                 AppLog.e("VideoGrid", "load failed source=$source rid=$rid page=${startKey.page}", t)
+                context?.let {
+                    RefreshDebugOverlay.log(
+                        context = it,
+                        pageName = "VideoGridFragment",
+                        message = "fail page=${startKey.page} ${t.javaClass.simpleName}: ${t.message?.take(80).orEmpty()}",
+                    )
+                }
                 context?.let { AppToast.show(it, "加载失败，可查看 Logcat(标签 BLBL)") }
             } finally {
                 if (isRefresh && paging.snapshot().generation == startGen) _binding?.swipeRefresh?.isRefreshing = false
+                context?.let {
+                    val snap = paging.snapshot()
+                    RefreshDebugOverlay.log(
+                        context = it,
+                        pageName = "VideoGridFragment",
+                        message = "end refresh=$isRefresh next=${snap.nextKey.page} loading=${snap.isLoading} end=${snap.endReached} total=${debugItemCount()}",
+                    )
+                }
                 AppLog.d(
                     "VideoGrid",
                     "loadNextPage end source=$source rid=$rid page=${paging.snapshot().nextKey.page} refresh=$isRefresh t=${SystemClock.uptimeMillis()}",
