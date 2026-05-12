@@ -285,6 +285,13 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
 
     private fun debugItemCount(): Int = if (::adapter.isInitialized) adapter.itemCount else -1
 
+    private fun debugFirstItem(items: List<VideoCard>): String {
+        val first = items.firstOrNull() ?: return "first=none"
+        val id = first.bvid.takeIf { it.isNotBlank() } ?: first.aid?.let { "av$it" } ?: first.stableKey()
+        val title = first.title.replace('\n', ' ').take(18)
+        return "first=$id/$title"
+    }
+
     private fun loadNextPage(isRefresh: Boolean = false) {
         val startSnap = paging.snapshot()
         if (startSnap.isLoading || startSnap.endReached) {
@@ -377,7 +384,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     RefreshDebugOverlay.log(
                         context = it,
                         pageName = "VideoGridFragment",
-                        message = "ok r=${applied.isRefresh} p=${startKey.page} add=${applied.items.size} total=${adapter.itemCount} cost=${SystemClock.uptimeMillis() - startAt}ms",
+                        message = "ok r=${applied.isRefresh} p=${startKey.page} add=${applied.items.size} total=${adapter.itemCount} ${debugFirstItem(applied.items)} cost=${SystemClock.uptimeMillis() - startAt}ms",
                     )
                 }
             } catch (t: Throwable) {
