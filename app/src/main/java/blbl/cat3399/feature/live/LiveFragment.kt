@@ -13,6 +13,7 @@ import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.prefs.AppPrefs
 import blbl.cat3399.core.ui.AppToast
+import blbl.cat3399.core.ui.RefreshDebugOverlay
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.core.ui.enableDpadTabFocus
 import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentStrict
@@ -125,7 +126,7 @@ class LiveFragment : Fragment(), LiveGridTabSwitchFocusHost, BackPressHandler, L
         val page = currentPageFragment()
         val handler = page as? RefreshKeyHandler
         val handled = handler?.handleRefreshKey() == true
-        AppToast.showDebug(requireContext(), "直播刷新: page=${page?.javaClass?.simpleName ?: "null"} handler=${handler != null} handled=$handled")
+        RefreshDebugOverlay.show(requireContext(), source = "live container refresh", page = page, handled = handled, extra = "handler=${handler != null}")
         return handled
     }
 

@@ -12,6 +12,7 @@ import blbl.cat3399.core.api.BiliApi
 import blbl.cat3399.core.model.FavFolder
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.ui.AppToast
+import blbl.cat3399.core.ui.RefreshDebugOverlay
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.core.ui.TabContentSwitchFocusHost
 import blbl.cat3399.core.ui.enableDpadTabFocus
@@ -70,7 +71,7 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
     override fun handleRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.favorite_container)
         val handled = (current as? RefreshKeyHandler)?.handleRefreshKey() == true
-        AppToast.showDebug(requireContext(), "收藏刷新: page=${current?.javaClass?.simpleName ?: "null"} handled=$handled")
+        RefreshDebugOverlay.show(requireContext(), source = "favorite container refresh", page = current, handled = handled)
         if (handled) return true
         loadFolders()
         return true
@@ -79,7 +80,7 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
     override fun handleFullRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.favorite_container)
         val handled = (current as? RefreshKeyHandler)?.handleFullRefreshKey() == true
-        AppToast.showDebug(requireContext(), "收藏长按刷新: page=${current?.javaClass?.simpleName ?: "null"} handled=$handled")
+        RefreshDebugOverlay.show(requireContext(), source = "favorite long-back refresh", page = current, handled = handled)
         if (handled) return true
         loadFolders()
         return true

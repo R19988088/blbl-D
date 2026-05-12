@@ -17,6 +17,7 @@ import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.paging.PagedGridStateMachine
 import blbl.cat3399.core.paging.appliedOrNull
 import blbl.cat3399.core.ui.AppToast
+import blbl.cat3399.core.ui.RefreshDebugOverlay
 import blbl.cat3399.core.ui.DpadGridController
 import blbl.cat3399.core.ui.FocusTreeUtils
 import blbl.cat3399.core.ui.GridViewportFillMonitor
@@ -177,7 +178,9 @@ class LiveGridFragment : Fragment(), LivePageFocusTarget, RefreshKeyHandler {
     }
 
     override fun handleFullRefreshKey(): Boolean {
-        return refreshFromKey(force = true)
+        val handled = refreshFromKey(force = true)
+        RefreshDebugOverlay.show(requireContext(), source = "pull/back refresh", page = this, handled = handled)
+        return handled
     }
 
     private fun refreshFromKey(force: Boolean): Boolean {

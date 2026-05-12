@@ -34,6 +34,7 @@ import blbl.cat3399.core.ui.BaseActivity
 import blbl.cat3399.core.ui.FocusReturn
 import blbl.cat3399.core.ui.FocusTreeUtils
 import blbl.cat3399.core.ui.Immersive
+import blbl.cat3399.core.ui.RefreshDebugOverlay
 import blbl.cat3399.core.ui.TabContentSwitchFocusHost
 import blbl.cat3399.core.ui.cloneInUserScale
 import blbl.cat3399.core.ui.dispatchToAncestorDpadItemKeyHandler
@@ -458,7 +459,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
     private fun dispatchRefreshKeyToCurrentPage(): Boolean {
         val root = currentRootFragment() ?: return false
         val handled = (root as? RefreshKeyHandler)?.handleRefreshKey() == true
-        AppToast.showDebug(this, "刷新调试: ${root.javaClass.simpleName}.refresh handled=$handled")
+        RefreshDebugOverlay.show(this, source = "nav/reselect refresh", page = root, handled = handled)
         return handled
     }
 
@@ -466,10 +467,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         val root = currentRootFragment()
         val handler = root as? RefreshKeyHandler
         val handled = handler?.handleFullRefreshKey() == true
-        AppToast.showDebug(
-            this,
-            "长按返回刷新: root=${root?.javaClass?.simpleName ?: "null"} handler=${handler != null} handled=$handled",
-        )
+        RefreshDebugOverlay.show(this, source = "long-back refresh", page = root, handled = handled, extra = "handler=${handler != null}")
         return handled
     }
 
