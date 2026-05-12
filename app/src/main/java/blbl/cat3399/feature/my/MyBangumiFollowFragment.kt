@@ -126,7 +126,7 @@ class MyBangumiFollowFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHa
 
     override fun handleFullRefreshKey(): Boolean {
         val handled = refreshFromKey(force = true)
-        RefreshDebugOverlay.show(requireContext(), source = "pull/back refresh", page = this, handled = handled)
+        RefreshDebugOverlay.show(requireContext(), source = "pull/back refresh", page = this, pageName = "MyBangumiFollowFragment", handled = handled)
         return handled
     }
 

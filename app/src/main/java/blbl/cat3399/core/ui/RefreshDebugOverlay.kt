@@ -8,13 +8,14 @@ object RefreshDebugOverlay {
         context: Context,
         source: String,
         page: Any?,
+        pageName: String? = null,
         handled: Boolean? = null,
         extra: String? = null,
     ) {
         val time = SystemClock.uptimeMillis() % 100_000L
-        val pageName = page?.javaClass?.simpleName ?: "null"
+        val stablePageName = pageName ?: page?.javaClass?.simpleName ?: "null"
         val handledText = handled?.let { " handled=$it" }.orEmpty()
         val extraText = extra?.takeIf { it.isNotBlank() }?.let { "\n$it" }.orEmpty()
-        AppToast.showDebug(context, "REFRESH DEBUG $time\n$source page=$pageName$handledText$extraText")
+        AppToast.showDebug(context, "REFRESH DEBUG $time\n$source page=$stablePageName$handledText$extraText")
     }
 }

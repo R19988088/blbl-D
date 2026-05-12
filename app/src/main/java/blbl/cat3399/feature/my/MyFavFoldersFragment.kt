@@ -96,7 +96,7 @@ class MyFavFoldersFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHandl
 
     override fun handleFullRefreshKey(): Boolean {
         val handled = refreshFromKey(force = true)
-        RefreshDebugOverlay.show(requireContext(), source = "pull/back refresh", page = this, handled = handled)
+        RefreshDebugOverlay.show(requireContext(), source = "pull/back refresh", page = this, pageName = "MyFavFoldersFragment", handled = handled)
         return handled
     }
 

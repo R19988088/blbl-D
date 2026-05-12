@@ -149,7 +149,7 @@ class MyLikeFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHandler {
 
     override fun handleFullRefreshKey(): Boolean {
         val handled = refreshFromKey(force = true)
-        RefreshDebugOverlay.show(requireContext(), source = "pull/back refresh", page = this, handled = handled)
+        RefreshDebugOverlay.show(requireContext(), source = "pull/back refresh", page = this, pageName = "MyLikeFragment", handled = handled)
         return handled
     }
 
