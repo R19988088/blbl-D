@@ -44,6 +44,11 @@ class VideoCardActionController(
     private val favoriteActionMode: VideoCardFavoriteActionMode = VideoCardFavoriteActionMode.ADD,
 ) : VideoCardActionDelegate {
     private val inFlightActionKeys = HashSet<String>()
+    private val effectiveFavoriteActionMode =
+        when (dismissBehavior) {
+            is VideoCardDismissBehavior.DeleteFavFolderItem -> VideoCardFavoriteActionMode.REMOVE
+            else -> favoriteActionMode
+        }
 
     override fun resolveLongPressAction(
         card: VideoCard,
@@ -315,14 +320,14 @@ class VideoCardActionController(
     }
 
     private fun handleFavoriteAction(card: VideoCard) {
-        when (favoriteActionMode) {
+        when (effectiveFavoriteActionMode) {
             VideoCardFavoriteActionMode.ADD -> openFavoriteFolders(card)
             VideoCardFavoriteActionMode.REMOVE -> dismissCard(card)
         }
     }
 
     private fun favoriteActionLabelRes(): Int {
-        return when (favoriteActionMode) {
+        return when (effectiveFavoriteActionMode) {
             VideoCardFavoriteActionMode.ADD -> R.string.video_card_action_favorite
             VideoCardFavoriteActionMode.REMOVE -> R.string.video_card_action_unfavorite
         }
