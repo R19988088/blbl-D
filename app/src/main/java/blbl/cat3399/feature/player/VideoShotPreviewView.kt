@@ -3,9 +3,12 @@ package blbl.cat3399.feature.player
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.RectF
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.View
 import blbl.cat3399.R
 import kotlin.math.min
@@ -22,6 +25,13 @@ class VideoShotPreviewView @JvmOverloads constructor(
     }
 
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+    private val focusStrokePaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = context.resources.displayMetrics.density * 2f
+            color = resolveFocusStrokeColor()
+        }
+    private val focusStrokeRect = RectF()
 
     private val srcRect = Rect()
     private val dstRect = Rect()
@@ -95,15 +105,37 @@ class VideoShotPreviewView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val frame = spriteFrame ?: return
+        val frame = spriteFrame
+        if (frame != null) {
+            val bitmap: Bitmap = frame.spriteSheet
 
-        val bitmap: Bitmap = frame.spriteSheet
+            updateDrawSourceRect(frame.srcRect)
 
-        updateDrawSourceRect(frame.srcRect)
+            dstRect.set(0, 0, width, height)
 
-        dstRect.set(0, 0, width, height)
+            canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
+        }
 
-        canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
+        if (isFocused) {
+            val inset = focusStrokePaint.strokeWidth / 2f
+            focusStrokeRect.set(inset, inset, width - inset, height - inset)
+            val radius = context.resources.displayMetrics.density * 12f
+            canvas.drawRoundRect(focusStrokeRect, radius, radius, focusStrokePaint)
+        }
+    }
+
+    override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {
+        super.onFocusChanged(gainFocus, direction, previouslyFocusedRect)
+        invalidate()
+    }
+
+    private fun resolveFocusStrokeColor(): Int {
+        val typedValue = TypedValue()
+        return if (context.theme.resolveAttribute(blbl.cat3399.R.attr.blblFocusStrokeColor, typedValue, true)) {
+            if (typedValue.resourceId != 0) context.getColor(typedValue.resourceId) else typedValue.data
+        } else {
+            Color.WHITE
+        }
     }
 
     private fun updateDrawSourceRect(cellRect: Rect) {

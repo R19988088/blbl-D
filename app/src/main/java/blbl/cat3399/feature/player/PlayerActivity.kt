@@ -1689,6 +1689,13 @@ class PlayerActivity : BaseActivity() {
                     if (showListPanelFromShortcut()) return true
                 }
                 setControlsVisible(true)
+                if (binding.videoShotPreview.isFocused) {
+                    return if (focusUpQuickCardFromPreview()) true else super.dispatchKeyEvent(event)
+                }
+                if (binding.seekProgress.isFocused && canFocusVideoShotPreview()) {
+                    focusVideoShotPreview()
+                    return true
+                }
                 if (!binding.seekProgress.isFocused) {
                     focusSeekBar()
                     return true
@@ -1697,6 +1704,11 @@ class PlayerActivity : BaseActivity() {
 
             KeyEvent.KEYCODE_DPAD_DOWN -> {
                 if (isSidePanelVisible()) return super.dispatchKeyEvent(event)
+                if (binding.videoShotPreview.isFocused) {
+                    setControlsVisible(true)
+                    focusSeekBar()
+                    return true
+                }
                 if (binding.seekProgress.isFocused) {
                     setControlsVisible(true)
                     focusFirstControl()
@@ -1713,8 +1725,8 @@ class PlayerActivity : BaseActivity() {
             KeyEvent.KEYCODE_ENTER,
             KeyEvent.KEYCODE_NUMPAD_ENTER,
             KeyEvent.KEYCODE_BUTTON_A,
-            -> {
-                if (!isSidePanelVisible() && !hasControlsFocus()) {
+                -> {
+                    if (!isSidePanelVisible() && !hasControlsFocus()) {
                     if (event.repeatCount > 0) {
                         clearPendingCenterKeyAction()
                         startHoldSeek(direction = +1, showControls = false)
@@ -1726,12 +1738,18 @@ class PlayerActivity : BaseActivity() {
                     }
                     setPendingCenterKeyAction(PendingCenterKeyAction.ShowControls)
                     return true
-                }
-                if (!isSidePanelVisible() && binding.seekProgress.isFocused) {
-                    if (event.repeatCount == 0) {
-                        togglePlayPauseFromUser()
                     }
-                    return true
+                    if (!isSidePanelVisible() && binding.videoShotPreview.isFocused) {
+                        if (event.repeatCount == 0) {
+                            commitFocusedVideoShotPreviewSelection()
+                        }
+                        return true
+                    }
+                    if (!isSidePanelVisible() && binding.seekProgress.isFocused) {
+                        if (event.repeatCount == 0) {
+                            togglePlayPauseFromUser()
+                        }
+                        return true
                 }
                 if (osdMode == OsdMode.Hidden && !isSidePanelVisible()) {
                     binding.btnPlayPause.performClick()
@@ -1785,6 +1803,10 @@ class PlayerActivity : BaseActivity() {
                     return super.dispatchKeyEvent(event)
                 }
                 if (isSidePanelVisible()) return super.dispatchKeyEvent(event)
+                if (binding.videoShotPreview.isFocused) {
+                    moveFocusedVideoShotPreviewSelection(direction = -1)
+                    return true
+                }
                 if (hasControlsFocusOutsideSeekBar()) return super.dispatchKeyEvent(event)
 
                 if (event.repeatCount > 0) {
@@ -1805,6 +1827,10 @@ class PlayerActivity : BaseActivity() {
             KeyEvent.KEYCODE_BUTTON_R2,
             -> {
                 if (isSidePanelVisible()) return super.dispatchKeyEvent(event)
+                if (binding.videoShotPreview.isFocused) {
+                    moveFocusedVideoShotPreviewSelection(direction = +1)
+                    return true
+                }
                 if (hasControlsFocusOutsideSeekBar()) return super.dispatchKeyEvent(event)
 
                 if (event.repeatCount > 0) {

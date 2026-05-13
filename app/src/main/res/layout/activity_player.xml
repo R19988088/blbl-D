@@ -762,6 +762,10 @@
         android:background="@drawable/bg_rounded_preview"
         android:clipToOutline="true"
         android:elevation="@dimen/player_videoshot_preview_elevation"
+        android:focusable="true"
+        android:focusableInTouchMode="false"
+        android:nextFocusDown="@id/seek_progress"
+        android:nextFocusUp="@id/btn_up_quick_profile"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/barrier_player_bottom_overlay_top"
         app:layout_constraintStart_toStartOf="parent" />

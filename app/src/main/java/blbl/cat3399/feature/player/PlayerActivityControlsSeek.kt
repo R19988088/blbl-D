@@ -326,6 +326,7 @@ internal fun PlayerActivity.hasControlsFocus(): Boolean =
     binding.topBar.hasFocus() ||
         binding.cardUpQuick.hasFocus() ||
         binding.bottomBar.hasFocus() ||
+        binding.videoShotPreview.hasFocus() ||
         binding.sponsorSubmitPanel.hasFocus() ||
         binding.playerInfoPanel.hasFocus() ||
         binding.settingsPanel.hasFocus() ||
@@ -380,6 +381,87 @@ internal fun PlayerActivity.focusDownKeyOsdTargetControl() {
 
 internal fun PlayerActivity.focusSeekBar() {
     binding.seekProgress.post { binding.seekProgress.requestFocus() }
+}
+
+internal fun PlayerActivity.canFocusVideoShotPreview(): Boolean {
+    if (binding.videoShotPreview.visibility != View.VISIBLE) return false
+    if (BiliClient.prefs.playerVideoShotPreviewSize == AppPrefs.PLAYER_VIDEOSHOT_PREVIEW_SIZE_OFF) return false
+    return !currentVideoShot?.times.isNullOrEmpty()
+}
+
+internal fun PlayerActivity.focusVideoShotPreview() {
+    binding.videoShotPreview.post { binding.videoShotPreview.requestFocus() }
+}
+
+internal fun PlayerActivity.focusUpQuickCardFromPreview(): Boolean {
+    if (binding.cardUpQuick.visibility != View.VISIBLE) return false
+    if (requestFocusControlNow(binding.btnUpQuickProfile)) return true
+    if (requestFocusControlNow(binding.btnUpQuickFollow)) return true
+    return false
+}
+
+internal fun PlayerActivity.moveFocusedVideoShotPreviewSelection(direction: Int): Boolean {
+    val safeDirection = direction.coerceIn(-1, 1)
+    if (safeDirection == 0) return false
+    val durationMs = player?.duration?.takeIf { it > 0L } ?: currentViewDurationMs?.takeIf { it > 0L } ?: return false
+    val currentMs =
+        resolvePlayerUiPositionMs(
+            committedPositionMs = player?.currentPosition ?: 0L,
+            holdPreviewPositionMs = holdScrubPreviewPosMs,
+            deferredPreviewPositionMs = keySeekPreviewPosMs,
+        ).coerceIn(0L, durationMs)
+    val targetMs =
+        nextVideoShotPreviewTimeMs(currentMs = currentMs, direction = safeDirection)
+            ?: accumulateDeferredSeekPreviewPositionMs(
+                committedPositionMs = player?.currentPosition ?: currentMs,
+                activePreviewPositionMs = currentMs,
+                deltaMs = smartSeekStepMs() * safeDirection.toLong(),
+                durationMs = durationMs,
+            )
+    previewVideoShotSelectionAt(targetMs = targetMs, durationMs = durationMs)
+    return true
+}
+
+internal fun PlayerActivity.commitFocusedVideoShotPreviewSelection(): Boolean {
+    val pendingSeekTo = keySeekPreviewPosMs ?: keyScrubPendingSeekToMs ?: return false
+    keyScrubPendingSeekToMs = pendingSeekTo
+    commitDeferredKeySeekPreview()
+    return true
+}
+
+private fun PlayerActivity.previewVideoShotSelectionAt(targetMs: Long, durationMs: Long) {
+    val clampedMs = targetMs.coerceIn(0L, durationMs.coerceAtLeast(0L))
+    val progress =
+        if (durationMs > 0L) {
+            ((clampedMs.toDouble() / durationMs.toDouble()) * PlayerActivity.SEEK_MAX)
+                .toInt()
+                .coerceIn(0, PlayerActivity.SEEK_MAX)
+        } else {
+            0
+        }
+    scrubbing = true
+    keySeekPreviewPosMs = clampedMs
+    keyScrubPendingSeekToMs = clampedMs
+    suppressBufferingOverlayDuringKeySeek(PlayerActivity.KEY_STEP_SEEK_COMMIT_DELAY_MS)
+    binding.seekProgress.progress = progress
+    binding.tvTime.text = "${formatHms(clampedMs)} / ${formatHms(durationMs)}"
+    showSeekOsd(
+        posMs = clampedMs,
+        durationMs = durationMs,
+        bufferedPosMs = resolveSeekUiBufferedPositionMs(player?.bufferedPosition ?: 0L, clampedMs),
+    )
+    scheduleKeyScrubEnd(delayMs = PlayerActivity.KEY_STEP_SEEK_COMMIT_DELAY_MS)
+}
+
+private fun PlayerActivity.nextVideoShotPreviewTimeMs(currentMs: Long, direction: Int): Long? {
+    val times = currentVideoShot?.times ?: return null
+    if (times.isEmpty()) return null
+    val guardMs = 50L
+    return if (direction > 0) {
+        times.firstOrNull { it.toLong() * 1000L > currentMs + guardMs }?.toLong()?.times(1000L)
+    } else {
+        times.lastOrNull { it.toLong() * 1000L < currentMs - guardMs }?.toLong()?.times(1000L)
+    }
 }
 
 internal fun PlayerActivity.focusAdvancedControl() {
