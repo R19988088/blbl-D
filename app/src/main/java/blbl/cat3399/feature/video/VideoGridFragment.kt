@@ -303,7 +303,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         when (source) {
             SRC_RECOMMEND -> recommendRefreshSeed += 1
             SRC_POPULAR -> popularRefreshSeed += 1
-            SRC_REGION -> regionRefreshSeedByRid[rid] = regionRefreshSeedByRid.getOrDefault(rid, 1) + 1
+            SRC_REGION -> regionRefreshSeedByRid[rid] = 1
         }
         AppLog.i(
             "VideoGrid",

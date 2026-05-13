@@ -415,7 +415,7 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
         val activity = activity as? ComponentActivity ?: return false
         val actions =
             actionController.manualActions(card, position)
-                .filter { it.id != VideoCardQuickActionId.FAVORITE && it.id != VideoCardQuickActionId.OPEN_DETAIL }
+                .filter { it.id != VideoCardQuickActionId.OPEN_DETAIL && it.id != VideoCardQuickActionId.DISMISS }
                 .take(4)
         activity.showVideoCardRemoteMenuPopup(card, actions) { action ->
             actionController.onActionSelected(card, position, action)

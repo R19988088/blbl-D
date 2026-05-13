@@ -4,6 +4,7 @@ import android.content.Intent
 import android.view.LayoutInflater
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApi
 import blbl.cat3399.core.api.BiliApiException
 import blbl.cat3399.core.image.ImageLoader
@@ -25,6 +26,9 @@ internal fun PlayerActivity.showRemoteMenuPopup() {
 
     var handle: PopupHandle? = null
 
+    dialogBinding.btnFavorite.text = getString(
+        if (actionFavored) R.string.video_card_action_unfavorite else R.string.video_card_action_favorite,
+    )
     dialogBinding.btnFavorite.setOnClickListener {
         handle?.dismiss()
         onFavButtonClicked(showControls = false)

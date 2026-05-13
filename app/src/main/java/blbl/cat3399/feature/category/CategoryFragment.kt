@@ -227,16 +227,11 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
             )
         }
         val strict = findCurrentViewPagerChildFragmentAsStrict<RefreshKeyHandler>(b.viewPager)
-        if (strict != null) {
-            AppLog.d("Category", "refresh handler strict hit pos=$position title=${zone?.title} tid=${zone?.tid} handler=${strict.javaClass.simpleName} t=${SystemClock.uptimeMillis()}")
-            return strict
-        }
-        val loose = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(b.viewPager)
         AppLog.d(
             "Category",
-            "refresh handler loose=${loose?.javaClass?.simpleName} pos=$position title=${zone?.title} tid=${zone?.tid} t=${SystemClock.uptimeMillis()}",
+            "refresh handler strict=${strict?.javaClass?.simpleName} pos=$position title=${zone?.title} tid=${zone?.tid} t=${SystemClock.uptimeMillis()}",
         )
-        return loose
+        return strict
     }
 
     override fun handleRefreshKey(): Boolean {
