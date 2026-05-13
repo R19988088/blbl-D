@@ -154,6 +154,15 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
         context?.let {
             RefreshDebugOverlay.show(
                 it,
+                source = "category refresh",
+                page = pageFragment,
+                handled = handled,
+                extra = "pos=$position title=${zone?.title} tid=${zone?.tid}",
+            )
+        }
+        context?.let {
+            RefreshDebugOverlay.show(
+                it,
                 source = "category tab refresh",
                 page = pageFragment,
                 handled = handled,

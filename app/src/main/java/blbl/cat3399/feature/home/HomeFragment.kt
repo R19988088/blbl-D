@@ -7,6 +7,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.prefs.AppPrefs
@@ -16,6 +17,7 @@ import blbl.cat3399.core.ui.enableDpadTabFocus
 import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAs
 import blbl.cat3399.core.ui.postDelayedIfAlive
 import blbl.cat3399.core.ui.postIfAlive
+import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAsStrict
 import blbl.cat3399.core.ui.requestFocusSelectedTab
 import blbl.cat3399.databinding.FragmentHomeBinding
 import blbl.cat3399.feature.video.VideoGridTabSwitchFocusHost
@@ -69,7 +71,7 @@ class HomeFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler, 
     }
 
     private fun refreshCurrentPageFromTabReselect(): Boolean {
-        val page = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
+        val page = currentSelectedPageRefreshHandler() ?: return false
         return page.handleRefreshKey()
     }
 
@@ -216,8 +218,21 @@ class HomeFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandler, 
     }
 
     override fun handleFullRefreshKey(): Boolean {
-        val page = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager) ?: return false
+        val page = currentSelectedPageRefreshHandler() ?: return false
         return page.handleFullRefreshKey()
+    }
+
+    private fun currentSelectedPageRefreshHandler(): RefreshKeyHandler? {
+        val b = _binding ?: return null
+        val adapter = b.viewPager.adapter as? FragmentStateAdapter
+        if (adapter != null) {
+            val itemId = adapter.getItemId(b.viewPager.currentItem)
+            childFragmentManager.findFragmentByTag("f$itemId")?.let { fragment ->
+                return fragment as? RefreshKeyHandler
+            }
+        }
+        return findCurrentViewPagerChildFragmentAsStrict<RefreshKeyHandler>(b.viewPager)
+            ?: findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(b.viewPager)
     }
 
     override fun onDestroyView() {
