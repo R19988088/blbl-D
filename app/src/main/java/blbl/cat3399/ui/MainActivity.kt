@@ -91,6 +91,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
     private var lastBackAtMs: Long = 0L
     private var lastMainFocusAtMs: Long = 0L
     private val backLongPressRefresh = BackLongPressRefresh()
+    private var lastMainContentPrefsKey: String = ""
 
     private data class FocusabilitySnapshot(
         val descendantFocusability: Int,
@@ -174,6 +175,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         refreshSidebarUser()
         showFirstLaunchDisclaimerIfNeeded()
         maybeStartAutoUpdateCheck()
+        lastMainContentPrefsKey = buildMainContentPrefsKey()
     }
 
     private fun resolveLaunchNavId(): Int {
@@ -186,6 +188,7 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
 
     override fun onResume() {
         super.onResume()
+        val oldMainContentPrefsKey = lastMainContentPrefsKey
         syncSidebarNavState()
         syncSidebarExpansionWithPrefs()
         restoreFocusAfterResume()
@@ -202,6 +205,14 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         showLastCrashPromptIfNeeded()
         showIjkKernelUpdatePromptIfNeeded()
         showAutoUpdatePromptIfReady()
+        val newMainContentPrefsKey = buildMainContentPrefsKey()
+        if (oldMainContentPrefsKey.isNotBlank() && oldMainContentPrefsKey != newMainContentPrefsKey) {
+            AppLog.i("MainActivity", "main content prefs changed, refresh current page")
+            binding.mainContainer.post {
+                dispatchFullRefreshKeyToCurrentPage()
+            }
+        }
+        lastMainContentPrefsKey = newMainContentPrefsKey
     }
 
     override fun onPause() {
@@ -1480,5 +1491,22 @@ class MainActivity : BaseActivity(), SidebarFocusHost {
         private const val STATE_KEY_ROOT_NAV_ID = "MainActivity.rootNavId"
         private const val BACK_DOUBLE_PRESS_WINDOW_MS = 1_500L
         private const val SIDEBAR_COLLAPSE_ARM_TIMEOUT_MS = 1_000L
+    }
+
+    private fun buildMainContentPrefsKey(): String {
+        val prefs = BiliClient.prefs
+        return buildString {
+            append(prefs.mainVisiblePages.joinToString(","))
+            append('|')
+            append(prefs.mainHomeVisibleTabs.joinToString(","))
+            append('|')
+            append(prefs.mainCategoryVisibleTabs.joinToString(","))
+            append('|')
+            append(prefs.mainLiveVisibleTabs.joinToString(","))
+            append('|')
+            append(prefs.mainMyVisibleTabs.joinToString(","))
+            append('|')
+            append(prefs.favoriteVisibleFolderIds.joinToString(","))
+        }
     }
 }
