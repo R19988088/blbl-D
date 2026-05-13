@@ -148,15 +148,21 @@ internal class WebVideoMapper(
         data: JSONObject,
         request: VideoRegionLatestRequest,
     ): VideoCardPage<VideoRegionLatestRequest> {
-        val list = data.optJSONArray("list") ?: JSONArray()
-        val items = parseVideoCards(list)
+        val archives = data.optJSONArray("archives")
+        val list = data.optJSONArray("list")
+        val items = parseVideoCards(archives ?: list ?: JSONArray())
+        val total =
+            data.optJSONObject("page")
+                ?.optInt("count", 0)
+                ?.takeIf { it > 0 }
+                ?: items.size
         return VideoCardPage(
             source = source,
             request = request,
             items = items,
             page = request.pn,
             hasMore = items.size >= request.ps,
-            total = items.size,
+            total = total,
         )
     }
 
