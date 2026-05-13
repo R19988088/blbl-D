@@ -214,6 +214,7 @@ internal fun PlayerActivity.showListPanel(
     bottomCardPanelRestoreFocus = java.lang.ref.WeakReference(restoreFocusView)
     binding.recommendScrim.visibility = View.VISIBLE
     binding.recommendPanel.visibility = View.VISIBLE
+    binding.recyclerCollectionThumbs.visibility = View.GONE
     selectBottomPanelKind(kind = kind, requestFocus = true)
 }
 
@@ -274,6 +275,7 @@ internal fun PlayerActivity.hideBottomCardPanel(
     (binding.recyclerRecommend.adapter as? VideoCardAdapter)?.submit(emptyList())
     binding.tvListPanelEmpty.visibility = View.GONE
     binding.recyclerRecommend.visibility = View.VISIBLE
+    refreshCollectionThumbsStrip(show = osdMode != PlayerActivity.OsdMode.Hidden)
     dismissTarget?.let { onLastOverlayPanelDismissed(it) }
     if (!restoreFocus || dismissTarget == PlayerActivity.PanelDismissTarget.Fullscreen) return
 
@@ -461,6 +463,46 @@ private fun PlayerActivity.resolvePlaylistUiCards(items: List<PlayerPlaylistItem
             pubDate = null,
             pubDateText = null,
         )
+    }
+}
+
+internal fun PlayerActivity.refreshCollectionThumbsStrip(show: Boolean = osdMode != PlayerActivity.OsdMode.Hidden) {
+    if (binding.recyclerCollectionThumbs.adapter == null) return
+    val kind = collectionThumbsKindForCurrentPlayback()
+    val selectedIndex =
+        when (kind) {
+            PlayerVideoListKind.PAGE -> pageListIndex
+            PlayerVideoListKind.PARTS -> partsListIndex
+            else -> -1
+        }
+    val cards =
+        when (kind) {
+            PlayerVideoListKind.PAGE -> resolvePlaylistUiCards(items = pageListItems, uiCards = pageListUiCards)
+            PlayerVideoListKind.PARTS -> resolvePlaylistUiCards(items = partsListItems, uiCards = partsListUiCards)
+            else -> emptyList()
+        }
+    val shouldShow = show && cards.size > 1 && selectedIndex in cards.indices && !isBottomCardPanelVisible()
+    binding.recyclerCollectionThumbs.visibility = if (shouldShow) View.VISIBLE else View.GONE
+    if (!shouldShow) {
+        if (collectionThumbsKind != kind || collectionThumbsSelectedIndex != selectedIndex) {
+            collectionThumbsKind = kind
+            collectionThumbsSelectedIndex = selectedIndex
+        }
+        return
+    }
+    collectionThumbsKind = kind
+    collectionThumbsSelectedIndex = selectedIndex
+    (binding.recyclerCollectionThumbs.adapter as? VideoCardAdapter)?.submit(cards)
+    binding.recyclerCollectionThumbs.post {
+        binding.recyclerCollectionThumbs.smoothScrollToPosition(selectedIndex)
+    }
+}
+
+private fun PlayerActivity.collectionThumbsKindForCurrentPlayback(): PlayerVideoListKind? {
+    return when {
+        partsListItems.size > 1 && partsListIndex in partsListItems.indices -> PlayerVideoListKind.PARTS
+        pageListItems.size > 1 && pageListIndex in pageListItems.indices -> PlayerVideoListKind.PAGE
+        else -> null
     }
 }
 

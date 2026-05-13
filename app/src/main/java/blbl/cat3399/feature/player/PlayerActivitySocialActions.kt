@@ -393,6 +393,7 @@ internal fun PlayerActivity.updatePlaylistControls() {
 
     binding.btnListPanel.isEnabled = hasListPanel
     binding.btnListPanel.alpha = if (hasListPanel) 1.0f else 0.35f
+    refreshCollectionThumbsStrip(show = osdMode != PlayerActivity.OsdMode.Hidden)
 }
 
 internal fun PlayerActivity.updateUpButton() {

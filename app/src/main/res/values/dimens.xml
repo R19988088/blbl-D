@@ -52,6 +52,8 @@
     <!-- Player: bottom recommend panel -->
     <dimen name="player_recommend_card_width">260dp</dimen>
     <dimen name="player_recommend_card_margin">6dp</dimen>
+    <dimen name="player_collection_thumb_card_width">210dp</dimen>
+    <dimen name="player_collection_thumb_margin">5dp</dimen>
     <dimen name="player_sponsor_submit_thumb_height">220dp</dimen>
     <dimen name="player_sponsor_submit_timeline_height">62dp</dimen>
     <dimen name="player_sponsor_submit_button_min_width">124dp</dimen>

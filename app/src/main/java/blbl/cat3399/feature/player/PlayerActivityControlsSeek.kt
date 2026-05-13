@@ -65,9 +65,11 @@ internal fun PlayerActivity.setControlsVisible(visible: Boolean) {
     if (show) {
         applyBottomBarFullLayout()
     } else {
+        binding.recyclerCollectionThumbs.visibility = View.GONE
         binding.videoShotPreview.visibility = View.GONE
         videoShotFetchJob?.cancel()
     }
+    refreshCollectionThumbsStrip(show = show)
     syncPlayerInfoPanelVisibility()
     updatePersistentBottomProgressBarVisibility()
     onTouchOverlayStateChanged()

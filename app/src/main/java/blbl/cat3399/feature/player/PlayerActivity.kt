@@ -52,6 +52,7 @@ import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import blbl.cat3399.BlblApp
 import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApi
@@ -96,6 +97,7 @@ import blbl.cat3399.feature.player.engine.PlaybackSource
 import blbl.cat3399.feature.settings.SettingsActivity
 import blbl.cat3399.core.tv.isTvDevice
 import blbl.cat3399.feature.video.VideoDetailActivity
+import blbl.cat3399.feature.video.VideoCardAdapter
 import blbl.cat3399.databinding.ActivityPlayerBinding
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -296,6 +298,8 @@ class PlayerActivity : BaseActivity() {
     internal val partsListLoadMoreCallbacks = ArrayList<(Boolean) -> Unit>()
     internal var partsListFetchJob: kotlinx.coroutines.Job? = null
     internal var partsListFetchToken: Int = 0
+    internal var collectionThumbsKind: PlayerVideoListKind? = null
+    internal var collectionThumbsSelectedIndex: Int = -1
     internal lateinit var session: PlayerSessionSettings
     internal var settingsPanelMenu: PlayerSettingsMenu = PlayerSettingsMenu.ROOT
     internal var bottomCardPanelKind: PlayerVideoListKind = PlayerVideoListKind.PAGE
@@ -2393,10 +2397,45 @@ class PlayerActivity : BaseActivity() {
         updateSubtitleButton()
         updateDanmakuButton()
         updateUpButton()
+        initCollectionThumbsStrip()
         updatePlaylistControls()
         // Do not auto-show OSD when opening the player; user interaction will bring it up.
         setControlsVisible(false)
         startProgressLoop()
+    }
+
+    private fun initCollectionThumbsStrip() {
+        binding.recyclerCollectionThumbs.layoutManager =
+            LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.recyclerCollectionThumbs.itemAnimator = null
+        binding.recyclerCollectionThumbs.adapter =
+            VideoCardAdapter(
+                onClick = { _, pos ->
+                    when (collectionThumbsKind) {
+                        PlayerVideoListKind.PAGE -> playPageListIndex(pos)
+                        PlayerVideoListKind.PARTS -> playPartsListIndex(pos)
+                        else -> Unit
+                    }
+                    setControlsVisible(true)
+                },
+                onLongClick = null,
+                fixedItemWidthDimenRes = R.dimen.player_collection_thumb_card_width,
+                fixedItemMarginDimenRes = R.dimen.player_collection_thumb_margin,
+                stableIdKey = { card ->
+                    buildString {
+                        append(card.bvid)
+                        append('|')
+                        append(card.cid ?: -1L)
+                        append('|')
+                        append(card.aid ?: -1L)
+                        append('|')
+                        append(card.epId ?: -1L)
+                        append('|')
+                        append(card.title)
+                    }
+                },
+                isSelected = { _, pos -> pos == collectionThumbsSelectedIndex },
+            )
     }
 
     internal fun applyUpInfo(detail: VideoDetail) {
