@@ -133,16 +133,14 @@ internal class WebVideoApi(
         val safePs = request.ps.coerceIn(1, 100)
         val safeRequest = request.copy(rid = safeRid, pn = safePn, ps = safePs)
         val url =
-            transport.signedWbiUrl(
-                path = "/x/web-interface/ranking/v2",
+            transport.withQuery(
+                "https://api.bilibili.com/x/web-interface/dynamic/region",
                 params =
                     mapOf(
                         "rid" to safeRid.toString(),
-                        "type" to "all",
                         "pn" to safePn.toString(),
                         "ps" to safePs.toString(),
                     ),
-                keys = transport.ensureWbiKeys(),
             )
         val json = transport.getJson(url)
         checkApiCode(json)
