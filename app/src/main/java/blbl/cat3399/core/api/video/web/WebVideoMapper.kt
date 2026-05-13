@@ -154,8 +154,8 @@ internal class WebVideoMapper(
             source = source,
             request = request,
             items = items,
-            page = 1,
-            hasMore = false,
+            page = request.pn,
+            hasMore = items.size >= request.ps,
             total = items.size,
         )
     }

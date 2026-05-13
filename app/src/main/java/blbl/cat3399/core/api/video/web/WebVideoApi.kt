@@ -129,13 +129,19 @@ internal class WebVideoApi(
 
     override suspend fun regionLatest(request: VideoRegionLatestRequest): VideoCardPage<VideoRegionLatestRequest> {
         val safeRid = request.rid.takeIf { it > 0 } ?: error("region_latest_invalid_rid")
-        val safePn = 1
+        val safePn = request.pn.coerceAtLeast(1)
         val safePs = request.ps.coerceIn(1, 100)
         val safeRequest = request.copy(rid = safeRid, pn = safePn, ps = safePs)
         val url =
             transport.signedWbiUrl(
                 path = "/x/web-interface/ranking/v2",
-                params = mapOf("rid" to safeRid.toString(), "type" to "all"),
+                params =
+                    mapOf(
+                        "rid" to safeRid.toString(),
+                        "type" to "all",
+                        "pn" to safePn.toString(),
+                        "ps" to safePs.toString(),
+                    ),
                 keys = transport.ensureWbiKeys(),
             )
         val json = transport.getJson(url)

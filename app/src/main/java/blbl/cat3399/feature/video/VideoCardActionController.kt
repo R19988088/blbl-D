@@ -320,6 +320,10 @@ class VideoCardActionController(
     }
 
     private fun handleFavoriteAction(card: VideoCard) {
+        if (dismissBehavior is VideoCardDismissBehavior.DeleteFavFolderItem) {
+            dismissCard(card)
+            return
+        }
         when (effectiveFavoriteActionMode) {
             VideoCardFavoriteActionMode.ADD -> openFavoriteFolders(card)
             VideoCardFavoriteActionMode.REMOVE -> dismissCard(card)
