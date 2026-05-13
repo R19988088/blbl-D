@@ -66,6 +66,9 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
 
     private val loadedStableKeys = HashSet<String>()
     private val paging = PagedGridStateMachine(initialKey = PagingKey(page = 1, recommendFetchRow = 0))
+    private var recommendRefreshSeed: Int = 1
+    private var popularRefreshSeed: Int = 1
+    private var regionRefreshSeedByRid: MutableMap<Int, Int> = linkedMapOf()
 
     private var pendingFocusFirstCardFromTab: Boolean = false
     private var pendingFocusFirstCardFromContentSwitch: Boolean = false
@@ -256,7 +259,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         pendingFocusFirstCardAfterRefresh = true
         dpadGridController?.parkFocusForDataSetReset()
         b.swipeRefresh.isRefreshing = true
-        resetAndLoad()
+        resetAndLoad(advanceRefreshSeed = force)
         return true
     }
 
@@ -269,15 +272,34 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         }
         if (binding.swipeRefresh.isRefreshing) return
         binding.swipeRefresh.isRefreshing = true
-        resetAndLoad()
+        resetAndLoad(advanceRefreshSeed = false)
         initialLoadTriggered = true
     }
 
-    private fun resetAndLoad() {
-        AppLog.d("VideoGrid", "resetAndLoad source=$source rid=$rid t=${SystemClock.uptimeMillis()}")
-        paging.reset()
+    private fun resetAndLoad(advanceRefreshSeed: Boolean) {
+        if (advanceRefreshSeed) advanceRefreshSeedForSource()
+        val resetKey = refreshStartKey()
+        AppLog.d("VideoGrid", "resetAndLoad source=$source rid=$rid key=$resetKey t=${SystemClock.uptimeMillis()}")
+        paging.resetTo(resetKey)
         loadedStableKeys.clear()
         loadNextPage(isRefresh = true)
+    }
+
+    private fun advanceRefreshSeedForSource() {
+        when (source) {
+            SRC_RECOMMEND -> recommendRefreshSeed += 1
+            SRC_POPULAR -> popularRefreshSeed += 1
+            SRC_REGION -> regionRefreshSeedByRid[rid] = regionRefreshSeedByRid.getOrDefault(rid, 1) + 1
+        }
+    }
+
+    private fun refreshStartKey(): PagingKey {
+        return when (source) {
+            SRC_RECOMMEND -> PagingKey(page = recommendRefreshSeed, recommendFetchRow = recommendRefreshSeed - 1)
+            SRC_POPULAR -> PagingKey(page = popularRefreshSeed, recommendFetchRow = 0)
+            SRC_REGION -> PagingKey(page = regionRefreshSeedByRid.getOrDefault(rid, 1), recommendFetchRow = 0)
+            else -> PagingKey(page = 1, recommendFetchRow = 0)
+        }
     }
 
     private fun loadNextPage(isRefresh: Boolean = false) {
@@ -601,7 +623,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                 val res = BiliApi.regionLatestPage(rid = rid, pn = key.page, ps = ps)
                 FetchedPage(
                     items = res.items,
-                    nextKey = key.copy(page = 1),
+                    nextKey = if (res.hasMore) key.copy(page = key.page + 1) else key.copy(page = 1),
                     hasMore = res.hasMore,
                 )
             }
