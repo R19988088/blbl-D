@@ -7,6 +7,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.viewpager2.adapter.FragmentStateAdapter
 import blbl.cat3399.core.prefs.AppPrefs
 import blbl.cat3399.ui.RefreshKeyHandler
 import com.google.android.material.tabs.TabLayout
@@ -137,17 +138,28 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
     }
 
     private fun refreshCurrentPageFromTabReselect(): Boolean {
-        val pageFragment = findCurrentViewPagerChildFragmentAsStrict<RefreshKeyHandler>(binding.viewPager)
-            ?: findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager)
+        val pageFragment = currentSelectedPageRefreshHandler()
             ?: return false
         return pageFragment.handleRefreshKey()
     }
 
     private fun refreshCurrentPageFullStrict(): Boolean {
-        val pageFragment = findCurrentViewPagerChildFragmentAsStrict<RefreshKeyHandler>(binding.viewPager)
-            ?: findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(binding.viewPager)
+        val pageFragment = currentSelectedPageRefreshHandler()
             ?: return false
         return pageFragment.handleFullRefreshKey()
+    }
+
+    private fun currentSelectedPageRefreshHandler(): RefreshKeyHandler? {
+        val b = _binding ?: return null
+        val adapter = b.viewPager.adapter as? FragmentStateAdapter
+        if (adapter != null) {
+            val itemId = adapter.getItemId(b.viewPager.currentItem)
+            childFragmentManager.findFragmentByTag("f$itemId")?.let { fragment ->
+                return fragment as? RefreshKeyHandler
+            }
+        }
+        return findCurrentViewPagerChildFragmentAsStrict<RefreshKeyHandler>(b.viewPager)
+            ?: findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(b.viewPager)
     }
 
     override fun handleRefreshKey(): Boolean {

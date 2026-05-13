@@ -500,7 +500,6 @@ internal fun PlayerActivity.refreshCollectionThumbsStrip(show: Boolean = osdMode
 
 private fun PlayerActivity.collectionThumbsKindForCurrentPlayback(): PlayerVideoListKind? {
     return when {
-        partsListItems.size > 1 && partsListIndex in partsListItems.indices -> PlayerVideoListKind.PARTS
         pageListItems.size > 1 && pageListIndex in pageListItems.indices -> PlayerVideoListKind.PAGE
         else -> null
     }
