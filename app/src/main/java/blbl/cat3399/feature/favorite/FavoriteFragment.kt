@@ -9,9 +9,11 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApi
+import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.model.FavFolder
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.ui.AppToast
+import blbl.cat3399.core.ui.RefreshDebugOverlay
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.core.ui.TabContentSwitchFocusHost
 import blbl.cat3399.core.ui.enableDpadTabFocus
@@ -34,6 +36,7 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
     private var selectedIndex: Int = 0
     private var loadToken: Int = 0
     private var pendingFocusContent: Boolean = false
+    private var appliedVisibleFolderIds: List<String> = emptyList()
 
     private fun focusCurrentContentFromTab(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.favorite_container) as? TabContentFocusTarget ?: return false
@@ -53,7 +56,11 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
 
     override fun onResume() {
         super.onResume()
-        if (folders.isEmpty()) loadFolders()
+        val visibleIds = BiliClient.prefs.favoriteVisibleFolderIds
+        if (folders.isEmpty() || visibleIds != appliedVisibleFolderIds) {
+            AppLog.i("Favorite", "reload folders onResume empty=${folders.isEmpty()} visibleChanged=${visibleIds != appliedVisibleFolderIds} old=$appliedVisibleFolderIds new=$visibleIds")
+            loadFolders()
+        }
     }
 
     override fun requestFocusCurrentPagePrimaryItemFromContentSwitch(): Boolean {
@@ -69,12 +76,20 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
 
     override fun handleRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.favorite_container)
-        return (current as? RefreshKeyHandler)?.handleRefreshKey() == true
+        val handled = (current as? RefreshKeyHandler)?.handleRefreshKey() == true
+        context?.let { RefreshDebugOverlay.show(it, source = "favorite refresh", page = current, handled = handled) }
+        if (handled) return true
+        loadFolders()
+        return true
     }
 
     override fun handleFullRefreshKey(): Boolean {
         val current = childFragmentManager.findFragmentById(R.id.favorite_container)
-        return (current as? RefreshKeyHandler)?.handleFullRefreshKey() == true
+        val handled = (current as? RefreshKeyHandler)?.handleFullRefreshKey() == true
+        context?.let { RefreshDebugOverlay.show(it, source = "favorite full refresh", page = current, handled = handled) }
+        if (handled) return true
+        loadFolders()
+        return true
     }
 
     override fun handleBackPressed(): Boolean {
@@ -100,11 +115,13 @@ class FavoriteFragment : Fragment(), BackPressHandler, RefreshKeyHandler, TabCon
                     return@launch
                 }
                 val nextFolders = applyVisibleFolderPrefs(BiliApi.favFolders(upMid = mid))
+                val visibleIds = BiliClient.prefs.favoriteVisibleFolderIds
                 if (token != loadToken || _binding == null) return@launch
                 if (nextFolders.isEmpty()) {
                     AppToast.show(requireContext(), "未获取到收藏夹")
                     return@launch
                 }
+                appliedVisibleFolderIds = visibleIds
                 applyFolders(nextFolders)
             } catch (t: Throwable) {
                 if (t is CancellationException) throw t

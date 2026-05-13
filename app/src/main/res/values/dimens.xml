@@ -136,6 +136,7 @@
     <dimen name="player_title_meta_padding_bottom">0dp</dimen>
 
     <dimen name="player_bottom_bar_padding_v">8dp</dimen>
+    <dimen name="player_bottom_bar_height">110dp</dimen>
     <!-- SeekBar touch target height matches the larger thumb so the icon can visually fill the bar. -->
     <dimen name="player_seekbar_touch_height">24dp</dimen>
     <!-- SeekBar thumb icon size; track thickness is handled separately below. -->

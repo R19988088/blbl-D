@@ -354,7 +354,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/bottom_bar"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="@dimen/player_bottom_bar_height"
         android:background="@drawable/bg_player_controls"
         android:paddingTop="@dimen/player_bottom_bar_padding_v"
         android:paddingBottom="@dimen/player_bottom_bar_padding_v"
@@ -593,22 +593,22 @@
             app:layout_constraintBottom_toBottomOf="@id/controls_row"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/controls_row" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_collection_thumbs"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:clipToPadding="false"
-            android:focusable="true"
-            android:nextFocusUp="@id/controls_row"
-            android:overScrollMode="never"
-            android:paddingStart="@dimen/player_controls_row_margin_start"
-            android:paddingEnd="@dimen/player_controls_row_margin_end"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/controls_row" />
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_collection_thumbs"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:focusable="true"
+        android:nextFocusDown="@id/seek_progress"
+        android:overScrollMode="never"
+        android:paddingStart="@dimen/player_controls_row_margin_start"
+        android:paddingEnd="@dimen/player_controls_row_margin_end"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/bottom_bar"
+        app:layout_constraintEnd_toEndOf="@id/player_view"
+        app:layout_constraintStart_toStartOf="@id/player_view" />
 
     <blbl.cat3399.feature.player.SegmentedProgressBar
         android:id="@+id/progress_persistent_bottom"

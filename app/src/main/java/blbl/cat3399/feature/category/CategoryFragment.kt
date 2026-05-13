@@ -20,6 +20,7 @@ import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAs
 import blbl.cat3399.core.ui.findCurrentViewPagerChildFragmentAsStrict
 import blbl.cat3399.core.ui.postDelayedIfAlive
 import blbl.cat3399.core.ui.postIfAlive
+import blbl.cat3399.core.ui.RefreshDebugOverlay
 import blbl.cat3399.core.ui.requestFocusSelectedTab
 import blbl.cat3399.core.ui.TabContentFocusTarget
 import blbl.cat3399.databinding.FragmentCategoryBinding
@@ -149,10 +150,19 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
             )
             return false
         }
-        val handled = pageFragment.handleRefreshKey()
+        val handled = pageFragment.handleFullRefreshKey()
+        context?.let {
+            RefreshDebugOverlay.show(
+                it,
+                source = "category tab refresh",
+                page = pageFragment,
+                handled = handled,
+                extra = "pos=$position title=${zone?.title} tid=${zone?.tid}",
+            )
+        }
         AppLog.i(
             "Category",
-            "refresh tabReselect handled=$handled pos=$position title=${zone?.title} tid=${zone?.tid} handler=${pageFragment.javaClass.simpleName} t=${SystemClock.uptimeMillis()}",
+            "refresh tabReselect force handled=$handled pos=$position title=${zone?.title} tid=${zone?.tid} handler=${pageFragment.javaClass.simpleName} t=${SystemClock.uptimeMillis()}",
         )
         return handled
     }
@@ -170,6 +180,15 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
             return false
         }
         val handled = pageFragment.handleFullRefreshKey()
+        context?.let {
+            RefreshDebugOverlay.show(
+                it,
+                source = "category full refresh",
+                page = pageFragment,
+                handled = handled,
+                extra = "pos=$position title=${zone?.title} tid=${zone?.tid}",
+            )
+        }
         AppLog.i(
             "Category",
             "refresh full handled=$handled pos=$position title=${zone?.title} tid=${zone?.tid} handler=${pageFragment.javaClass.simpleName} t=${SystemClock.uptimeMillis()}",

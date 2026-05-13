@@ -35,11 +35,29 @@ object AppToast {
         showInternal(context = context, text = text, durationMs = DURATION_LONG_MS)
     }
 
-    private fun showInternal(context: Context, text: CharSequence, durationMs: Long) {
+    fun showDebug(context: Context, text: CharSequence) {
+        showInternal(context = context, text = text, durationMs = DURATION_LONG_MS, textSizeSp = 10f, alignRight = true)
+    }
+
+    private fun showInternal(
+        context: Context,
+        text: CharSequence,
+        durationMs: Long,
+        textSizeSp: Float? = null,
+        alignRight: Boolean = false,
+    ) {
         if (text.isBlank()) return
 
         if (Looper.myLooper() != Looper.getMainLooper()) {
-            mainHandler.post { showInternal(context = context, text = text, durationMs = durationMs) }
+            mainHandler.post {
+                showInternal(
+                    context = context,
+                    text = text,
+                    durationMs = durationMs,
+                    textSizeSp = textSizeSp,
+                    alignRight = alignRight,
+                )
+            }
             return
         }
 
@@ -66,6 +84,7 @@ object AppToast {
 
         val tvText = view.findViewById<TextView>(R.id.tv_text)
         tvText.text = text
+        if (textSizeSp != null) tvText.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp)
         tvText.maxWidth =
             (root.context.resources.displayMetrics.widthPixels * 0.70f)
                 .toInt()
@@ -82,7 +101,7 @@ object AppToast {
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
             ).apply {
-                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                gravity = if (alignRight) Gravity.END or Gravity.CENTER_VERTICAL else Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
                 val marginH = dp(root.context, 24f)
                 val marginB = dp(root.context, 32f) + insetsBottom
                 setMargins(marginH, 0, marginH, marginB)

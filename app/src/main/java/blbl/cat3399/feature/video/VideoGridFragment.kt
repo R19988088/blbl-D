@@ -22,6 +22,7 @@ import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.paging.PagedGridStateMachine
 import blbl.cat3399.core.paging.appliedOrNull
 import blbl.cat3399.core.ui.AppToast
+import blbl.cat3399.core.ui.RefreshDebugOverlay
 import blbl.cat3399.core.ui.DpadGridController
 import blbl.cat3399.core.ui.FocusTreeUtils
 import blbl.cat3399.core.ui.GridViewportFillMonitor
@@ -245,11 +246,15 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
     }
 
     override fun handleRefreshKey(): Boolean {
-        return refreshFromKey(force = false)
+        val handled = refreshFromKey(force = true)
+        context?.let { RefreshDebugOverlay.show(it, source = "video grid refresh", page = this, handled = handled, extra = "source=$source rid=$rid") }
+        return handled
     }
 
     override fun handleFullRefreshKey(): Boolean {
-        return refreshFromKey(force = true)
+        val handled = refreshFromKey(force = true)
+        context?.let { RefreshDebugOverlay.show(it, source = "video grid full refresh", page = this, handled = handled, extra = "source=$source rid=$rid") }
+        return handled
     }
 
     private fun refreshFromKey(force: Boolean): Boolean {
