@@ -100,7 +100,6 @@ class MyFavFolderDetailFragment : Fragment(), RefreshKeyHandler, TabContentFocus
                             isAlive = { _binding != null && isResumed },
                         )
                     },
-                    favoriteActionMode = VideoCardFavoriteActionMode.REMOVE,
                 )
             adapter =
                 VideoCardAdapter(
