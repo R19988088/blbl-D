@@ -8,6 +8,7 @@ import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApi
 import blbl.cat3399.core.api.BiliApiException
 import blbl.cat3399.core.image.ImageLoader
+import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.ui.AppToast
 import blbl.cat3399.core.ui.popup.PopupHandle
 import blbl.cat3399.core.ui.popup.PopupHost
@@ -25,13 +26,19 @@ internal fun PlayerActivity.showRemoteMenuPopup() {
     dialogBinding.tvUpId.text = currentUpDisplayText()
 
     var handle: PopupHandle? = null
+    val favoriteMediaId = currentFavoriteMediaIdFromPlaylistSource()
+    val showUnfavorite = favoriteMediaId != null || actionFavored
 
     dialogBinding.btnFavorite.text = getString(
-        if (actionFavored) R.string.video_card_action_unfavorite else R.string.video_card_action_favorite,
+        if (showUnfavorite) R.string.video_card_action_unfavorite else R.string.video_card_action_favorite,
     )
     dialogBinding.btnFavorite.setOnClickListener {
         handle?.dismiss()
-        onFavButtonClicked(showControls = false)
+        if (favoriteMediaId != null) {
+            removeCurrentVideoFromFavoriteFolder(mediaId = favoriteMediaId)
+        } else {
+            onFavButtonClicked(showControls = false)
+        }
     }
     dialogBinding.btnWatchLater.setOnClickListener {
         handle?.dismiss()
@@ -60,6 +67,12 @@ internal fun PlayerActivity.showRemoteMenuPopup() {
                 dialogBinding.btnFavorite.post { dialogBinding.btnFavorite.requestFocus() }
             },
         )
+}
+
+private fun PlayerActivity.currentFavoriteMediaIdFromPlaylistSource(): Long? {
+    val source = pageListSource?.trim().orEmpty()
+    if (!source.startsWith("MyFavFolderDetail:")) return null
+    return source.substringAfter(':', "").trim().toLongOrNull()?.takeIf { it > 0L }
 }
 
 private fun PlayerActivity.openCurrentUpHome() {
@@ -122,6 +135,42 @@ private fun PlayerActivity.blockCurrentUp() {
             if (t is CancellationException) return@launch
             val e = t as? BiliApiException
             AppToast.show(this@blockCurrentUp, e?.apiMessage?.takeIf { it.isNotBlank() } ?: "拉黑失败")
+        }
+    }
+}
+
+private fun PlayerActivity.removeCurrentVideoFromFavoriteFolder(mediaId: Long) {
+    val aid = currentAid?.takeIf { it > 0L }
+    if (aid == null) {
+        AppToast.show(this, "未获取到 aid，暂不支持取消收藏")
+        return
+    }
+    val requestBvid = currentBvid.trim()
+    val selfMid = BiliClient.cookies.getCookieValue("DedeUserID")?.trim()?.toLongOrNull()?.takeIf { it > 0L }
+    lifecycleScope.launch {
+        try {
+            val wasFavored = actionFavored
+            withContext(Dispatchers.IO) {
+                BiliApi.favResourceDelete(aid = aid, mediaId = mediaId)
+            }
+            val favoredAfterDelete =
+                if (selfMid != null && requestBvid.isNotBlank()) {
+                    withContext(Dispatchers.IO) {
+                        runCatching { BiliApi.archiveFavoured(bvid = requestBvid, aid = aid) }.getOrNull()
+                    }
+                } else {
+                    null
+                }
+            actionFavored = favoredAfterDelete ?: false
+            if (wasFavored && !actionFavored) {
+                currentPlayerFavCount = currentPlayerFavCount?.let { (it - 1L).coerceAtLeast(0L) }
+            }
+            updateActionButtonsUi()
+            AppToast.show(this@removeCurrentVideoFromFavoriteFolder, "已取消收藏")
+        } catch (t: Throwable) {
+            if (t is CancellationException) return@launch
+            val e = t as? BiliApiException
+            AppToast.show(this@removeCurrentVideoFromFavoriteFolder, e?.apiMessage?.takeIf { it.isNotBlank() } ?: "取消收藏失败")
         }
     }
 }
