@@ -253,9 +253,18 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
     }
 
     private fun refreshFromKey(force: Boolean): Boolean {
-        val b = _binding ?: return false
-        if (!isResumed) return false
-        if (!force && b.swipeRefresh.isRefreshing) return true
+        val b = _binding ?: return false.also {
+            AppLog.w("VideoGrid", "refresh ignored binding null source=$source rid=$rid force=$force t=${SystemClock.uptimeMillis()}")
+        }
+        if (!isResumed) {
+            AppLog.w("VideoGrid", "refresh ignored not resumed source=$source rid=$rid force=$force state=${lifecycle.currentState} t=${SystemClock.uptimeMillis()}")
+            return false
+        }
+        if (!force && b.swipeRefresh.isRefreshing) {
+            AppLog.i("VideoGrid", "refresh coalesced source=$source rid=$rid force=$force currentKey=${paging.snapshot().nextKey} t=${SystemClock.uptimeMillis()}")
+            return true
+        }
+        AppLog.i("VideoGrid", "refresh requested source=$source rid=$rid force=$force currentKey=${paging.snapshot().nextKey} items=${adapter.itemCount} t=${SystemClock.uptimeMillis()}")
         pendingFocusFirstCardAfterRefresh = true
         dpadGridController?.parkFocusForDataSetReset()
         b.swipeRefresh.isRefreshing = true
@@ -291,6 +300,10 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
             SRC_POPULAR -> popularRefreshSeed += 1
             SRC_REGION -> regionRefreshSeedByRid[rid] = regionRefreshSeedByRid.getOrDefault(rid, 1) + 1
         }
+        AppLog.i(
+            "VideoGrid",
+            "refresh seed advanced source=$source rid=$rid recommend=$recommendRefreshSeed popular=$popularRefreshSeed region=${regionRefreshSeedByRid[rid] ?: 1} t=${SystemClock.uptimeMillis()}",
+        )
     }
 
     private fun refreshStartKey(): PagingKey {
@@ -605,9 +618,12 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         key: PagingKey,
         ps: Int,
     ): FetchedPage {
+        val startAt = SystemClock.uptimeMillis()
+        AppLog.d("VideoGrid", "fetch raw start source=$source rid=$rid key=$key ps=$ps t=$startAt")
         return when (source) {
             SRC_RECOMMEND -> {
                 val items = BiliApi.recommend(freshIdx = key.page, ps = ps, fetchRow = key.recommendFetchRow)
+                AppLog.i("VideoGrid", "fetch raw ok source=$source rid=$rid key=$key got=${items.size} cost=${SystemClock.uptimeMillis() - startAt}ms")
                 FetchedPage(
                     items = items,
                     nextKey =
@@ -621,6 +637,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
 
             SRC_REGION -> {
                 val res = BiliApi.regionLatestPage(rid = rid, pn = key.page, ps = ps)
+                AppLog.i("VideoGrid", "fetch raw ok source=$source rid=$rid key=$key got=${res.items.size} hasMore=${res.hasMore} cost=${SystemClock.uptimeMillis() - startAt}ms")
                 FetchedPage(
                     items = res.items,
                     nextKey = if (res.hasMore) key.copy(page = key.page + 1) else key.copy(page = 1),
@@ -638,6 +655,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     )
                 } else {
                     val res = BiliApi.searchVideo(keyword = keyword, page = key.page, order = "totalrank")
+                    AppLog.i("VideoGrid", "fetch raw ok source=$source rid=$rid keyword=$keyword key=$key got=${res.items.size} pages=${res.pages} page=${res.page} cost=${SystemClock.uptimeMillis() - startAt}ms")
                     FetchedPage(
                         items = res.items,
                         nextKey = key.copy(page = key.page + 1),
@@ -648,6 +666,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
 
             else -> {
                 val res = BiliApi.popularPage(pn = key.page, ps = ps)
+                AppLog.i("VideoGrid", "fetch raw ok source=$source rid=$rid key=$key got=${res.items.size} hasMore=${res.hasMore} cost=${SystemClock.uptimeMillis() - startAt}ms")
                 FetchedPage(
                     items = res.items,
                     nextKey = key.copy(page = key.page + 1),

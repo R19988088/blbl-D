@@ -138,38 +138,96 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
     }
 
     private fun refreshCurrentPageFromTabReselect(): Boolean {
+        val b = _binding
+        val position = b?.viewPager?.currentItem ?: -1
+        val zone = zones.getOrNull(position)
         val pageFragment = currentSelectedPageRefreshHandler()
-            ?: return false
-        return pageFragment.handleRefreshKey()
+        if (pageFragment == null) {
+            AppLog.w(
+                "Category",
+                "refresh tabReselect no handler pos=$position title=${zone?.title} tid=${zone?.tid} childCount=${childFragmentManager.fragments.size} fragments=${childFragmentManager.fragments.joinToString { it.javaClass.simpleName + ':' + it.isResumed }} t=${SystemClock.uptimeMillis()}",
+            )
+            return false
+        }
+        val handled = pageFragment.handleRefreshKey()
+        AppLog.i(
+            "Category",
+            "refresh tabReselect handled=$handled pos=$position title=${zone?.title} tid=${zone?.tid} handler=${pageFragment.javaClass.simpleName} t=${SystemClock.uptimeMillis()}",
+        )
+        return handled
     }
 
     private fun refreshCurrentPageFullStrict(): Boolean {
+        val b = _binding
+        val position = b?.viewPager?.currentItem ?: -1
+        val zone = zones.getOrNull(position)
         val pageFragment = currentSelectedPageRefreshHandler()
-            ?: return false
-        return pageFragment.handleFullRefreshKey()
+        if (pageFragment == null) {
+            AppLog.w(
+                "Category",
+                "refresh full no handler pos=$position title=${zone?.title} tid=${zone?.tid} childCount=${childFragmentManager.fragments.size} fragments=${childFragmentManager.fragments.joinToString { it.javaClass.simpleName + ':' + it.isResumed }} t=${SystemClock.uptimeMillis()}",
+            )
+            return false
+        }
+        val handled = pageFragment.handleFullRefreshKey()
+        AppLog.i(
+            "Category",
+            "refresh full handled=$handled pos=$position title=${zone?.title} tid=${zone?.tid} handler=${pageFragment.javaClass.simpleName} t=${SystemClock.uptimeMillis()}",
+        )
+        return handled
     }
 
     private fun currentSelectedPageRefreshHandler(): RefreshKeyHandler? {
-        val b = _binding ?: return null
+        val b = _binding ?: return null.also {
+            AppLog.w("Category", "refresh handler lookup skipped: binding null t=${SystemClock.uptimeMillis()}")
+        }
+        val position = b.viewPager.currentItem
+        val zone = zones.getOrNull(position)
         val adapter = b.viewPager.adapter as? FragmentStateAdapter
         if (adapter != null) {
-            val itemId = adapter.getItemId(b.viewPager.currentItem)
+            val itemId = adapter.getItemId(position)
             childFragmentManager.findFragmentByTag("f$itemId")?.let { fragment ->
+                AppLog.d(
+                    "Category",
+                    "refresh handler tag hit pos=$position title=${zone?.title} tid=${zone?.tid} itemId=$itemId fragment=${fragment.javaClass.simpleName} resumed=${fragment.isResumed} handler=${fragment is RefreshKeyHandler} t=${SystemClock.uptimeMillis()}",
+                )
                 return fragment as? RefreshKeyHandler
             }
+            AppLog.w(
+                "Category",
+                "refresh handler tag miss pos=$position title=${zone?.title} tid=${zone?.tid} itemId=$itemId childCount=${childFragmentManager.fragments.size} tags=${childFragmentManager.fragments.joinToString { it.tag.orEmpty() + ':' + it.javaClass.simpleName + ':' + it.isResumed }} t=${SystemClock.uptimeMillis()}",
+            )
         }
-        return findCurrentViewPagerChildFragmentAsStrict<RefreshKeyHandler>(b.viewPager)
-            ?: findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(b.viewPager)
+        val strict = findCurrentViewPagerChildFragmentAsStrict<RefreshKeyHandler>(b.viewPager)
+        if (strict != null) {
+            AppLog.d("Category", "refresh handler strict hit pos=$position title=${zone?.title} tid=${zone?.tid} handler=${strict.javaClass.simpleName} t=${SystemClock.uptimeMillis()}")
+            return strict
+        }
+        val loose = findCurrentViewPagerChildFragmentAs<RefreshKeyHandler>(b.viewPager)
+        AppLog.d(
+            "Category",
+            "refresh handler loose=${loose?.javaClass?.simpleName} pos=$position title=${zone?.title} tid=${zone?.tid} t=${SystemClock.uptimeMillis()}",
+        )
+        return loose
     }
 
     override fun handleRefreshKey(): Boolean {
-        return refreshCurrentPageStrict()
+        val handled = refreshCurrentPageStrict()
+        AppLog.i("Category", "handleRefreshKey handled=$handled current=${_binding?.viewPager?.currentItem ?: -1} t=${SystemClock.uptimeMillis()}")
+        return handled
     }
 
     override fun handleFullRefreshKey(): Boolean {
-        if (refreshCurrentPageFullStrict()) return true
+        if (refreshCurrentPageFullStrict()) {
+            AppLog.i("Category", "handleFullRefreshKey handled immediate current=${_binding?.viewPager?.currentItem ?: -1} t=${SystemClock.uptimeMillis()}")
+            return true
+        }
         val b = _binding ?: return false
-        b.viewPager.postIfAlive(isAlive = { _binding === b }) { refreshCurrentPageFullStrict() }
+        AppLog.w("Category", "handleFullRefreshKey deferred current=${b.viewPager.currentItem} t=${SystemClock.uptimeMillis()}")
+        b.viewPager.postIfAlive(isAlive = { _binding === b }) {
+            val handled = refreshCurrentPageFullStrict()
+            AppLog.i("Category", "handleFullRefreshKey deferred handled=$handled current=${_binding?.viewPager?.currentItem ?: -1} t=${SystemClock.uptimeMillis()}")
+        }
         return true
     }
 

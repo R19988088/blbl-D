@@ -4,6 +4,7 @@ import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.animation.DecelerateInterpolator
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.lifecycle.lifecycleScope
 import blbl.cat3399.R
@@ -57,11 +58,44 @@ internal fun PlayerActivity.setControlsVisible(visible: Boolean) {
     transientSeekOsdVisible = false
     osdMode = if (show) PlayerActivity.OsdMode.Full else PlayerActivity.OsdMode.Hidden
 
+    controlsVisibilityAnimator?.cancel()
+    controlsVisibilityAnimator = null
+    if (show) {
+        if (binding.bottomBar.visibility != View.VISIBLE) {
+            binding.bottomBar.alpha = 0f
+            binding.bottomBar.translationY = binding.bottomBar.resources.displayMetrics.density * 8f
+            binding.bottomBar.visibility = View.VISIBLE
+        }
+        controlsVisibilityAnimator =
+            binding.bottomBar.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(PlayerActivity.CONTROLS_VISIBILITY_ANIM_MS)
+                .setInterpolator(DecelerateInterpolator())
+                .withEndAction { controlsVisibilityAnimator = null }
+        controlsVisibilityAnimator?.start()
+    } else if (binding.bottomBar.visibility == View.VISIBLE) {
+        controlsVisibilityAnimator =
+            binding.bottomBar.animate()
+                .alpha(0f)
+                .translationY(binding.bottomBar.resources.displayMetrics.density * 8f)
+                .setDuration(PlayerActivity.CONTROLS_VISIBILITY_ANIM_MS)
+                .setInterpolator(DecelerateInterpolator())
+                .withEndAction {
+                    if (osdMode == PlayerActivity.OsdMode.Hidden) binding.bottomBar.visibility = View.GONE
+                    binding.bottomBar.translationY = 0f
+                    controlsVisibilityAnimator = null
+                }
+        controlsVisibilityAnimator?.start()
+    } else {
+        binding.bottomBar.alpha = 0f
+        binding.bottomBar.translationY = 0f
+    }
+
     binding.controlsRow.visibility = if (show) View.VISIBLE else View.GONE
     binding.tvTime.visibility = if (show) View.VISIBLE else View.GONE
     updateTopBarUi()
     updateUpQuickCardUi()
-    binding.bottomBar.visibility = if (show) View.VISIBLE else View.GONE
     if (show) {
         applyBottomBarFullLayout()
     } else {

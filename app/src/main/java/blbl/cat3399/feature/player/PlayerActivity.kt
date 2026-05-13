@@ -157,6 +157,7 @@ class PlayerActivity : BaseActivity() {
     internal var autoNextAfterEndedToken: Long = 0L
     private var reportProgressJob: kotlinx.coroutines.Job? = null
     internal var autoHideJob: kotlinx.coroutines.Job? = null
+    internal var controlsVisibilityAnimator: android.view.ViewPropertyAnimator? = null
     internal var seekOsdHideJob: kotlinx.coroutines.Job? = null
     internal var holdSeekJob: kotlinx.coroutines.Job? = null
     internal var seekHintJob: kotlinx.coroutines.Job? = null
@@ -3784,6 +3785,7 @@ class PlayerActivity : BaseActivity() {
         private const val ACTIVITY_STACK_MAX_DEPTH: Int = 3
         internal const val SEEK_MAX = 10_000
         internal const val AUTO_HIDE_MS = 4_000L
+        internal const val CONTROLS_VISIBILITY_ANIM_MS = 180L
         internal const val EDGE_TAP_THRESHOLD = 0.4f
         private const val TAP_SEEK_ACTIVE_MS = 1_200L
         internal const val SMART_SEEK_WINDOW_MS = 900L
