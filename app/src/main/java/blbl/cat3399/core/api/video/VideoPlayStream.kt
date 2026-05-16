@@ -62,6 +62,7 @@ data class VideoDashStream(
 enum class VideoMediaRequestProfile {
     WEB,
     APP,
+    TV,
 }
 
 data class VideoTrack(

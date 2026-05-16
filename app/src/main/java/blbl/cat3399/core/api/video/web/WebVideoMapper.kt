@@ -15,6 +15,7 @@ import blbl.cat3399.core.api.video.VideoDetailRequest
 import blbl.cat3399.core.api.video.VideoDetailStat
 import blbl.cat3399.core.api.video.VideoDimension
 import blbl.cat3399.core.api.video.VideoDynamicTagRequest
+import blbl.cat3399.core.api.video.VideoMediaRequestProfile
 import blbl.cat3399.core.api.video.VideoOwner
 import blbl.cat3399.core.api.video.VideoPlayClipSegment
 import blbl.cat3399.core.api.video.VideoPlayRequest
@@ -54,10 +55,11 @@ internal class WebVideoMapper(
     fun parsePlayStream(
         json: JSONObject,
         request: VideoPlayRequest,
+        mediaRequestProfile: VideoMediaRequestProfile = VideoMediaRequestProfile.WEB,
     ): VideoPlayStream {
         val data = json.optJSONObject("data") ?: json.optJSONObject("result") ?: JSONObject()
-        val dash = parseDash(data.optJSONObject("dash"))
-        val progressive = parseProgressive(data.optJSONArray("durl"))
+        val dash = parseDash(data.optJSONObject("dash"), mediaRequestProfile = mediaRequestProfile)
+        val progressive = parseProgressive(data.optJSONArray("durl"), mediaRequestProfile = mediaRequestProfile)
         return VideoPlayStream(
             source = source,
             request = request,
@@ -590,20 +592,30 @@ internal class WebVideoMapper(
         }
     }
 
-    private fun parseDash(dash: JSONObject?): VideoDashStream? {
+    private fun parseDash(
+        dash: JSONObject?,
+        mediaRequestProfile: VideoMediaRequestProfile,
+    ): VideoDashStream? {
         if (dash == null) return null
         val durationMs = dash.optLong("duration", -1L).takeIf { it > 0L }?.times(1000L)
-        val videos = parseVideoTracks(dash.optJSONArray("video"))
+        val videos = parseVideoTracks(dash.optJSONArray("video"), mediaRequestProfile = mediaRequestProfile)
         val audios =
             buildList {
-                addAll(parseAudioTracks(dash.optJSONArray("audio"), kind = VideoAudioKind.NORMAL))
-                addAll(parseAudioTracks(dash.optJSONObject("dolby")?.optJSONArray("audio"), kind = VideoAudioKind.DOLBY))
-                parseAudioTrack(dash.optJSONObject("flac")?.optJSONObject("audio"), kind = VideoAudioKind.FLAC)?.let { add(it) }
+                addAll(parseAudioTracks(dash.optJSONArray("audio"), kind = VideoAudioKind.NORMAL, mediaRequestProfile = mediaRequestProfile))
+                addAll(parseAudioTracks(dash.optJSONObject("dolby")?.optJSONArray("audio"), kind = VideoAudioKind.DOLBY, mediaRequestProfile = mediaRequestProfile))
+                parseAudioTrack(
+                    dash.optJSONObject("flac")?.optJSONObject("audio"),
+                    kind = VideoAudioKind.FLAC,
+                    mediaRequestProfile = mediaRequestProfile,
+                )?.let { add(it) }
             }
         return VideoDashStream(durationMs = durationMs, videos = videos, audios = audios)
     }
 
-    private fun parseVideoTracks(arr: JSONArray?): List<VideoTrack> {
+    private fun parseVideoTracks(
+        arr: JSONArray?,
+        mediaRequestProfile: VideoMediaRequestProfile,
+    ): List<VideoTrack> {
         if (arr == null) return emptyList()
         val out = ArrayList<VideoTrack>(arr.length())
         for (i in 0 until arr.length()) {
@@ -617,6 +629,7 @@ internal class WebVideoMapper(
                     urls = urlsOf(obj),
                     info = trackInfo(obj),
                     isDolbyVision = isDolbyVisionTrack(obj),
+                    mediaRequestProfile = mediaRequestProfile,
                 )
         }
         return out
@@ -625,11 +638,12 @@ internal class WebVideoMapper(
     private fun parseAudioTracks(
         arr: JSONArray?,
         kind: VideoAudioKind,
+        mediaRequestProfile: VideoMediaRequestProfile,
     ): List<AudioTrack> {
         if (arr == null) return emptyList()
         val out = ArrayList<AudioTrack>(arr.length())
         for (i in 0 until arr.length()) {
-            parseAudioTrack(arr.optJSONObject(i), kind = kind)?.let { out += it }
+            parseAudioTrack(arr.optJSONObject(i), kind = kind, mediaRequestProfile = mediaRequestProfile)?.let { out += it }
         }
         return out
     }
@@ -637,6 +651,7 @@ internal class WebVideoMapper(
     private fun parseAudioTrack(
         obj: JSONObject?,
         kind: VideoAudioKind,
+        mediaRequestProfile: VideoMediaRequestProfile,
     ): AudioTrack? {
         obj ?: return null
         return AudioTrack(
@@ -644,10 +659,14 @@ internal class WebVideoMapper(
             kind = kind,
             urls = urlsOf(obj),
             info = trackInfo(obj),
+            mediaRequestProfile = mediaRequestProfile,
         )
     }
 
-    private fun parseProgressive(arr: JSONArray?): List<VideoProgressiveStream> {
+    private fun parseProgressive(
+        arr: JSONArray?,
+        mediaRequestProfile: VideoMediaRequestProfile,
+    ): List<VideoProgressiveStream> {
         if (arr == null) return emptyList()
         val out = ArrayList<VideoProgressiveStream>(arr.length())
         for (i in 0 until arr.length()) {
@@ -656,6 +675,7 @@ internal class WebVideoMapper(
                 VideoProgressiveStream(
                     urls = urlsOf(obj),
                     lengthMs = obj.optLong("length", -1L).takeIf { it > 0L },
+                    mediaRequestProfile = mediaRequestProfile,
                 )
         }
         return out

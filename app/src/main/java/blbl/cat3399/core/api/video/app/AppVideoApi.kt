@@ -23,6 +23,7 @@ import blbl.cat3399.core.api.video.VideoOnlineStatusRequest
 import blbl.cat3399.core.api.video.VideoPlayerInfo
 import blbl.cat3399.core.api.video.VideoPlayerInfoRequest
 import blbl.cat3399.core.api.video.VideoPlayKind
+import blbl.cat3399.core.api.video.VideoMediaRequestProfile
 import blbl.cat3399.core.api.video.VideoPlayRequest
 import blbl.cat3399.core.api.video.VideoPlayStream
 import blbl.cat3399.core.api.video.VideoPopularRequest
@@ -48,6 +49,7 @@ import java.util.Locale
 internal class AppVideoApi(
     private val httpTransport: AppVideoHttpTransport = BiliClientAppVideoHttpTransport,
     private val grpcTransport: AppVideoGrpcTransport = BiliClientAppVideoGrpcTransport,
+    private val tvTransport: TvVideoHttpTransport = BiliClientTvVideoHttpTransport,
 ) : VideoSourceApi {
     override val source: BiliApiSource = BiliApiSource.APP
     override val capabilities: Set<BiliApiCapability> =
@@ -57,6 +59,7 @@ internal class AppVideoApi(
             BiliApiCapability.VIDEO_PLAY_URL_PGC,
         )
     private val mapper = AppVideoMapper(source)
+    private val webLikeMapper = blbl.cat3399.core.api.video.web.WebVideoMapper(source)
 
     override suspend fun recommend(request: VideoRecommendRequest): VideoRecommendPage {
         val idx = (request.fetchRow - 1).coerceAtLeast(0)
@@ -75,6 +78,7 @@ internal class AppVideoApi(
     }
 
     private suspend fun requestUgcPlayStream(request: VideoPlayRequest): VideoPlayStream {
+        requestTvPlayStreamOrNull(request)?.let { return it }
         val aid = request.aid?.takeIf { it > 0L } ?: error("aid required")
         val cid = request.cid?.takeIf { it > 0L } ?: error("cid required")
         val req =
@@ -101,6 +105,7 @@ internal class AppVideoApi(
     }
 
     private suspend fun requestPgcPlayStream(request: VideoPlayRequest): VideoPlayStream {
+        requestTvPlayStreamOrNull(request)?.let { return it }
         val epId = request.epId?.takeIf { it > 0L } ?: error("epId required")
         val codecTypes = listOf(PgcCodeType.CODE264, PgcCodeType.CODE265, PgcCodeType.NOCODE)
         val streams =
@@ -121,6 +126,21 @@ internal class AppVideoApi(
                 mapper.parsePgcPlayStream(reply = grpcTransport.playPgc(req), request = request)
             }
         return mapper.mergeStreams(streams)
+    }
+
+    private suspend fun requestTvPlayStreamOrNull(request: VideoPlayRequest): VideoPlayStream? {
+        if (!request.preferTvSource) return null
+        return runCatching {
+            val json = tvTransport.playUrl(request)
+            checkApiCode(json)
+            withContext(Dispatchers.Default) {
+                webLikeMapper.parsePlayStream(
+                    json = json,
+                    request = request,
+                    mediaRequestProfile = VideoMediaRequestProfile.TV,
+                )
+            }
+        }.getOrNull()?.takeIf { it.hasPlayableStream() }
     }
 
     private suspend fun <CodecT> requestAllCodecs(

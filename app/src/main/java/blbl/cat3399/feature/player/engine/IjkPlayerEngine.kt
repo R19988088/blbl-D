@@ -777,6 +777,7 @@ internal object IjkHttpHeaderBuilder {
     ): IjkHttpHeaders =
         when (mediaRequestProfile) {
             VideoMediaRequestProfile.APP -> buildAppHeaders()
+            VideoMediaRequestProfile.TV -> buildTvHeaders()
             VideoMediaRequestProfile.WEB -> buildWebHeaders(urlForCookie)
         }
 
@@ -809,6 +810,21 @@ internal object IjkHttpHeaderBuilder {
             userAgent = userAgent,
             referer = referer,
             cookie = cookie,
+            headersString =
+                buildString {
+                    append("Referer: ").append(referer).append("\r\n")
+                    append("Accept-Encoding: identity\r\n")
+                },
+        )
+    }
+
+    private fun buildTvHeaders(): IjkHttpHeaders {
+        val referer = "https://www.bilibili.com/"
+        return IjkHttpHeaders(
+            mediaRequestProfile = VideoMediaRequestProfile.TV,
+            userAgent = BiliClient.APP_CDN_USER_AGENT,
+            referer = referer,
+            cookie = null,
             headersString =
                 buildString {
                     append("Referer: ").append(referer).append("\r\n")

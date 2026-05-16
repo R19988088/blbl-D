@@ -87,6 +87,7 @@ data class VideoPlayRequest(
     val fnval: Int = 16,
     val tryLook: Boolean = false,
     val preferCodec: String? = null,
+    val preferTvSource: Boolean = true,
 )
 
 data class VideoPlayerInfoRequest(

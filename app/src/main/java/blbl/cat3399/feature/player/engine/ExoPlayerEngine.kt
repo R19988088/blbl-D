@@ -251,6 +251,7 @@ internal class ExoPlayerEngine(
             when (mediaRequestProfile) {
                 VideoMediaRequestProfile.WEB -> okHttpClient
                 VideoMediaRequestProfile.APP -> BiliClient.appCdnOkHttp
+                VideoMediaRequestProfile.TV -> BiliClient.appCdnOkHttp
             }
         val upstream = OkHttpDataSource.Factory(client).setTransferListener(listener)
         val uris =
