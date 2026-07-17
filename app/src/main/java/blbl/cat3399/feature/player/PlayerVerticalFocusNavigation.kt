@@ -20,7 +20,11 @@ internal fun resolvePlayerVerticalFocusTarget(
     hasCollectionThumbs: Boolean,
     hasVideoShotPreview: Boolean,
     hasUpQuick: Boolean,
+    isOsdHidden: Boolean = false,
 ): PlayerVerticalFocusRegion? {
+    if (direction == PlayerVerticalDirection.UP && isOsdHidden) {
+        return PlayerVerticalFocusRegion.CONTROLS
+    }
     return when (direction) {
         PlayerVerticalDirection.UP ->
             when (current) {

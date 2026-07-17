@@ -1687,11 +1687,7 @@ class PlayerActivity : BaseActivity() {
 
             KeyEvent.KEYCODE_DPAD_UP -> {
                 if (isSidePanelVisible()) return super.dispatchKeyEvent(event)
-                // TV-style shortcut: when OSD is hidden, UP directly opens the playlist (video list)
-                // instead of first bringing up the OSD.
-                if (osdMode == OsdMode.Hidden) {
-                    if (showListPanelFromShortcut()) return true
-                }
+                val wasOsdHidden = osdMode == OsdMode.Hidden
                 val currentRegion = currentPlayerVerticalFocusRegion()
                 setControlsVisible(true)
                 val targetRegion =
@@ -1701,6 +1697,7 @@ class PlayerActivity : BaseActivity() {
                         hasCollectionThumbs = canFocusCollectionThumbs(),
                         hasVideoShotPreview = canFocusVideoShotPreview(),
                         hasUpQuick = binding.cardUpQuick.visibility == View.VISIBLE,
+                        isOsdHidden = wasOsdHidden,
                     )
                 if (focusPlayerVerticalRegion(targetRegion)) return true
                 if (

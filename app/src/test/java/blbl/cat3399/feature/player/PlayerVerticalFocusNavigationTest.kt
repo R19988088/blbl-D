@@ -8,6 +8,21 @@ import org.w3c.dom.Element
 
 class PlayerVerticalFocusNavigationTest {
     @Test
+    fun hidden_osd_up_should_focus_standard_playback_controls() {
+        assertEquals(
+            PlayerVerticalFocusRegion.CONTROLS,
+            resolvePlayerVerticalFocusTarget(
+                current = PlayerVerticalFocusRegion.OTHER,
+                direction = PlayerVerticalDirection.UP,
+                hasCollectionThumbs = true,
+                hasVideoShotPreview = true,
+                hasUpQuick = true,
+                isOsdHidden = true,
+            ),
+        )
+    }
+
+    @Test
     fun seekUp_should_enter_collection_thumbnails_before_other_previews() {
         assertEquals(
             PlayerVerticalFocusRegion.COLLECTION_THUMBS,
