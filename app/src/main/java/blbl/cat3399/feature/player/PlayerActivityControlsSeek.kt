@@ -10,6 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import blbl.cat3399.R
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.prefs.AppPrefs
+import blbl.cat3399.core.ui.requestFocusAdapterPositionReliable
 import blbl.cat3399.feature.player.engine.BlblPlayerEngine
 import blbl.cat3399.feature.player.engine.PlayerEngineKind
 import java.util.Locale
@@ -325,6 +326,7 @@ internal fun PlayerActivity.scheduleKeyScrubEnd(delayMs: Long = PlayerActivity.K
 internal fun PlayerActivity.hasControlsFocus(): Boolean =
     binding.topBar.hasFocus() ||
         binding.cardUpQuick.hasFocus() ||
+        binding.recyclerCollectionThumbs.hasFocus() ||
         binding.bottomBar.hasFocus() ||
         binding.videoShotPreview.hasFocus() ||
         binding.sponsorSubmitPanel.hasFocus() ||
@@ -336,6 +338,7 @@ internal fun PlayerActivity.hasControlsFocusOutsideSeekBar(): Boolean {
     if (osdMode != PlayerActivity.OsdMode.Full) return false
     return binding.topBar.hasFocus() ||
         binding.cardUpQuick.hasFocus() ||
+        binding.recyclerCollectionThumbs.hasFocus() ||
         binding.controlsRow.hasFocus() ||
         binding.btnResolution.hasFocus() ||
         (binding.bottomBar.hasFocus() && !binding.seekProgress.isFocused)
@@ -383,6 +386,35 @@ internal fun PlayerActivity.focusSeekBar() {
     binding.seekProgress.post { binding.seekProgress.requestFocus() }
 }
 
+internal fun PlayerActivity.canFocusCollectionThumbs(): Boolean {
+    if (binding.recyclerCollectionThumbs.visibility != View.VISIBLE) return false
+    return (binding.recyclerCollectionThumbs.adapter?.itemCount ?: 0) > 0
+}
+
+internal fun PlayerActivity.focusCollectionThumbs(): Boolean {
+    val recycler = binding.recyclerCollectionThumbs
+    val itemCount = recycler.adapter?.itemCount ?: return false
+    if (recycler.visibility != View.VISIBLE || itemCount <= 0) return false
+    val targetPosition = collectionThumbsSelectedIndex.takeIf { it in 0 until itemCount } ?: 0
+    val requestToken = ++collectionThumbsFocusRequestToken
+    return recycler.requestFocusAdapterPositionReliable(
+        position = targetPosition,
+        smoothScroll = false,
+        isAlive = {
+            collectionThumbsFocusRequestToken == requestToken &&
+                !isFinishing &&
+                !isDestroyed &&
+                recycler.visibility == View.VISIBLE &&
+                (binding.seekProgress.isFocused || binding.cardUpQuick.hasFocus() || recycler.hasFocus())
+        },
+        onFocused = {},
+    )
+}
+
+internal fun PlayerActivity.cancelPendingCollectionThumbsFocus() {
+    collectionThumbsFocusRequestToken++
+}
+
 internal fun PlayerActivity.canFocusVideoShotPreview(): Boolean {
     if (binding.videoShotPreview.visibility != View.VISIBLE) return false
     if (BiliClient.prefs.playerVideoShotPreviewSize == AppPrefs.PLAYER_VIDEOSHOT_PREVIEW_SIZE_OFF) return false
@@ -393,7 +425,7 @@ internal fun PlayerActivity.focusVideoShotPreview() {
     binding.videoShotPreview.post { binding.videoShotPreview.requestFocus() }
 }
 
-internal fun PlayerActivity.focusUpQuickCardFromPreview(): Boolean {
+internal fun PlayerActivity.focusUpQuickCard(): Boolean {
     if (binding.cardUpQuick.visibility != View.VISIBLE) return false
     if (requestFocusControlNow(binding.btnUpQuickProfile)) return true
     if (requestFocusControlNow(binding.btnUpQuickFollow)) return true

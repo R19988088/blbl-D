@@ -301,6 +301,7 @@ class PlayerActivity : BaseActivity() {
     internal var partsListFetchToken: Int = 0
     internal var collectionThumbsKind: PlayerVideoListKind? = null
     internal var collectionThumbsSelectedIndex: Int = -1
+    internal var collectionThumbsFocusRequestToken: Int = 0
     internal lateinit var session: PlayerSessionSettings
     internal var settingsPanelMenu: PlayerSettingsMenu = PlayerSettingsMenu.ROOT
     internal var bottomCardPanelKind: PlayerVideoListKind = PlayerVideoListKind.PAGE
@@ -1462,6 +1463,9 @@ class PlayerActivity : BaseActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val keyCode = event.keyCode
+        if (event.action == KeyEvent.ACTION_DOWN && keyCode != KeyEvent.KEYCODE_DPAD_UP) {
+            cancelPendingCollectionThumbsFocus()
+        }
 
         if (dispatchCommentImageViewerKey(event)) return true
 
@@ -1688,13 +1692,23 @@ class PlayerActivity : BaseActivity() {
                 if (osdMode == OsdMode.Hidden) {
                     if (showListPanelFromShortcut()) return true
                 }
+                val currentRegion = currentPlayerVerticalFocusRegion()
                 setControlsVisible(true)
-                if (binding.videoShotPreview.isFocused) {
-                    return if (focusUpQuickCardFromPreview()) true else super.dispatchKeyEvent(event)
-                }
-                if (binding.seekProgress.isFocused && canFocusVideoShotPreview()) {
-                    focusVideoShotPreview()
-                    return true
+                val targetRegion =
+                    resolvePlayerVerticalFocusTarget(
+                        current = currentRegion,
+                        direction = PlayerVerticalDirection.UP,
+                        hasCollectionThumbs = canFocusCollectionThumbs(),
+                        hasVideoShotPreview = canFocusVideoShotPreview(),
+                        hasUpQuick = binding.cardUpQuick.visibility == View.VISIBLE,
+                    )
+                if (focusPlayerVerticalRegion(targetRegion)) return true
+                if (
+                    currentRegion == PlayerVerticalFocusRegion.UP_QUICK ||
+                    currentRegion == PlayerVerticalFocusRegion.COLLECTION_THUMBS ||
+                    currentRegion == PlayerVerticalFocusRegion.VIDEO_SHOT_PREVIEW
+                ) {
+                    return super.dispatchKeyEvent(event)
                 }
                 if (!binding.seekProgress.isFocused) {
                     focusSeekBar()
@@ -1704,16 +1718,16 @@ class PlayerActivity : BaseActivity() {
 
             KeyEvent.KEYCODE_DPAD_DOWN -> {
                 if (isSidePanelVisible()) return super.dispatchKeyEvent(event)
-                if (binding.videoShotPreview.isFocused) {
-                    setControlsVisible(true)
-                    focusSeekBar()
-                    return true
-                }
-                if (binding.seekProgress.isFocused) {
-                    setControlsVisible(true)
-                    focusFirstControl()
-                    return true
-                }
+                val targetRegion =
+                    resolvePlayerVerticalFocusTarget(
+                        current = currentPlayerVerticalFocusRegion(),
+                        direction = PlayerVerticalDirection.DOWN,
+                        hasCollectionThumbs = canFocusCollectionThumbs(),
+                        hasVideoShotPreview = canFocusVideoShotPreview(),
+                        hasUpQuick = binding.cardUpQuick.visibility == View.VISIBLE,
+                    )
+                if (targetRegion != null) setControlsVisible(true)
+                if (focusPlayerVerticalRegion(targetRegion)) return true
                 if (osdMode == OsdMode.Hidden) {
                     setControlsVisible(true)
                     focusDownKeyOsdTargetControl()
@@ -1846,6 +1860,42 @@ class PlayerActivity : BaseActivity() {
         }
 
         return super.dispatchKeyEvent(event)
+    }
+
+    private fun currentPlayerVerticalFocusRegion(): PlayerVerticalFocusRegion {
+        return when {
+            binding.cardUpQuick.hasFocus() -> PlayerVerticalFocusRegion.UP_QUICK
+            binding.recyclerCollectionThumbs.hasFocus() -> PlayerVerticalFocusRegion.COLLECTION_THUMBS
+            binding.videoShotPreview.isFocused -> PlayerVerticalFocusRegion.VIDEO_SHOT_PREVIEW
+            binding.seekProgress.isFocused -> PlayerVerticalFocusRegion.SEEK
+            binding.bottomBar.hasFocus() -> PlayerVerticalFocusRegion.CONTROLS
+            else -> PlayerVerticalFocusRegion.OTHER
+        }
+    }
+
+    private fun focusPlayerVerticalRegion(region: PlayerVerticalFocusRegion?): Boolean {
+        if (region != PlayerVerticalFocusRegion.COLLECTION_THUMBS) {
+            cancelPendingCollectionThumbsFocus()
+        }
+        return when (region) {
+            PlayerVerticalFocusRegion.UP_QUICK -> focusUpQuickCard()
+            PlayerVerticalFocusRegion.COLLECTION_THUMBS -> focusCollectionThumbs()
+            PlayerVerticalFocusRegion.VIDEO_SHOT_PREVIEW -> {
+                focusVideoShotPreview()
+                true
+            }
+            PlayerVerticalFocusRegion.SEEK -> {
+                focusSeekBar()
+                true
+            }
+            PlayerVerticalFocusRegion.CONTROLS -> {
+                focusFirstControl()
+                true
+            }
+            PlayerVerticalFocusRegion.OTHER,
+            null,
+            -> false
+        }
     }
 
     override fun onStop() {
