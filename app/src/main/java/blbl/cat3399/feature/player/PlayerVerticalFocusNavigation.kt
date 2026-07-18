@@ -14,6 +14,15 @@ internal enum class PlayerVerticalDirection {
     DOWN,
 }
 
+internal fun shouldConsumeCollectionThumbHorizontalBoundary(
+    itemPosition: Int,
+    itemCount: Int,
+    movingLeft: Boolean,
+): Boolean {
+    if (itemPosition !in 0 until itemCount) return false
+    return if (movingLeft) itemPosition == 0 else itemPosition == itemCount - 1
+}
+
 internal fun resolvePlayerVerticalFocusTarget(
     current: PlayerVerticalFocusRegion,
     direction: PlayerVerticalDirection,

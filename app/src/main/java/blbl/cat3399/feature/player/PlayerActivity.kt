@@ -53,6 +53,7 @@ import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import blbl.cat3399.BlblApp
 import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApi
@@ -1524,6 +1525,7 @@ class PlayerActivity : BaseActivity() {
         }
 
         if (event.action == KeyEvent.ACTION_UP) {
+            if (shouldConsumeCollectionThumbHorizontalKey(keyCode)) return true
             if (isConfirmHoldKey(keyCode)) {
                 val pendingCenterAction = consumePendingCenterKeyAction()
                 if (holdSeekJob != null) {
@@ -1592,6 +1594,7 @@ class PlayerActivity : BaseActivity() {
         if (isInteractionKey(keyCode)) noteUserInteraction()
 
         if (dispatchPlayerCustomShortcutIfNeeded(event)) return true
+        if (shouldConsumeCollectionThumbHorizontalKey(keyCode)) return true
 
         when (keyCode) {
             KeyEvent.KEYCODE_MENU -> {
@@ -1857,6 +1860,25 @@ class PlayerActivity : BaseActivity() {
         }
 
         return super.dispatchKeyEvent(event)
+    }
+
+    private fun shouldConsumeCollectionThumbHorizontalKey(keyCode: Int): Boolean {
+        val movingLeft =
+            when (keyCode) {
+                KeyEvent.KEYCODE_DPAD_LEFT -> true
+                KeyEvent.KEYCODE_DPAD_RIGHT -> false
+                else -> return false
+            }
+        val recycler = binding.recyclerCollectionThumbs
+        val focused = currentFocus ?: return false
+        val holder = recycler.findContainingViewHolder(focused) ?: return false
+        val position = holder.bindingAdapterPosition
+        if (position == RecyclerView.NO_POSITION) return false
+        return shouldConsumeCollectionThumbHorizontalBoundary(
+            itemPosition = position,
+            itemCount = recycler.adapter?.itemCount ?: 0,
+            movingLeft = movingLeft,
+        )
     }
 
     private fun currentPlayerVerticalFocusRegion(): PlayerVerticalFocusRegion {

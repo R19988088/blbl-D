@@ -8,6 +8,14 @@ import org.w3c.dom.Element
 
 class PlayerVerticalFocusNavigationTest {
     @Test
+    fun collection_thumbnail_horizontal_boundaries_should_not_leave_the_strip() {
+        assertEquals(true, shouldConsumeCollectionThumbHorizontalBoundary(0, 4, movingLeft = true))
+        assertEquals(false, shouldConsumeCollectionThumbHorizontalBoundary(1, 4, movingLeft = true))
+        assertEquals(false, shouldConsumeCollectionThumbHorizontalBoundary(2, 4, movingLeft = false))
+        assertEquals(true, shouldConsumeCollectionThumbHorizontalBoundary(3, 4, movingLeft = false))
+    }
+
+    @Test
     fun hidden_osd_up_should_focus_standard_playback_controls() {
         assertEquals(
             PlayerVerticalFocusRegion.CONTROLS,
@@ -120,6 +128,7 @@ class PlayerVerticalFocusNavigationTest {
             assertEquals("$layoutName seek up", "@id/recycler_collection_thumbs", seek.androidAttr("nextFocusUp"))
             assertEquals("$layoutName thumbnails up", "@id/btn_up_quick_profile", thumbnails.androidAttr("nextFocusUp"))
             assertEquals("$layoutName thumbnails down", "@id/seek_progress", thumbnails.androidAttr("nextFocusDown"))
+            assertEquals("$layoutName thumbnails background", "@color/player_overlay_bg", thumbnails.androidAttr("background"))
             assertEquals("$layoutName UP profile down", "@id/recycler_collection_thumbs", upProfile.androidAttr("nextFocusDown"))
             assertEquals("$layoutName UP follow down", "@id/recycler_collection_thumbs", upFollow.androidAttr("nextFocusDown"))
         }
