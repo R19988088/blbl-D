@@ -122,13 +122,19 @@ class PlayerVerticalFocusNavigationTest {
 
             val seek = document.elementById("seek_progress")
             val thumbnails = document.elementById("recycler_collection_thumbs")
+            val backdrop = document.elementById("collection_controls_backdrop")
+            val bottomBar = document.elementById("bottom_bar")
             val upProfile = document.elementById("btn_up_quick_profile")
             val upFollow = document.elementById("btn_up_quick_follow")
 
             assertEquals("$layoutName seek up", "@id/recycler_collection_thumbs", seek.androidAttr("nextFocusUp"))
             assertEquals("$layoutName thumbnails up", "@id/btn_up_quick_profile", thumbnails.androidAttr("nextFocusUp"))
             assertEquals("$layoutName thumbnails down", "@id/seek_progress", thumbnails.androidAttr("nextFocusDown"))
-            assertEquals("$layoutName thumbnails background", "@color/player_overlay_bg", thumbnails.androidAttr("background"))
+            assertEquals("$layoutName thumbnails background", "", thumbnails.androidAttr("background"))
+            assertEquals("$layoutName controls background", "", bottomBar.androidAttr("background"))
+            assertEquals("$layoutName backdrop background", "@color/player_overlay_bg", backdrop.androidAttr("background"))
+            assertEquals("$layoutName backdrop top", "@id/recycler_collection_thumbs", backdrop.appAttr("layout_constraintTop_toTopOf"))
+            assertEquals("$layoutName backdrop bottom", "@id/player_view", backdrop.appAttr("layout_constraintBottom_toBottomOf"))
             assertEquals("$layoutName UP profile down", "@id/recycler_collection_thumbs", upProfile.androidAttr("nextFocusDown"))
             assertEquals("$layoutName UP follow down", "@id/recycler_collection_thumbs", upFollow.androidAttr("nextFocusDown"))
         }
@@ -152,7 +158,10 @@ class PlayerVerticalFocusNavigationTest {
 
     private fun Element.androidAttr(name: String): String = getAttributeNS(ANDROID_NAMESPACE, name)
 
+    private fun Element.appAttr(name: String): String = getAttributeNS(APP_NAMESPACE, name)
+
     private companion object {
         const val ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"
+        const val APP_NAMESPACE = "http://schemas.android.com/apk/res-auto"
     }
 }

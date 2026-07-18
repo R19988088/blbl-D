@@ -62,6 +62,7 @@ internal fun PlayerActivity.setControlsVisible(visible: Boolean) {
     controlsVisibilityAnimator?.cancel()
     controlsVisibilityAnimator = null
     if (show) {
+        binding.collectionControlsBackdrop.visibility = View.VISIBLE
         if (binding.bottomBar.visibility != View.VISIBLE) {
             binding.bottomBar.alpha = 0f
             binding.bottomBar.translationY = binding.bottomBar.resources.displayMetrics.density * 8f
@@ -83,7 +84,10 @@ internal fun PlayerActivity.setControlsVisible(visible: Boolean) {
                 .setDuration(PlayerActivity.CONTROLS_VISIBILITY_ANIM_MS)
                 .setInterpolator(DecelerateInterpolator())
                 .withEndAction {
-                    if (osdMode == PlayerActivity.OsdMode.Hidden) binding.bottomBar.visibility = View.GONE
+                    if (osdMode == PlayerActivity.OsdMode.Hidden) {
+                        binding.bottomBar.visibility = View.GONE
+                        binding.collectionControlsBackdrop.visibility = View.GONE
+                    }
                     binding.bottomBar.translationY = 0f
                     controlsVisibilityAnimator = null
                 }
@@ -91,6 +95,7 @@ internal fun PlayerActivity.setControlsVisible(visible: Boolean) {
     } else {
         binding.bottomBar.alpha = 0f
         binding.bottomBar.translationY = 0f
+        binding.collectionControlsBackdrop.visibility = View.GONE
     }
 
     binding.controlsRow.visibility = if (show) View.VISIBLE else View.GONE

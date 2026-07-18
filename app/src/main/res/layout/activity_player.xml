@@ -351,11 +351,24 @@
             android:textSize="@dimen/player_up_quick_follow_text_size" />
     </LinearLayout>
 
+    <View
+        android:id="@+id/collection_controls_backdrop"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@color/player_overlay_bg"
+        android:clickable="false"
+        android:focusable="false"
+        android:importantForAccessibility="no"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/player_view"
+        app:layout_constraintEnd_toEndOf="@id/player_view"
+        app:layout_constraintStart_toStartOf="@id/player_view"
+        app:layout_constraintTop_toTopOf="@id/recycler_collection_thumbs" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/bottom_bar"
         android:layout_width="0dp"
         android:layout_height="@dimen/player_bottom_bar_height"
-        android:background="@drawable/bg_player_controls"
         android:paddingTop="@dimen/player_bottom_bar_padding_v"
         android:paddingBottom="@dimen/player_bottom_bar_padding_v"
         android:visibility="gone"
@@ -666,7 +679,6 @@
         android:id="@+id/recycler_collection_thumbs"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/player_overlay_bg"
         android:clipToPadding="false"
         android:focusable="true"
         android:nextFocusDown="@id/seek_progress"

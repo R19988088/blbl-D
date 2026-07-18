@@ -50,7 +50,7 @@ class ApkUpdaterChangelogTest {
     @Test
     fun updateApkUrl_should_always_use_latest_release_asset() {
         assertEquals(
-            "https://github.com/R19988088/blbl-D/releases/latest/download/blbl-D-latest-release.apk",
+            "https://github.com/R19988088/blbl-D/releases/latest/download/Blbl-latest.apk",
             ApkUpdater.TEST_APK_URL,
         )
         assertEquals(ApkUpdater.TEST_APK_URL, ApkUpdater.apkUrlFor("0.1.5"))

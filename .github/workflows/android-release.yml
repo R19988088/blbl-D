@@ -37,7 +37,10 @@ jobs:
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease -PversionName=${{ inputs.version_name || format('0.1.{0}', github.run_number) }} -PversionCode=${{ github.run_number }}
+          VERSION_NAME: ${{ inputs.version_name || format('0.1.{0}', github.run_number) }}
+        run: |
+          CLEAN_VERSION="${VERSION_NAME#v}"
+          ./gradlew assembleRelease -PversionName="${CLEAN_VERSION}" -PversionCode=${{ github.run_number }}
       - name: Upload release APK to R2 (optional)
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -81,11 +84,6 @@ jobs:
           aws s3 cp "CHANGELOG.md" "s3://${R2_BUCKET}/${KEY_PREFIX}CHANGELOG.md" --endpoint-url "${ENDPOINT}" --content-type "text/markdown; charset=utf-8" --cache-control "no-cache"
           aws s3 cp "${APK_PATH}" "s3://${R2_BUCKET}/${KEY_PREFIX}blbl-D-${CLEAN_VERSION}-release.apk" --endpoint-url "${ENDPOINT}" --content-type "application/vnd.android.package-archive"
           aws s3 cp "${APK_PATH}" "s3://${R2_BUCKET}/${KEY_PREFIX}blbl-D-latest-release.apk" --endpoint-url "${ENDPOINT}" --content-type "application/vnd.android.package-archive" --cache-control "no-cache"
-      - name: Upload release APK
-        uses: actions/upload-artifact@v6
-        with:
-          name: app-release-apk
-          path: app/build/outputs/apk/release/blbl-D-*-release.apk
       - name: Publish release APK to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -95,6 +93,12 @@ jobs:
         run: |
           CLEAN_VERSION="${VERSION_NAME#v}"
           APK_PATH="app/build/outputs/apk/release/blbl-D-${CLEAN_VERSION}-release.apk"
+          RELEASE_APK="Blbl-${CLEAN_VERSION}.apk"
+          LATEST_APK="Blbl-latest.apk"
+          LEGACY_LATEST_APK="blbl-D-latest-release.apk"
+          cp "${APK_PATH}" "${RELEASE_APK}"
+          cp "${APK_PATH}" "${LATEST_APK}"
+          cp "${APK_PATH}" "${LEGACY_LATEST_APK}"
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             if [ -n "${CHANGELOG:-}" ]; then
               printf '%s' "$CHANGELOG" > changelog.md
@@ -108,5 +112,6 @@ jobs:
               gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes --target "$GITHUB_SHA"
             fi
           fi
-          gh release upload "$RELEASE_TAG" "${APK_PATH}#blbl-D-${VERSION_NAME}-release.apk" --clobber
-          gh release upload "$RELEASE_TAG" "${APK_PATH}#blbl-D-latest-release.apk" --clobber
+          gh release upload "$RELEASE_TAG" "${RELEASE_APK}" --clobber
+          gh release upload "$RELEASE_TAG" "${LATEST_APK}" --clobber
+          gh release upload "$RELEASE_TAG" "${LEGACY_LATEST_APK}" --clobber

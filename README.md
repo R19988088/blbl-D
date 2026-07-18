@@ -18,7 +18,7 @@
 - 应用内检测更新固定读取 `R19988088/blbl-D` 的 GitHub Release，不再读取上游 `cat3399/blbl`。
 - 入口代码：`app/src/main/java/blbl/cat3399/core/update/ApkUpdater.kt`。
 - 最新版本接口：`https://api.github.com/repos/R19988088/blbl-D/releases/latest`。
-- APK 下载地址由 Release 资源名决定：`blbl-D-latest-debug.apk`、`blbl-D-latest-release.apk`，以及按版本下载的 `blbl-D-{version}-{debug|release}.apk`。
+- 正式版 APK 直接发布为 `Blbl-latest.apk` 和 `Blbl-{version}.apk`，并保留 `blbl-D-latest-release.apk` 供旧客户端升级；调试版仍使用 `blbl-D-latest-debug.apk` 和 `blbl-D-{version}-debug.apk`。
 - 如果检测更新提示 404，优先检查 `R19988088/blbl-D/releases` 是否存在 Release、对应 APK 资源是否已上传，以及 Release 是否为公开可访问。
 
 ## 本机开发限制
