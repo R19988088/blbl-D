@@ -759,7 +759,7 @@ internal fun PlayerActivity.startHoldScrub(direction: Int, showControls: Boolean
     val holdSpeed = speedOverride ?: holdSeekSpeed()
     val holdMode = BiliClient.prefs.playerHoldSeekMode
     holdPrevSpeed = engine.playbackSpeed
-    holdPrevPlayWhenReady = engine.playWhenReady
+    holdPrevPlayWhenReady = direction < 0 || engine.playWhenReady
     holdScrubPreviewPosMs = null
     val fixedStepMs =
         if (speedOverride != null) {
