@@ -668,7 +668,40 @@ internal fun PlayerActivity.smartSeekStepMs(): Long {
     return BiliClient.prefs.playerShortSeekStepSeconds * 1_000L
 }
 
-internal fun PlayerActivity.startHoldSeek(direction: Int, showControls: Boolean) {
+internal fun PlayerActivity.handleRemoteBoostSecondPress(event: KeyEvent): Boolean {
+    val keyCode = event.keyCode
+    if (osdMode != PlayerActivity.OsdMode.Hidden || event.repeatCount > 0 ||
+        (keyCode != KeyEvent.KEYCODE_DPAD_LEFT && keyCode != KeyEvent.KEYCODE_DPAD_RIGHT)
+    ) {
+        remoteBoostLastTapKeyCode = 0
+        remoteBoostLastTapAtMs = 0L
+        return false
+    }
+    val secondPress = isRemoteBoostSecondPress(
+        remoteBoostLastTapKeyCode, remoteBoostLastTapAtMs, keyCode, event.eventTime,
+        ViewConfiguration.getDoubleTapTimeout().toLong(),
+    )
+    remoteBoostLastTapKeyCode = 0
+    remoteBoostLastTapAtMs = 0L
+    if (!secondPress) return false
+
+    clearKeySeekPending()
+    cancelDeferredKeySeekPreview()
+    startHoldSeek(direction = +1, showControls = false, speedOverride = PLAYER_HOLD_BOOST_SPEED)
+    if (holdSeekJob == null) return false
+    remoteBoostHeldKeyCode = keyCode
+    return true
+}
+
+internal fun PlayerActivity.finishRemoteBoostGesture() {
+    remoteBoostLastTapKeyCode = 0
+    remoteBoostLastTapAtMs = 0L
+    if (remoteBoostHeldKeyCode == 0) return
+    remoteBoostHeldKeyCode = 0
+    stopHoldSeek()
+}
+
+internal fun PlayerActivity.startHoldSeek(direction: Int, showControls: Boolean, speedOverride: Float? = null) {
     // Speed-hold seek is forward-only; long-press LEFT is handled by preview-scrub (startHoldScrub).
     if (direction <= 0) return
     if (holdSeekJob?.isActive == true) return
@@ -680,8 +713,8 @@ internal fun PlayerActivity.startHoldSeek(direction: Int, showControls: Boolean)
         noteUserInteraction()
     }
 
-    val holdSpeed = holdSeekSpeed()
-    val holdMode = BiliClient.prefs.playerHoldSeekMode
+    val holdSpeed = speedOverride ?: holdSeekSpeed()
+    val holdMode = if (speedOverride != null) AppPrefs.PLAYER_HOLD_SEEK_MODE_SPEED else BiliClient.prefs.playerHoldSeekMode
     if (holdMode == AppPrefs.PLAYER_HOLD_SEEK_MODE_SPEED && keyScrubPendingSeekToMs != null) {
         commitDeferredKeySeekPreview()
     }

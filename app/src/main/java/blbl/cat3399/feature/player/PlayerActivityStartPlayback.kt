@@ -113,6 +113,7 @@ internal fun PlayerActivity.resetPlaybackStateForNewMedia(
     engine: BlblPlayerEngine,
     preservePartsList: Boolean,
 ) {
+    finishRemoteBoostGesture()
     cancelPlayUrlAutoRefresh(reason = "new_media")
     traceFirstFrameLogged = false
     lastAvailableQns = emptyList()

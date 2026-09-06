@@ -203,7 +203,7 @@ private class VodPlayerTouchHost(
         playerActivity.scheduleHideSeekHint()
     }
 
-    override fun touchBoostSpeed(): Float = playerActivity.holdSeekSpeed()
+    override fun touchBoostSpeed(): Float = PLAYER_HOLD_BOOST_SPEED
 
     override fun touchBoostSpeedText(speed: Float): String = playerActivity.holdSeekSpeedText(speed)
 }
@@ -328,7 +328,7 @@ internal class PlayerTouchController(
     private var downY = 0f
     private var lastX = 0f
     private var lastY = 0f
-    private var pendingRightEdgeBoostJob: Job? = null
+    private var pendingEdgeBoostJob: Job? = null
     private var boostActive = false
     private var boostPrevSpeed = 1.0f
     private var boostPrevPlayWhenReady = false
@@ -368,8 +368,8 @@ internal class PlayerTouchController(
     }
 
     fun onStop() {
-        pendingRightEdgeBoostJob?.cancel()
-        pendingRightEdgeBoostJob = null
+        pendingEdgeBoostJob?.cancel()
+        pendingEdgeBoostJob = null
         finishActiveGesture(commitSeek = false)
         stopBoostPlayback()
         pointerDown = false
@@ -402,12 +402,12 @@ internal class PlayerTouchController(
         val detectorHandled = tapDetector.onTouchEvent(event)
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                if (!host.isSidePanelVisible) scheduleRightEdgeBoostIfNeeded()
+                if (!host.isSidePanelVisible) scheduleEdgeBoostIfNeeded()
             }
 
             MotionEvent.ACTION_POINTER_DOWN -> {
                 tapSuppressed = true
-                pendingRightEdgeBoostJob?.cancel()
+                pendingEdgeBoostJob?.cancel()
                 finishActiveGesture(commitSeek = false)
                 stopBoostPlayback()
                 gestureMode = TouchGestureMode.Blocked
@@ -472,7 +472,7 @@ internal class PlayerTouchController(
                 height = gestureLayerHeight(),
                 edgeRatio = PlayerActivity.TOUCH_GESTURE_EXCLUDED_EDGE_RATIO,
             )
-        pendingRightEdgeBoostJob?.cancel()
+        pendingEdgeBoostJob?.cancel()
     }
 
     private fun handleMove(event: MotionEvent) {
@@ -485,7 +485,7 @@ internal class PlayerTouchController(
             if (!tapSuppressed && hasExceededTouchSlop(event.x, event.y)) {
                 tapSuppressed = true
             }
-            pendingRightEdgeBoostJob?.cancel()
+            pendingEdgeBoostJob?.cancel()
             return
         }
 
@@ -494,7 +494,7 @@ internal class PlayerTouchController(
         val absDx = abs(dx)
         val absDy = abs(dy)
         if (absDx > touchSlopPx || absDy > touchSlopPx) {
-            pendingRightEdgeBoostJob?.cancel()
+            pendingEdgeBoostJob?.cancel()
             tapSuppressed = true
         }
 
@@ -544,8 +544,8 @@ internal class PlayerTouchController(
 
     private fun finishTouch(cancelled: Boolean) {
         pointerDown = false
-        pendingRightEdgeBoostJob?.cancel()
-        pendingRightEdgeBoostJob = null
+        pendingEdgeBoostJob?.cancel()
+        pendingEdgeBoostJob = null
 
         if (boostActive) {
             stopBoostPlayback()
@@ -655,14 +655,12 @@ internal class PlayerTouchController(
         host.showTouchHint(activity.getString(R.string.player_touch_volume_fmt, percent), hold = true)
     }
 
-    private fun scheduleRightEdgeBoostIfNeeded() {
+    private fun scheduleEdgeBoostIfNeeded() {
         if (host.boostDelegate == null) return
         val width = gestureLayerWidth()
-        if (width <= 0f) return
-        val threshold = PlayerActivity.TOUCH_GESTURE_EDGE_LONG_PRESS_THRESHOLD
-        if (downX < width * (1f - threshold)) return
-        pendingRightEdgeBoostJob?.cancel()
-        pendingRightEdgeBoostJob =
+        if (!isPlayerTouchBoostZone(downX, width)) return
+        pendingEdgeBoostJob?.cancel()
+        pendingEdgeBoostJob =
             host.lifecycleScope.launch {
                 delay(longPressTimeoutMs)
                 if (!pointerDown || tapSuppressed || gestureMode != TouchGestureMode.None || boostActive) return@launch
@@ -705,7 +703,7 @@ internal class PlayerTouchController(
             return
         }
         touchLocked = true
-        pendingRightEdgeBoostJob?.cancel()
+        pendingEdgeBoostJob?.cancel()
         finishActiveGesture(commitSeek = false)
         stopBoostPlayback()
         host.setControlsVisibleFromTouch(false)

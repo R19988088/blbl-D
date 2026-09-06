@@ -236,6 +236,9 @@ class PlayerActivity : BaseActivity() {
     internal var keySeekHoldDetectJob: kotlinx.coroutines.Job? = null
     internal var keySeekPendingKeyCode: Int = 0
     internal var keySeekPendingDirection: Int = 0
+    internal var remoteBoostLastTapKeyCode = 0
+    internal var remoteBoostLastTapAtMs = 0L
+    internal var remoteBoostHeldKeyCode = 0
     internal var pendingCenterKeyAction: Int = 0
     internal var seekOsdToken: Long = 0L
     internal var transientSeekOsdVisible: Boolean = false
@@ -1444,6 +1447,7 @@ class PlayerActivity : BaseActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus) finishRemoteBoostGesture()
         if (exitTraceStartAtMs > 0L) {
             exitTraceLog("window:focus", "hasFocus=${if (hasFocus) 1 else 0}")
         }
@@ -1465,6 +1469,10 @@ class PlayerActivity : BaseActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val keyCode = event.keyCode
+        if (remoteBoostHeldKeyCode != 0 && keyCode == remoteBoostHeldKeyCode) {
+            if (event.action == KeyEvent.ACTION_UP) finishRemoteBoostGesture()
+            return true
+        }
         if (event.action == KeyEvent.ACTION_DOWN && keyCode != KeyEvent.KEYCODE_DPAD_UP) {
             cancelPendingCollectionThumbsFocus()
         }
@@ -1583,6 +1591,12 @@ class PlayerActivity : BaseActivity() {
 
                 if (pendingDir != 0) {
                     smartSeek(direction = pendingDir, showControls = false, hintKind = SeekHintKind.Step)
+                    if (osdMode == OsdMode.Hidden &&
+                        (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)
+                    ) {
+                        remoteBoostLastTapKeyCode = keyCode
+                        remoteBoostLastTapAtMs = event.eventTime
+                    }
                     return true
                 }
             }
@@ -1595,6 +1609,7 @@ class PlayerActivity : BaseActivity() {
         if (isInteractionKey(keyCode)) noteUserInteraction()
 
         if (dispatchPlayerCustomShortcutIfNeeded(event)) return true
+        if (handleRemoteBoostSecondPress(event)) return true
         if (shouldConsumeCollectionThumbHorizontalKey(keyCode)) return true
 
         when (keyCode) {
@@ -1871,6 +1886,7 @@ class PlayerActivity : BaseActivity() {
                 else -> return false
             }
         val recycler = binding.recyclerCollectionThumbs
+        if (recycler.visibility != View.VISIBLE) return false
         val focused = currentFocus ?: return false
         val holder = recycler.findContainingViewHolder(focused) ?: return false
         val position = holder.bindingAdapterPosition
@@ -1992,6 +2008,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     override fun onPause() {
+        finishRemoteBoostGesture()
         exitTracePauseAtMs = SystemClock.elapsedRealtime()
         if (exitCleanupRequested || isFinishing || exitTraceStartAtMs > 0L) {
             exitTraceStart("onPause")
@@ -3919,7 +3936,6 @@ class PlayerActivity : BaseActivity() {
         private const val BACK_DOUBLE_PRESS_WINDOW_MS = 2_500L
         internal const val TOUCH_LOCK_UI_HIDE_DELAY_MS = 2_500L
         internal const val TOUCH_GESTURE_EXCLUDED_EDGE_RATIO = 0.03f
-        internal const val TOUCH_GESTURE_EDGE_LONG_PRESS_THRESHOLD = 0.18f
         internal const val TOUCH_GESTURE_SIDE_VERTICAL_THRESHOLD = 0.32f
         internal const val TOUCH_GESTURE_DIRECTION_RATIO = 1.2f
         internal const val TOUCH_GESTURE_SEEK_START_THRESHOLD_MULTIPLIER = 2.5f
