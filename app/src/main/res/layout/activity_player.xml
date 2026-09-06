@@ -394,6 +394,7 @@
 
         <TextView
             android:id="@+id/btn_collection_mode"
+            android:visibility="gone"
             android:layout_width="48dp"
             android:layout_height="?attr/playerOsdButtonTargetSize"
             android:background="?attr/blblFocusBgRound"

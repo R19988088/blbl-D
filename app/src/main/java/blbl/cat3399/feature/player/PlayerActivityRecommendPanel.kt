@@ -488,13 +488,7 @@ internal fun PlayerActivity.refreshCollectionThumbsStrip(show: Boolean = osdMode
     val cards = cardsForBottomPanel(kind)
     val shouldShow = show && cards.isNotEmpty() && !isBottomCardPanelVisible()
     binding.recyclerCollectionThumbs.visibility = if (shouldShow) View.VISIBLE else View.GONE
-    if (!shouldShow) {
-        if (collectionThumbsKind != kind || collectionThumbsSelectedIndex != selectedIndex) {
-            collectionThumbsKind = kind
-            collectionThumbsSelectedIndex = selectedIndex
-        }
-        return
-    }
+    if (!shouldShow) return
     val selectionChanged = collectionThumbsKind != kind || collectionThumbsSelectedIndex != selectedIndex
     collectionThumbsKind = kind
     collectionThumbsSelectedIndex = selectedIndex

@@ -2502,6 +2502,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun initCollectionThumbsStrip() {
+        binding.btnCollectionMode.visibility = View.VISIBLE
         binding.btnCollectionMode.setOnClickListener {
             collectionThumbsShowRecommend = !collectionThumbsShowRecommend
             refreshCollectionThumbsStrip()
