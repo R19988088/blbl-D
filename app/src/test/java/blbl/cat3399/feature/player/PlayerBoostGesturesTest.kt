@@ -1,18 +1,19 @@
 package blbl.cat3399.feature.player
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlayerBoostGesturesTest {
     @Test
-    fun touchBoostCoversBothOuterThirdsButNotTheCenter() {
-        assertTrue(isPlayerTouchBoostZone(100f, 900f))
-        assertTrue(isPlayerTouchBoostZone(300f, 900f))
-        assertFalse(isPlayerTouchBoostZone(450f, 900f))
-        assertTrue(isPlayerTouchBoostZone(600f, 900f))
-        assertTrue(isPlayerTouchBoostZone(800f, 900f))
-        assertFalse(isPlayerTouchBoostZone(0f, 0f))
+    fun touchLeftRewindsAndRightAdvancesWithoutCapturingTheCenter() {
+        assertEquals(-1, playerTouchBoostDirection(100f, 900f))
+        assertEquals(-1, playerTouchBoostDirection(300f, 900f))
+        assertEquals(0, playerTouchBoostDirection(450f, 900f))
+        assertEquals(1, playerTouchBoostDirection(600f, 900f))
+        assertEquals(1, playerTouchBoostDirection(800f, 900f))
+        assertEquals(0, playerTouchBoostDirection(0f, 0f))
     }
 
     @Test

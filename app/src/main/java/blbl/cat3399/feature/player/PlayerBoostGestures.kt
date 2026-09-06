@@ -2,8 +2,13 @@ package blbl.cat3399.feature.player
 
 internal const val PLAYER_HOLD_BOOST_SPEED = 3.0f
 
-internal fun isPlayerTouchBoostZone(x: Float, width: Float): Boolean =
-    width > 0f && (x <= width / 3f || x >= width * 2f / 3f)
+internal fun playerTouchBoostDirection(x: Float, width: Float): Int =
+    when {
+        width <= 0f -> 0
+        x <= width / 3f -> -1
+        x >= width * 2f / 3f -> 1
+        else -> 0
+    }
 
 internal fun isRemoteBoostSecondPress(
     firstKey: Int,

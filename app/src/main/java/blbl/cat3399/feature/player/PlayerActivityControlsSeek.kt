@@ -687,8 +687,7 @@ internal fun PlayerActivity.handleRemoteBoostSecondPress(event: KeyEvent): Boole
 
     clearKeySeekPending()
     cancelDeferredKeySeekPreview()
-    startHoldSeek(direction = +1, showControls = false, speedOverride = PLAYER_HOLD_BOOST_SPEED)
-    if (holdSeekJob == null) return false
+    if (!startDirectionalGestureHold(if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) -1 else 1)) return false
     remoteBoostHeldKeyCode = keyCode
     return true
 }
@@ -699,6 +698,16 @@ internal fun PlayerActivity.finishRemoteBoostGesture() {
     if (remoteBoostHeldKeyCode == 0) return
     remoteBoostHeldKeyCode = 0
     stopHoldSeek()
+}
+
+internal fun PlayerActivity.startDirectionalGestureHold(direction: Int): Boolean {
+    if (holdSeekJob?.isActive == true) return false
+    if (direction < 0) {
+        startHoldScrub(direction = -1, showControls = false, speedOverride = PLAYER_HOLD_BOOST_SPEED)
+    } else {
+        startHoldSeek(direction = +1, showControls = false, speedOverride = PLAYER_HOLD_BOOST_SPEED)
+    }
+    return holdSeekJob?.isActive == true
 }
 
 internal fun PlayerActivity.startHoldSeek(direction: Int, showControls: Boolean, speedOverride: Float? = null) {
@@ -737,7 +746,7 @@ internal fun PlayerActivity.startHoldSeek(direction: Int, showControls: Boolean,
     holdSeekJob = lifecycleScope.launch { kotlinx.coroutines.awaitCancellation() }
 }
 
-internal fun PlayerActivity.startHoldScrub(direction: Int, showControls: Boolean) {
+internal fun PlayerActivity.startHoldScrub(direction: Int, showControls: Boolean, speedOverride: Float? = null) {
     if (holdSeekJob?.isActive == true) return
     val engine = player ?: return
 
@@ -747,18 +756,21 @@ internal fun PlayerActivity.startHoldScrub(direction: Int, showControls: Boolean
         noteUserInteraction()
     }
 
-    val holdSpeed = holdSeekSpeed()
+    val holdSpeed = speedOverride ?: holdSeekSpeed()
     val holdMode = BiliClient.prefs.playerHoldSeekMode
     holdPrevSpeed = engine.playbackSpeed
     holdPrevPlayWhenReady = engine.playWhenReady
     holdScrubPreviewPosMs = null
     val fixedStepMs =
-        if (holdMode == AppPrefs.PLAYER_HOLD_SEEK_MODE_SCRUB_FIXED_TIME) {
+        if (speedOverride != null) {
+            (holdSpeed * PlayerActivity.HOLD_SCRUB_FIXED_STEP_BASE_TICK_MS).roundToInt().toLong()
+        } else if (holdMode == AppPrefs.PLAYER_HOLD_SEEK_MODE_SCRUB_FIXED_TIME) {
             holdScrubFixedStepMs()
         } else {
             null
         }
     startHoldScrubSeek(engine = engine, direction = direction, speed = holdSpeed, fixedStepMs = fixedStepMs)
+    if (speedOverride != null && holdSeekJob?.isActive == true) showSeekHoldHint(direction, holdSpeed)
 }
 
 internal fun PlayerActivity.startHoldScrubSeek(engine: BlblPlayerEngine, direction: Int, speed: Float, fixedStepMs: Long?) {

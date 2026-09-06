@@ -87,8 +87,8 @@ internal interface PlayerTouchSeekDelegate {
 }
 
 internal interface PlayerTouchBoostDelegate {
-    fun touchBoostSpeed(): Float
-    fun touchBoostSpeedText(speed: Float): String
+    fun startTouchBoost(direction: Int): Boolean
+    fun stopTouchBoost()
 }
 
 private class VodPlayerTouchHost(
@@ -203,9 +203,15 @@ private class VodPlayerTouchHost(
         playerActivity.scheduleHideSeekHint()
     }
 
-    override fun touchBoostSpeed(): Float = PLAYER_HOLD_BOOST_SPEED
+    override fun startTouchBoost(direction: Int): Boolean {
+        val started = playerActivity.startDirectionalGestureHold(direction)
+        if (started && direction > 0) {
+            showTouchHint(activity.getString(R.string.player_touch_boost_fmt, playerActivity.holdSeekSpeedText(PLAYER_HOLD_BOOST_SPEED)), hold = true)
+        }
+        return started
+    }
 
-    override fun touchBoostSpeedText(speed: Float): String = playerActivity.holdSeekSpeedText(speed)
+    override fun stopTouchBoost() = playerActivity.stopHoldSeek()
 }
 
 internal fun isSwipeGestureStartExcludedByEdge(
@@ -330,8 +336,6 @@ internal class PlayerTouchController(
     private var lastY = 0f
     private var pendingEdgeBoostJob: Job? = null
     private var boostActive = false
-    private var boostPrevSpeed = 1.0f
-    private var boostPrevPlayWhenReady = false
     private var touchSeekStartPosMs = 0L
     private var touchSeekPreviewPosMs: Long? = null
     private var touchSeekDurationMs = 0L
@@ -658,7 +662,7 @@ internal class PlayerTouchController(
     private fun scheduleEdgeBoostIfNeeded() {
         if (host.boostDelegate == null) return
         val width = gestureLayerWidth()
-        if (!isPlayerTouchBoostZone(downX, width)) return
+        if (playerTouchBoostDirection(downX, width) == 0) return
         pendingEdgeBoostJob?.cancel()
         pendingEdgeBoostJob =
             host.lifecycleScope.launch {
@@ -671,30 +675,18 @@ internal class PlayerTouchController(
 
     private fun startBoostPlayback() {
         val boostDelegate = host.boostDelegate ?: return
-        val engine = host.player ?: return
-        val speed = boostDelegate.touchBoostSpeed()
-        boostPrevSpeed = engine.playbackSpeed
-        boostPrevPlayWhenReady = engine.playWhenReady
+        val direction = playerTouchBoostDirection(downX, gestureLayerWidth())
+        if (direction == 0 || !boostDelegate.startTouchBoost(direction)) return
         boostActive = true
         tapSuppressed = true
-        engine.setPlaybackSpeed(speed)
-        engine.playWhenReady = true
         host.noteUserInteractionFromTouch()
-        host.showTouchHint(
-            activity.getString(R.string.player_touch_boost_fmt, boostDelegate.touchBoostSpeedText(speed)),
-            hold = true,
-        )
         overlayBinding.touchGestureLayer.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 
     private fun stopBoostPlayback() {
         if (!boostActive) return
         boostActive = false
-        host.player?.let { engine ->
-            engine.setPlaybackSpeed(boostPrevSpeed)
-            engine.playWhenReady = boostPrevPlayWhenReady
-        }
-        host.scheduleHideTouchHint()
+        host.boostDelegate?.stopTouchBoost()
     }
 
     private fun lockTouch() {
