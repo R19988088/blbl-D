@@ -392,24 +392,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:id="@+id/btn_collection_mode"
-            android:visibility="gone"
-            android:layout_width="48dp"
-            android:layout_height="?attr/playerOsdButtonTargetSize"
-            android:background="?attr/blblFocusBgRound"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:maxLines="1"
-            android:nextFocusRight="@id/btn_prev"
-            android:nextFocusUp="@id/seek_progress"
-            android:text="@string/player_collection_mode_list"
-            android:textColor="?attr/colorOnSurface"
-            android:textSize="14sp"
-            app:layout_constraintBottom_toBottomOf="@id/controls_row"
-            app:layout_constraintEnd_toStartOf="@id/controls_row"
-            app:layout_constraintTop_toTopOf="@id/controls_row" />
 
         <LinearLayout
             android:id="@+id/controls_row"
@@ -424,6 +406,27 @@
             app:layout_constraintEnd_toStartOf="@id/tv_time"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/seek_progress">
+
+            <TextView
+                android:id="@+id/btn_collection_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginEnd="10dp"
+                android:background="@drawable/bg_player_resolution_button"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:maxLines="1"
+                android:minWidth="78dp"
+                android:nextFocusLeft="@id/btn_collection_mode"
+                android:nextFocusRight="@id/btn_prev"
+                android:nextFocusUp="@id/seek_progress"
+                android:paddingHorizontal="10dp"
+                android:text="@string/player_collection_mode_list"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
 
             <ImageButton
                 android:id="@+id/btn_prev"

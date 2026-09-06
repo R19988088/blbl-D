@@ -2503,6 +2503,16 @@ class PlayerActivity : BaseActivity() {
 
     private fun initCollectionThumbsStrip() {
         binding.btnCollectionMode.visibility = View.VISIBLE
+        binding.btnResolution.addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
+            val width = right - left
+            val height = bottom - top
+            val params = binding.btnCollectionMode.layoutParams
+            if (width > 0 && height > 0 && (params.width != width || params.height != height)) {
+                params.width = width
+                params.height = height
+                binding.btnCollectionMode.layoutParams = params
+            }
+        }
         binding.btnCollectionMode.setOnClickListener {
             collectionThumbsShowRecommend = !collectionThumbsShowRecommend
             refreshCollectionThumbsStrip()
