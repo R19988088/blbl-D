@@ -57,6 +57,7 @@ data class VideoDetailPage(
     val title: String?,
     val durationSec: Int?,
     val dimension: VideoDimension?,
+    val firstFrameUrl: String? = null,
 )
 
 data class VideoUgcSeason(

@@ -393,6 +393,7 @@ internal class WebVideoMapper(
                     cid = cid,
                     page = obj.optInt("page").takeIf { it > 0 } ?: (i + 1),
                     title = obj.optString("part", "").trim().takeIf { it.isNotBlank() },
+                    firstFrameUrl = obj.optString("first_frame", "").trim().takeIf { it.isNotBlank() },
                     durationSec = parseDurationSec(obj),
                     dimension = parseDimension(obj.optJSONObject("dimension")),
                 )

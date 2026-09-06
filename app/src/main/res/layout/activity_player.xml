@@ -392,6 +392,24 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <TextView
+            android:id="@+id/btn_collection_mode"
+            android:layout_width="48dp"
+            android:layout_height="?attr/playerOsdButtonTargetSize"
+            android:background="?attr/blblFocusBgRound"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:maxLines="1"
+            android:nextFocusRight="@id/btn_prev"
+            android:nextFocusUp="@id/seek_progress"
+            android:text="@string/player_collection_mode_list"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            app:layout_constraintBottom_toBottomOf="@id/controls_row"
+            app:layout_constraintEnd_toStartOf="@id/controls_row"
+            app:layout_constraintTop_toTopOf="@id/controls_row" />
+
         <LinearLayout
             android:id="@+id/controls_row"
             android:layout_width="0dp"
@@ -414,7 +432,7 @@
                 android:background="?attr/blblFocusBgRound"
                 android:contentDescription="@string/app_name"
                 android:focusable="true"
-                android:nextFocusLeft="@id/btn_prev"
+                android:nextFocusLeft="@id/btn_collection_mode"
                 android:nextFocusRight="@id/btn_play_pause"
                 android:nextFocusUp="@id/seek_progress"
                 android:padding="?attr/playerOsdPadTransport"

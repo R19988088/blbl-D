@@ -105,6 +105,9 @@
     <string name="player_list_tab_page">视频列表</string>
     <string name="player_list_tab_parts">合集/分P</string>
     <string name="player_list_tab_recommend">推荐</string>
+    <string name="player_collection_mode_list">列表</string>
+    <string name="player_collection_switch_list">切换到列表</string>
+    <string name="player_collection_switch_recommend">切换到推荐</string>
     <string name="player_list_empty">暂无内容</string>
     <string name="player_btn_comments">评论</string>
     <string name="player_btn_detail">视频详情页</string>

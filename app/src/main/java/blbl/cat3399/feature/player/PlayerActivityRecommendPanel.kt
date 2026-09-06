@@ -425,14 +425,19 @@ private fun PlayerActivity.ensureRecommendCardsLoaded() {
                 relatedVideosCache = PlayerActivity.RelatedVideosCache(bvid = requestBvid, items = emptyList())
                 val e = t as? BiliApiException
                 val msg = e?.apiMessage?.takeIf { it.isNotBlank() } ?: (t.message ?: "加载推荐视频失败")
-                if (isBottomCardPanelVisible() && bottomCardPanelKind == PlayerVideoListKind.RECOMMEND) {
+                if ((isBottomCardPanelVisible() && bottomCardPanelKind == PlayerVideoListKind.RECOMMEND) ||
+                    (collectionThumbsShowRecommend && osdMode != PlayerActivity.OsdMode.Hidden)
+                ) {
                     AppToast.show(this@ensureRecommendCardsLoaded, msg)
                 } else {
                     AppLog.w("Player", "recommend:load_failed $msg")
                 }
             } finally {
                 if (token == relatedVideosFetchToken) relatedVideosFetchJob = null
-                if (currentBvid.trim() == requestBvid) refreshPlayerInfoPanelContent()
+                if (currentBvid.trim() == requestBvid) {
+                    refreshPlayerInfoPanelContent()
+                    refreshCollectionThumbsStrip()
+                }
                 if (isBottomCardPanelVisible() && bottomCardPanelKind == PlayerVideoListKind.RECOMMEND && currentBvid.trim() == requestBvid) {
                     refreshBottomCardPanelContent(requestFocus = shouldRequestBottomPanelContentFocusAfterAsyncUpdate(kind = PlayerVideoListKind.RECOMMEND))
                 }
@@ -468,20 +473,20 @@ private fun PlayerActivity.resolvePlaylistUiCards(items: List<PlayerPlaylistItem
 
 internal fun PlayerActivity.refreshCollectionThumbsStrip(show: Boolean = osdMode != PlayerActivity.OsdMode.Hidden) {
     if (binding.recyclerCollectionThumbs.adapter == null) return
-    val kind = collectionThumbsKindForCurrentPlayback()
+    val kind = collectionThumbsListKind(collectionThumbsShowRecommend, partsListItems.isNotEmpty())
+    binding.btnCollectionMode.setText(if (collectionThumbsShowRecommend) R.string.player_list_tab_recommend else R.string.player_collection_mode_list)
+    binding.btnCollectionMode.contentDescription = getString(
+        if (collectionThumbsShowRecommend) R.string.player_collection_switch_list else R.string.player_collection_switch_recommend,
+    )
+    if (show && kind == PlayerVideoListKind.RECOMMEND) ensureRecommendCardsLoaded()
     val selectedIndex =
         when (kind) {
             PlayerVideoListKind.PAGE -> pageListIndex
             PlayerVideoListKind.PARTS -> partsListIndex
             else -> -1
         }
-    val cards =
-        when (kind) {
-            PlayerVideoListKind.PAGE -> resolvePlaylistUiCards(items = pageListItems, uiCards = pageListUiCards)
-            PlayerVideoListKind.PARTS -> resolvePlaylistUiCards(items = partsListItems, uiCards = partsListUiCards)
-            else -> emptyList()
-        }
-    val shouldShow = show && cards.size > 1 && selectedIndex in cards.indices && !isBottomCardPanelVisible()
+    val cards = cardsForBottomPanel(kind)
+    val shouldShow = show && cards.isNotEmpty() && !isBottomCardPanelVisible()
     binding.recyclerCollectionThumbs.visibility = if (shouldShow) View.VISIBLE else View.GONE
     if (!shouldShow) {
         if (collectionThumbsKind != kind || collectionThumbsSelectedIndex != selectedIndex) {
@@ -490,18 +495,12 @@ internal fun PlayerActivity.refreshCollectionThumbsStrip(show: Boolean = osdMode
         }
         return
     }
+    val selectionChanged = collectionThumbsKind != kind || collectionThumbsSelectedIndex != selectedIndex
     collectionThumbsKind = kind
     collectionThumbsSelectedIndex = selectedIndex
     (binding.recyclerCollectionThumbs.adapter as? VideoCardAdapter)?.submit(cards)
-    binding.recyclerCollectionThumbs.post {
-        binding.recyclerCollectionThumbs.smoothScrollToPosition(selectedIndex)
-    }
-}
-
-private fun PlayerActivity.collectionThumbsKindForCurrentPlayback(): PlayerVideoListKind? {
-    return when {
-        pageListItems.size > 1 && pageListIndex in pageListItems.indices -> PlayerVideoListKind.PAGE
-        else -> null
+    if (selectionChanged) binding.recyclerCollectionThumbs.post {
+        binding.recyclerCollectionThumbs.scrollToPosition(selectedIndex.coerceAtLeast(0))
     }
 }
 
@@ -548,7 +547,7 @@ private fun PlayerActivity.focusBottomPanelDefaultItem() {
     focusBottomPanelPosition(pos.coerceIn(0, count - 1))
 }
 
-private fun PlayerActivity.playBottomPanelRecommendCard(card: VideoCard) {
+internal fun PlayerActivity.playBottomPanelRecommendCard(card: VideoCard) {
     val bvid = card.bvid.trim()
     if (bvid.isBlank()) return
     hideBottomCardPanel(restoreFocus = false)

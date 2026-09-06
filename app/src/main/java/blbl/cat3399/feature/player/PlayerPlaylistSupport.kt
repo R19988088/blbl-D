@@ -206,7 +206,7 @@ internal fun parseMultiPagePlaylistFromDetailWithUiCards(detail: VideoDetail, bv
                 cid = pageObj.cid,
                 aid = aid,
                 title = title,
-                coverUrl = detail.coverUrl.orEmpty(),
+                coverUrl = pageObj.firstFrameUrl?.takeIf { it.isNotBlank() } ?: detail.coverUrl.orEmpty(),
                 durationSec = pageObj.durationSec ?: 0,
                 ownerName = owner?.name.orEmpty(),
                 ownerFace = owner?.avatarUrl,

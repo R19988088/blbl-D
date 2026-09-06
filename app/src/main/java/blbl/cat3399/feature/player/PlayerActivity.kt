@@ -301,6 +301,7 @@ class PlayerActivity : BaseActivity() {
     internal var partsListFetchJob: kotlinx.coroutines.Job? = null
     internal var partsListFetchToken: Int = 0
     internal var collectionThumbsKind: PlayerVideoListKind? = null
+    internal var collectionThumbsShowRecommend = false
     internal var collectionThumbsSelectedIndex: Int = -1
     internal var collectionThumbsFocusRequestToken: Int = 0
     internal lateinit var session: PlayerSessionSettings
@@ -2501,15 +2502,21 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun initCollectionThumbsStrip() {
+        binding.btnCollectionMode.setOnClickListener {
+            collectionThumbsShowRecommend = !collectionThumbsShowRecommend
+            refreshCollectionThumbsStrip()
+            noteUserInteraction()
+        }
         binding.recyclerCollectionThumbs.layoutManager =
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         binding.recyclerCollectionThumbs.itemAnimator = null
         binding.recyclerCollectionThumbs.adapter =
             VideoCardAdapter(
-                onClick = { _, pos ->
+                onClick = { card, pos ->
                     when (collectionThumbsKind) {
                         PlayerVideoListKind.PAGE -> playPageListIndex(pos)
                         PlayerVideoListKind.PARTS -> playPartsListIndex(pos)
+                        PlayerVideoListKind.RECOMMEND -> playBottomPanelRecommendCard(card)
                         else -> Unit
                     }
                     setControlsVisible(true)
@@ -2532,6 +2539,18 @@ class PlayerActivity : BaseActivity() {
                 },
                 isSelected = { _, pos -> pos == collectionThumbsSelectedIndex },
             )
+        binding.recyclerCollectionThumbs.addOnScrollListener(
+            object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    if (dx <= 0) return
+                    val kind = collectionThumbsKind ?: return
+                    val last = (recyclerView.layoutManager as? LinearLayoutManager)?.findLastVisibleItemPosition() ?: return
+                    if (last >= (recyclerView.adapter?.itemCount ?: 0) - 3 &&
+                        hasMorePlaylistItems(kind) && !isPlaylistLoadMoreRunning(kind)
+                    ) loadMorePlaylist(kind)
+                }
+            },
+        )
     }
 
     internal fun applyUpInfo(detail: VideoDetail) {
