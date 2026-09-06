@@ -810,10 +810,17 @@ internal fun PlayerActivity.startHoldScrubSeek(engine: BlblPlayerEngine, directi
     val deltaMs = stepMs.coerceAtLeast(1L) * direction.toLong()
     holdSeekJob =
         lifecycleScope.launch {
+            var lastFrameSeekAtMs = 0L
             while (isActive) {
                 val current = holdScrubPreviewPosMs ?: initial
                 val next = (current + deltaMs).coerceIn(0L, duration)
                 holdScrubPreviewPosMs = next
+                val now = SystemClock.elapsedRealtime()
+                // Leave time to decode a frame between backward seeks.
+                if (direction < 0 && next != current && now - lastFrameSeekAtMs >= 240L) {
+                    engine.seekTo(next)
+                    lastFrameSeekAtMs = now
+                }
                 showSeekOsd(
                     posMs = next,
                     durationMs = duration,
