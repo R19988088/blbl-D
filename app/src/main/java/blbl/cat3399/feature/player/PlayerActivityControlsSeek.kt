@@ -228,6 +228,7 @@ internal fun PlayerActivity.ensureBottomBarConstraintSets() {
         ConstraintSet().also { set ->
             set.clone(binding.bottomBar)
             set.setVisibility(R.id.controls_row, View.VISIBLE)
+            set.setVisibility(R.id.btn_collection_mode, View.VISIBLE)
             set.setVisibility(R.id.tv_time, View.VISIBLE)
         }
 }

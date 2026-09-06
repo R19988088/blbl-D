@@ -5,7 +5,7 @@ on:
     branches: [codex/player-list-toggle]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -30,8 +30,19 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew :app:testReleaseUnitTest --tests blbl.cat3399.feature.player.PlayerCollectionThumbsTest :app:assembleRelease -PversionName=0.1.106 -PversionCode=106
+          ./gradlew :app:testReleaseUnitTest --tests blbl.cat3399.feature.player.PlayerCollectionThumbsTest :app:assembleRelease -PversionName=0.1.107 -PversionCode=107
       - uses: actions/upload-artifact@v6
         with:
           name: device-apk
           path: app/build/outputs/apk/release/*.apk
+      - name: Publish directly downloadable APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/blbl-D-0.1.107-release.apk Blbl-0.1.107.apk
+          cp Blbl-0.1.107.apk Blbl-latest.apk
+          cp Blbl-0.1.107.apk blbl-D-latest-release.apk
+          if ! gh release view v0.1.107 >/dev/null 2>&1; then
+            gh release create v0.1.107 --target "$GITHUB_SHA" --title v0.1.107 --notes '播放控制左侧新增列表与推荐切换，列表优先显示当前视频的合集或分 P，修复切换按钮被控制栏布局隐藏的问题。' --latest
+          fi
+          gh release upload v0.1.107 Blbl-0.1.107.apk Blbl-latest.apk blbl-D-latest-release.apk --clobber
