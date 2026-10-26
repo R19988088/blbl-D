@@ -38,7 +38,7 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
     private var pendingBackToTab0RequestToken: Int = 0
     private var pendingBackToTab0AttemptsLeft: Int = 0
 
-    private var zones: List<Zone> = emptyList()
+    private var tabs: List<CategoryTab> = emptyList()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCategoryBinding.inflate(inflater, container, false)
@@ -46,7 +46,7 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        setZones(CategoryZones.visibleZones(BiliClient.prefs), force = true)
+        setTabs(CategoryZones.visibleZones(BiliClient.prefs), force = true)
         binding.tabLayout.addOnTabSelectedListener(
             object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab) = Unit
@@ -61,10 +61,9 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
         pageCallback =
             object : androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
-                    val zone = zones.getOrNull(position)
+                    val tab = tabs.getOrNull(position)
                     AppLog.d(
-                        "Category",
-                        "page selected pos=$position title=${zone?.title} tid=${zone?.tid} t=${SystemClock.uptimeMillis()}",
+                        "Category", "page selected pos=$position title=${tab?.title} key=${tab?.key} t=${SystemClock.uptimeMillis()}",
                     )
                     if (pendingFocusFirstCardFromBackToTab0) {
                         maybeRequestTab0FocusFromBackToTab0()
@@ -80,31 +79,35 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
 
     override fun onResume() {
         super.onResume()
-        setZones(CategoryZones.visibleZones(BiliClient.prefs))
+        setTabs(CategoryZones.visibleZones(BiliClient.prefs))
     }
 
-    private fun setZones(nextZones: List<Zone>, force: Boolean = false) {
+    private fun setTabs(nextZones: List<Zone>, force: Boolean = false) {
         val b = _binding ?: return
-        val next = nextZones.ifEmpty { CategoryZones.defaultZones }
-        if (!force && zones.map { CategoryZones.stableKeyFor(it) } == next.map { CategoryZones.stableKeyFor(it) }) return
+        val zones = nextZones.ifEmpty { CategoryZones.defaultZones }
+        val next = buildList {
+            add(CategoryTab("home", getString(blbl.cat3399.R.string.tab_recommend), CategoryTabKind.HOME))
+            add(CategoryTab("popular", getString(blbl.cat3399.R.string.tab_popular), CategoryTabKind.POPULAR))
+            zones.filter { it.tid != null }.forEach { add(CategoryTab(CategoryZones.stableKeyFor(it), it.title, CategoryTabKind.ZONE, it)) }
+        }
+        if (!force && tabs.map { it.key } == next.map { it.key }) return
 
-        val currentKey = zones.getOrNull(b.viewPager.currentItem)?.let { CategoryZones.stableKeyFor(it) }
+        val currentKey = tabs.getOrNull(b.viewPager.currentItem)?.key
         mediator?.detach()
         mediator = null
-        zones = next
+        tabs = next
 
-        b.viewPager.adapter = CategoryPagerAdapter(this, zones)
+        b.viewPager.adapter = CategoryPagerAdapter(this, tabs)
         AppLog.d(
-            "Category",
-            "pager init count=${zones.size} offscreen=${b.viewPager.offscreenPageLimit} t=${SystemClock.uptimeMillis()}",
+            "Category", "pager init count=${tabs.size} offscreen=${b.viewPager.offscreenPageLimit} t=${SystemClock.uptimeMillis()}",
         )
         mediator =
             TabLayoutMediator(b.tabLayout, b.viewPager) { tab, position ->
-                tab.text = zones.getOrNull(position)?.title.orEmpty()
+                tab.text = tabs.getOrNull(position)?.title.orEmpty()
             }.also { it.attach() }
 
-        val targetIndex = currentKey?.let { key -> zones.indexOfFirst { CategoryZones.stableKeyFor(it) == key }.takeIf { it >= 0 } } ?: 0
-        if (targetIndex != b.viewPager.currentItem && targetIndex in zones.indices) {
+        val targetIndex = currentKey?.let { key -> tabs.indexOfFirst { it.key == key }.takeIf { it >= 0 } } ?: 0
+        if (targetIndex != b.viewPager.currentItem && targetIndex in tabs.indices) {
             b.viewPager.setCurrentItem(targetIndex, false)
         }
 
@@ -115,10 +118,9 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
         val tabLayout = b.tabLayout
         tabLayout.postIfAlive(isAlive = { _binding === b }) {
             tabLayout.enableDpadTabFocus(selectOnFocusProvider = { BiliClient.prefs.tabSwitchFollowsFocus }) { position ->
-                val zone = zones.getOrNull(position)
+                val tab = tabs.getOrNull(position)
                 AppLog.d(
-                    "Category",
-                    "tab focus pos=$position title=${zone?.title} tid=${zone?.tid} t=${SystemClock.uptimeMillis()}",
+                    "Category", "tab focus pos=$position title=${tab?.title} key=${tab?.key} t=${SystemClock.uptimeMillis()}",
                 )
             }
             val tabStrip = tabLayout.getChildAt(0) as? ViewGroup ?: return@postIfAlive
@@ -141,7 +143,7 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
     private fun refreshCurrentPageFromTabReselect(): Boolean {
         val b = _binding
         val position = b?.viewPager?.currentItem ?: -1
-        val zone = zones.getOrNull(position)
+        val tab = tabs.getOrNull(position)
         val pageFragment = currentSelectedPageRefreshHandler()
         if (pageFragment == null) {
             AppLog.w(
@@ -157,7 +159,7 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
                 source = "category refresh",
                 page = pageFragment,
                 handled = handled,
-                extra = "pos=$position title=${zone?.title} tid=${zone?.tid}",
+                extra = "pos=$position title=${tab?.title} key=${tab?.key}",
             )
         }
         context?.let {
@@ -166,12 +168,11 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
                 source = "category tab refresh",
                 page = pageFragment,
                 handled = handled,
-                extra = "pos=$position title=${zone?.title} tid=${zone?.tid}",
+                extra = "pos=$position title=${tab?.title} key=${tab?.key}",
             )
         }
         AppLog.i(
-            "Category",
-            "refresh tabReselect force handled=$handled pos=$position title=${zone?.title} tid=${zone?.tid} handler=${pageFragment.javaClass.simpleName} t=${SystemClock.uptimeMillis()}",
+            "Category", "refresh tabReselect force handled=$handled pos=$position title=${tab?.title} key=${tab?.key} handler=${pageFragment.javaClass.simpleName} t=${SystemClock.uptimeMillis()}",
         )
         return handled
     }
@@ -179,7 +180,7 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
     private fun refreshCurrentPageFullStrict(): Boolean {
         val b = _binding
         val position = b?.viewPager?.currentItem ?: -1
-        val zone = zones.getOrNull(position)
+        val tab = tabs.getOrNull(position)
         val pageFragment = currentSelectedPageRefreshHandler()
         if (pageFragment == null) {
             AppLog.w(
@@ -195,12 +196,11 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
                 source = "category full refresh",
                 page = pageFragment,
                 handled = handled,
-                extra = "pos=$position title=${zone?.title} tid=${zone?.tid}",
+                extra = "pos=$position title=${tab?.title} key=${tab?.key}",
             )
         }
         AppLog.i(
-            "Category",
-            "refresh full handled=$handled pos=$position title=${zone?.title} tid=${zone?.tid} handler=${pageFragment.javaClass.simpleName} t=${SystemClock.uptimeMillis()}",
+            "Category", "refresh full handled=$handled pos=$position title=${tab?.title} key=${tab?.key} handler=${pageFragment.javaClass.simpleName} t=${SystemClock.uptimeMillis()}",
         )
         return handled
     }
@@ -210,7 +210,7 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
             AppLog.w("Category", "refresh handler lookup skipped: binding null t=${SystemClock.uptimeMillis()}")
         }
         val position = b.viewPager.currentItem
-        val zone = zones.getOrNull(position)
+        val tab = tabs.getOrNull(position)
         val adapter = b.viewPager.adapter as? FragmentStateAdapter
         if (adapter != null) {
             val itemId = adapter.getItemId(position)
@@ -345,7 +345,7 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
         pageCallback = null
         mediator?.detach()
         mediator = null
-        zones = emptyList()
+        tabs = emptyList()
         _binding = null
         super.onDestroyView()
     }

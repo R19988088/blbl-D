@@ -9,24 +9,27 @@ import android.os.SystemClock
 
 class CategoryPagerAdapter(
     fragment: Fragment,
-    private val zones: List<Zone>,
+    private val tabs: List<CategoryTab>,
 ) : FragmentStateAdapter(fragment) {
-    override fun getItemCount(): Int = zones.size
+    override fun getItemCount(): Int = tabs.size
 
     override fun createFragment(position: Int): Fragment {
-        val zone = zones[position]
+        val tab = tabs[position]
         AppLog.d(
-            "Category",
-            "createFragment pos=$position title=${zone.title} tid=${zone.tid} t=${SystemClock.uptimeMillis()}",
+            "Category", "createFragment pos=$position title=${tab.title} key=${tab.key} t=${SystemClock.uptimeMillis()}",
         )
-        return if (zone.tid == null) {
-            VideoGridFragment.newPopular()
-        } else {
-            VideoGridFragment.newRegion(zone.tid)
+        return when (tab.kind) {
+            CategoryTabKind.HOME -> VideoGridFragment.newRecommend()
+            CategoryTabKind.POPULAR -> VideoGridFragment.newPopular()
+            CategoryTabKind.ZONE -> VideoGridFragment.newRegion(tab.zone!!.tid!!)
         }
     }
 
-    override fun getItemId(position: Int): Long = CategoryZones.stableKeyFor(zones[position]).hashCode().toLong()
+    override fun getItemId(position: Int): Long = tabs[position].key.hashCode().toLong()
 
-    override fun containsItem(itemId: Long): Boolean = zones.any { CategoryZones.stableKeyFor(it).hashCode().toLong() == itemId }
+    override fun containsItem(itemId: Long): Boolean = tabs.any { it.key.hashCode().toLong() == itemId }
 }
+
+enum class CategoryTabKind { HOME, POPULAR, ZONE }
+
+data class CategoryTab(val key: String, val title: String, val kind: CategoryTabKind, val zone: Zone? = null)
