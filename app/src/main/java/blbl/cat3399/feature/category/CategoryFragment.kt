@@ -148,7 +148,7 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
         if (pageFragment == null) {
             AppLog.w(
                 "Category",
-                "refresh tabReselect no handler pos=$position title=${zone?.title} tid=${zone?.tid} childCount=${childFragmentManager.fragments.size} fragments=${childFragmentManager.fragments.joinToString { it.javaClass.simpleName + ':' + it.isResumed }} t=${SystemClock.uptimeMillis()}",
+                "refresh tabReselect no handler pos=$position title=${tab?.title} key=${tab?.key} childCount=${childFragmentManager.fragments.size} fragments=${childFragmentManager.fragments.joinToString { it.javaClass.simpleName + ':' + it.isResumed }} t=${SystemClock.uptimeMillis()}",
             )
             return false
         }
@@ -185,7 +185,7 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
         if (pageFragment == null) {
             AppLog.w(
                 "Category",
-                "refresh full no handler pos=$position title=${zone?.title} tid=${zone?.tid} childCount=${childFragmentManager.fragments.size} fragments=${childFragmentManager.fragments.joinToString { it.javaClass.simpleName + ':' + it.isResumed }} t=${SystemClock.uptimeMillis()}",
+                "refresh full no handler pos=$position title=${tab?.title} key=${tab?.key} childCount=${childFragmentManager.fragments.size} fragments=${childFragmentManager.fragments.joinToString { it.javaClass.simpleName + ':' + it.isResumed }} t=${SystemClock.uptimeMillis()}",
             )
             return false
         }
@@ -217,19 +217,19 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
             childFragmentManager.findFragmentByTag("f$itemId")?.let { fragment ->
                 AppLog.d(
                     "Category",
-                    "refresh handler tag hit pos=$position title=${zone?.title} tid=${zone?.tid} itemId=$itemId fragment=${fragment.javaClass.simpleName} resumed=${fragment.isResumed} handler=${fragment is RefreshKeyHandler} t=${SystemClock.uptimeMillis()}",
+                    "refresh handler tag hit pos=$position title=${tab?.title} key=${tab?.key} itemId=$itemId fragment=${fragment.javaClass.simpleName} resumed=${fragment.isResumed} handler=${fragment is RefreshKeyHandler} t=${SystemClock.uptimeMillis()}",
                 )
                 return fragment as? RefreshKeyHandler
             }
             AppLog.w(
                 "Category",
-                "refresh handler tag miss pos=$position title=${zone?.title} tid=${zone?.tid} itemId=$itemId childCount=${childFragmentManager.fragments.size} tags=${childFragmentManager.fragments.joinToString { it.tag.orEmpty() + ':' + it.javaClass.simpleName + ':' + it.isResumed }} t=${SystemClock.uptimeMillis()}",
+                "refresh handler tag miss pos=$position title=${tab?.title} key=${tab?.key} itemId=$itemId childCount=${childFragmentManager.fragments.size} tags=${childFragmentManager.fragments.joinToString { it.tag.orEmpty() + ':' + it.javaClass.simpleName + ':' + it.isResumed }} t=${SystemClock.uptimeMillis()}",
             )
         }
         val strict = findCurrentViewPagerChildFragmentAsStrict<RefreshKeyHandler>(b.viewPager)
         AppLog.d(
             "Category",
-            "refresh handler strict=${strict?.javaClass?.simpleName} pos=$position title=${zone?.title} tid=${zone?.tid} t=${SystemClock.uptimeMillis()}",
+            "refresh handler strict=${strict?.javaClass?.simpleName} pos=$position title=${tab?.title} key=${tab?.key} t=${SystemClock.uptimeMillis()}",
         )
         return strict
     }
