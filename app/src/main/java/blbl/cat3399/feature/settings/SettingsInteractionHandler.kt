@@ -939,7 +939,6 @@ class SettingsInteractionHandler(
                     focusId = entry.id,
                     title = activity.getString(R.string.setting_main_visible_pages),
                     options = listOf(
-                        AppPrefs.MAIN_VISIBLE_PAGE_HOME to activity.getString(R.string.tab_recommend),
                         AppPrefs.MAIN_VISIBLE_PAGE_CATEGORY to activity.getString(R.string.tab_category),
                         AppPrefs.MAIN_VISIBLE_PAGE_DYNAMIC to activity.getString(R.string.tab_dynamic),
                         AppPrefs.MAIN_VISIBLE_PAGE_LIVE to activity.getString(R.string.tab_live),

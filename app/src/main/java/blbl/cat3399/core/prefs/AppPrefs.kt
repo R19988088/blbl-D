@@ -107,8 +107,13 @@ class AppPrefs(context: Context) {
         set(value) = saveStringList(KEY_MAIN_MY_VISIBLE_TABS, normalizeStringList(value))
 
     var mainVisiblePages: List<String>
-        get() = loadStringList(KEY_MAIN_VISIBLE_PAGES).takeIf { it.isNotEmpty() } ?: DEFAULT_MAIN_VISIBLE_PAGES
-        set(value) = saveStringList(KEY_MAIN_VISIBLE_PAGES, normalizeStringList(value).ifEmpty { DEFAULT_MAIN_VISIBLE_PAGES })
+        get() = loadStringList(KEY_MAIN_VISIBLE_PAGES)
+            .filter { it != MAIN_VISIBLE_PAGE_HOME }
+            .takeIf { it.isNotEmpty() } ?: DEFAULT_MAIN_VISIBLE_PAGES
+        set(value) = saveStringList(
+            KEY_MAIN_VISIBLE_PAGES,
+            normalizeStringList(value).filter { it != MAIN_VISIBLE_PAGE_HOME }.ifEmpty { DEFAULT_MAIN_VISIBLE_PAGES },
+        )
 
     var favoriteVisibleFolderIds: List<String>
         get() = loadStringList(KEY_FAVORITE_VISIBLE_FOLDER_IDS)
@@ -1241,7 +1246,6 @@ class AppPrefs(context: Context) {
 
         val DEFAULT_MAIN_VISIBLE_PAGES: List<String> =
             listOf(
-                MAIN_VISIBLE_PAGE_HOME,
                 MAIN_VISIBLE_PAGE_CATEGORY,
                 MAIN_VISIBLE_PAGE_DYNAMIC,
                 MAIN_VISIBLE_PAGE_LIVE,

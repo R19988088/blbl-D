@@ -124,6 +124,13 @@ class CategoryFragment : Fragment(), VideoGridTabSwitchFocusHost, BackPressHandl
                 )
             }
             val tabStrip = tabLayout.getChildAt(0) as? ViewGroup ?: return@postIfAlive
+            // Add half the existing inter-tab padding to make this gap 1.5x wider.
+            val popularTab = tabStrip.getChildAt(1)
+            val firstZoneTab = tabStrip.getChildAt(2)
+            (firstZoneTab?.layoutParams as? ViewGroup.MarginLayoutParams)?.let { params ->
+                params.marginStart = (popularTab.paddingEnd + firstZoneTab.paddingStart) / 2
+                firstZoneTab.layoutParams = params
+            }
             for (i in 0 until tabStrip.childCount) {
                 tabStrip.getChildAt(i).setOnKeyListener { _, keyCode, event ->
                     if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {

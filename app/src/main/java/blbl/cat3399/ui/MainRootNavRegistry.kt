@@ -143,7 +143,8 @@ object MainRootNavRegistry {
 
     fun resolveLaunchNavId(startupPageKey: String): Int {
         return enabledStartupSpecs().firstOrNull { it.startupPageKey == startupPageKey }?.navId
-            ?: SidebarNavAdapter.ID_HOME
+            ?: enabledStartupSpecs().firstOrNull()?.navId
+            ?: SidebarNavAdapter.ID_CATEGORY
     }
 
     fun startupTitle(context: Context, startupPageKey: String): String {
