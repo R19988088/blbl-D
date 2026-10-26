@@ -15,6 +15,7 @@ import blbl.cat3399.feature.favorite.FavoriteFragment
 import blbl.cat3399.feature.home.HomeFragment
 import blbl.cat3399.feature.live.LiveFragment
 import blbl.cat3399.feature.my.MyFragment
+import blbl.cat3399.feature.my.MyToViewFragment
 import blbl.cat3399.feature.search.SearchFragment
 
 data class RootNavSpec(
@@ -68,6 +69,14 @@ object MainRootNavRegistry {
                 iconRes = R.drawable.ic_action_fav,
                 matchesFragment = { it is FavoriteFragment },
                 fragmentFactory = { FavoriteFragment.newInstance() },
+            ),
+            RootNavSpec(
+                navId = SidebarNavAdapter.ID_WATCH_LATER,
+                key = "watch_later",
+                titleRes = R.string.tab_watch_later,
+                iconRes = R.drawable.ic_nav_watch_later,
+                matchesFragment = { it is MyToViewFragment },
+                fragmentFactory = { MyToViewFragment() },
             ),
             RootNavSpec(
                 navId = SidebarNavAdapter.ID_DYNAMIC,

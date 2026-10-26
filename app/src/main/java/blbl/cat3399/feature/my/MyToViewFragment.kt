@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -27,6 +28,7 @@ import blbl.cat3399.feature.video.VideoCardVisibilityFilter
 import blbl.cat3399.feature.video.buildVideoCardPlaylistToken
 import blbl.cat3399.feature.video.openVideoDetailFromCards
 import blbl.cat3399.feature.video.removeVideoCardAndRestoreFocus
+import blbl.cat3399.feature.video.showVideoCardRemoteMenuPopup
 import blbl.cat3399.ui.RefreshKeyHandler
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -94,8 +96,12 @@ class MyToViewFragment : Fragment(), MyTabSwitchFocusTarget, RefreshKeyHandler {
                             )
                         }
                     },
-                    onLongClick = { card, _ ->
-                        openUpDetailFromVideoCard(card)
+                    onLongClick = { card, pos ->
+                        val activity = activity as? ComponentActivity ?: return@VideoCardAdapter false
+                        val actions = actionController.manualActions(card, pos).take(4)
+                        activity.showVideoCardRemoteMenuPopup(card, actions) { action ->
+                            actionController.onActionSelected(card, pos, action)
+                        }
                         true
                     },
                     actionDelegate = actionController,

@@ -22,6 +22,11 @@
     <dimen name="sidebar_nav_card_margin_h">6dp</dimen>
     <dimen name="sidebar_nav_container_padding_v">8dp</dimen>
     <dimen name="sidebar_nav_icon_size">32dp</dimen>
+    <dimen name="sidebar_nav_icon_size_selected">28.8dp</dimen>
+    <dimen name="sidebar_nav_icon_size_search">33.6dp</dimen>
+    <dimen name="sidebar_nav_icon_size_search_selected">30.24dp</dimen>
+    <dimen name="sidebar_nav_icon_size_watch_later">41.6dp</dimen>
+    <dimen name="sidebar_nav_icon_size_watch_later_selected">37.44dp</dimen>
     <dimen name="sidebar_nav_label_margin_top">4dp</dimen>
     <dimen name="sidebar_nav_label_text_size">14sp</dimen>
     <dimen name="sidebar_nav_item_height_default">48dp</dimen>

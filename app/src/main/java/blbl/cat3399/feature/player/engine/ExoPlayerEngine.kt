@@ -498,6 +498,12 @@ private class BlblRenderersFactory(
     context: Context,
     private val volumeBalanceProcessor: VolumeBalanceAudioProcessor,
 ) : DefaultRenderersFactory(context) {
+    init {
+        // Some Android TV OMX decoders fail after playback has already started.
+        // Let Media3 try another decoder instead of terminating the whole player.
+        setEnableDecoderFallback(true)
+    }
+
     override fun buildAudioSink(context: Context, enableFloatOutput: Boolean, enableAudioTrackPlaybackParams: Boolean): AudioSink {
         return DefaultAudioSink.Builder(context)
             .setEnableFloatOutput(enableFloatOutput)

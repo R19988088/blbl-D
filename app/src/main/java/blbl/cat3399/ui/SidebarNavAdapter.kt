@@ -94,6 +94,22 @@ class SidebarNavAdapter(
             onClick: () -> Unit,
         ) {
             binding.ivIcon.setImageResource(item.iconRes)
+            val iconSizeRes =
+                when {
+                    item.id == ID_SEARCH && selected -> R.dimen.sidebar_nav_icon_size_search_selected
+                    item.id == ID_SEARCH -> R.dimen.sidebar_nav_icon_size_search
+                    item.id == ID_WATCH_LATER && selected -> R.dimen.sidebar_nav_icon_size_watch_later_selected
+                    item.id == ID_WATCH_LATER -> R.dimen.sidebar_nav_icon_size_watch_later
+                    selected -> R.dimen.sidebar_nav_icon_size_selected
+                    else -> R.dimen.sidebar_nav_icon_size
+                }
+            val iconSizePx = binding.root.resources.getDimensionPixelSize(iconSizeRes)
+            val iconLayoutParams = binding.ivIcon.layoutParams
+            if (iconLayoutParams.width != iconSizePx || iconLayoutParams.height != iconSizePx) {
+                iconLayoutParams.width = iconSizePx
+                iconLayoutParams.height = iconSizePx
+                binding.ivIcon.layoutParams = iconLayoutParams
+            }
             binding.tvLabel.text = item.title
             binding.tvLabel.visibility = if (showLabelsAlways || selected) View.VISIBLE else View.GONE
             val ctx = binding.root.context
@@ -134,5 +150,6 @@ class SidebarNavAdapter(
         const val ID_MY = 5
         const val ID_CUSTOM = 6
         const val ID_FAVORITE = 7
+        const val ID_WATCH_LATER = 8
     }
 }

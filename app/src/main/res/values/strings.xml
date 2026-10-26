@@ -9,6 +9,7 @@
     <string name="tab_search">搜索</string>
     <string name="tab_category">分类</string>
     <string name="tab_favorite">收藏</string>
+    <string name="tab_watch_later">稍后</string>
     <string name="tab_dynamic">动态</string>
     <string name="tab_live">直播</string>
     <string name="tab_custom">自定义</string>
@@ -39,6 +40,8 @@
     <string name="video_card_action_favorite">添加到收藏</string>
     <string name="video_card_action_unfavorite">取消收藏</string>
     <string name="video_card_action_watch_later">稍后观看</string>
+    <string name="video_card_action_remove_watch_later">取消稍后</string>
+    <string name="video_card_action_remove_watch_later_done">已取消稍后</string>
     <string name="video_card_action_block_up">拉黑UP</string>
     <string name="video_card_action_open_detail">进入详情页</string>
     <string name="video_card_action_open_up">进入UP主页</string>

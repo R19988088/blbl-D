@@ -61,7 +61,15 @@ class VideoCardActionController(
     ): List<VideoCardQuickAction> {
         return listOf(
             VideoCardQuickAction.favorite(context.getString(favoriteActionLabelRes())),
-            VideoCardQuickAction.watchLater(context.getString(R.string.video_card_action_watch_later)),
+            VideoCardQuickAction.watchLater(
+                context.getString(
+                    if (dismissBehavior == VideoCardDismissBehavior.DeleteToView) {
+                        R.string.video_card_action_remove_watch_later
+                    } else {
+                        R.string.video_card_action_watch_later
+                    },
+                ),
+            ),
             VideoCardQuickAction.blockUp(context.getString(R.string.video_card_action_block_up)),
             VideoCardQuickAction.openDetail(context.getString(R.string.video_card_action_open_detail)),
             VideoCardQuickAction.openUp(context.getString(R.string.video_card_action_open_up)),
@@ -76,7 +84,8 @@ class VideoCardActionController(
     ) {
         when (action.id) {
             VideoCardQuickActionId.FAVORITE -> handleFavoriteAction(card)
-            VideoCardQuickActionId.WATCH_LATER -> addToWatchLater(card)
+            VideoCardQuickActionId.WATCH_LATER ->
+                if (dismissBehavior == VideoCardDismissBehavior.DeleteToView) dismissCard(card) else addToWatchLater(card)
             VideoCardQuickActionId.BLOCK_UP -> blockUp(card)
             VideoCardQuickActionId.OPEN_DETAIL -> openDetail(card, position)
             VideoCardQuickActionId.OPEN_UP -> onOpenUp(card)
@@ -280,7 +289,13 @@ class VideoCardActionController(
                             }
                         }
                         onCardRemoved(card.stableKey())
-                        AppToast.show(context, context.getString(R.string.video_card_action_delete_done))
+                        val messageRes =
+                            if (dismissBehavior == VideoCardDismissBehavior.DeleteToView) {
+                                R.string.video_card_action_remove_watch_later_done
+                            } else {
+                                R.string.video_card_action_delete_done
+                            }
+                        AppToast.show(context, context.getString(messageRes))
                     } catch (t: Throwable) {
                         if (t is CancellationException) throw t
                         AppToast.show(context, errorMessage(t))
