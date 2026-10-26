@@ -28,6 +28,7 @@ internal fun PlayerActivity.showRemoteMenuPopup() {
     var handle: PopupHandle? = null
     val favoriteMediaId = currentFavoriteMediaIdFromPlaylistSource()
     val showUnfavorite = favoriteMediaId != null || actionFavored
+    var isInWatchLater = pageListSource?.trim() == "MyToView"
 
     dialogBinding.btnFavorite.text = getString(
         if (showUnfavorite) R.string.video_card_action_unfavorite else R.string.video_card_action_favorite,
@@ -40,9 +41,16 @@ internal fun PlayerActivity.showRemoteMenuPopup() {
             onFavButtonClicked(showControls = false)
         }
     }
+    fun updateWatchLaterLabel() {
+        dialogBinding.btnWatchLater.text = getString(
+            if (isInWatchLater) R.string.video_card_action_remove_watch_later
+            else R.string.video_card_action_watch_later,
+        )
+    }
+    updateWatchLaterLabel()
     dialogBinding.btnWatchLater.setOnClickListener {
         handle?.dismiss()
-        addCurrentVideoToWatchLater()
+        if (isInWatchLater) removeCurrentVideoFromWatchLater() else addCurrentVideoToWatchLater()
     }
     dialogBinding.btnBlockUp.setOnClickListener {
         handle?.dismiss()
@@ -67,6 +75,20 @@ internal fun PlayerActivity.showRemoteMenuPopup() {
                 dialogBinding.btnFavorite.post { dialogBinding.btnFavorite.requestFocus() }
             },
         )
+    lifecycleScope.launch {
+        val aid = currentAid?.takeIf { it > 0L }
+        val bvid = currentBvid.trim()
+        if (aid == null && bvid.isBlank()) return@launch
+        val found = withContext(Dispatchers.IO) {
+            runCatching { BiliApi.toViewList() }.getOrNull()?.any { card ->
+                (aid != null && card.aid == aid) || (bvid.isNotBlank() && card.bvid == bvid)
+            } == true
+        }
+        if (!isFinishing && !isDestroyed) {
+            isInWatchLater = isInWatchLater || found
+            updateWatchLaterLabel()
+        }
+    }
 }
 
 private fun PlayerActivity.currentFavoriteMediaIdFromPlaylistSource(): Long? {
@@ -117,6 +139,24 @@ private fun PlayerActivity.addCurrentVideoToWatchLater() {
             if (t is CancellationException) return@launch
             val e = t as? BiliApiException
             AppToast.show(this@addCurrentVideoToWatchLater, e?.apiMessage?.takeIf { it.isNotBlank() } ?: "稍后再看失败")
+        }
+    }
+}
+
+private fun PlayerActivity.removeCurrentVideoFromWatchLater() {
+    val aid = currentAid?.takeIf { it > 0L }
+    if (aid == null) {
+        AppToast.show(this, "未获取到 aid，暂不支持取消稍后")
+        return
+    }
+    lifecycleScope.launch {
+        try {
+            withContext(Dispatchers.IO) { BiliApi.toViewDelete(aid) }
+            AppToast.show(this@removeCurrentVideoFromWatchLater, getString(R.string.video_card_action_remove_watch_later_done))
+        } catch (t: Throwable) {
+            if (t is CancellationException) return@launch
+            val e = t as? BiliApiException
+            AppToast.show(this@removeCurrentVideoFromWatchLater, e?.apiMessage?.takeIf { it.isNotBlank() } ?: "取消稍后失败")
         }
     }
 }
