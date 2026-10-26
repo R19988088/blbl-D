@@ -40,7 +40,7 @@ fun ComponentActivity.showVideoCardRemoteMenuPopup(
 
     handle =
         PopupHost.from(this).showModal(
-            title = "菜单",
+            title = card.title.trim().takeIf { it.isNotBlank() } ?: "视频",
             contentView = dialogBinding.root,
             cancelable = true,
             actions = emptyList(),

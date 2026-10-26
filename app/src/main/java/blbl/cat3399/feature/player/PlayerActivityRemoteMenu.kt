@@ -57,7 +57,7 @@ internal fun PlayerActivity.showRemoteMenuPopup() {
 
     handle =
         PopupHost.from(this).showModal(
-            title = "菜单",
+            title = currentMainTitle?.trim()?.takeIf { it.isNotBlank() } ?: "视频",
             contentView = dialogBinding.root,
             cancelable = true,
             actions = emptyList(),
