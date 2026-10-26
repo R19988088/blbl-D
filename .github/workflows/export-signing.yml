@@ -1,0 +1,50 @@
+name: Export Encrypted Signing
+on:
+  push:
+    branches: [codex/signing-export]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Encrypt signing configuration
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          RECIPIENT_CERT: |
+            -----BEGIN CERTIFICATE-----
+            MIIDyDCCAjACCQCOYu4cAtoOszANBgkqhkiG9w0BAQsFADAmMSQwIgYDVQQDDBti
+            bGJsLWxvY2FsLXNpZ25pbmctdHJhbnNmZXIwHhcNMjYwOTA2MDk0OTM5WhcNMjYw
+            OTA3MDk0OTM5WjAmMSQwIgYDVQQDDBtibGJsLWxvY2FsLXNpZ25pbmctdHJhbnNm
+            ZXIwggGiMA0GCSqGSIb3DQEBAQUAA4IBjwAwggGKAoIBgQC1knJu9fBiUsbdiBu2
+            LHkxB49gKppc60SiaJ4JzLbcpRol58plTTc451Awm5zu2CktOBjHhDztTz6PBwP9
+            1BaGmg450ECEReNav0s6hFgxSuo9aY3s2dJ/ZYBDaEi80Aj07tJ1LQzUQdZn28RG
+            xyype14+pwAKkOIuZu513/sazNDDQZMMRpqKaC4Lw4jeoSWYJu1IxQgQiGT6upnN
+            px09zhL8jTQxnOHySeOTaScLrMmg3DfdIGCB07MU+iyKpNyc8Kd9QVwVJXM4Wi8z
+            A8SVaIE+BRelYpaZINldTtDqBgOwKFx0Lsq++K7FcdYSo8JSn8F7OehyTMm6iyB1
+            yvBr14LMonlirQvM+vtTtPHdOoNEZk8RZ1dZ3cDquaBIIOnw+RJzRQZl2ICOk7ds
+            COv2ZvWmtexGD3Jt0KxhGL5mqA23ouAS6uRNjum7nU3hftV02uPkcIrLyv5Sf3xg
+            iXj6JtdNXFt6oOHx8O6Z62RY/z9SDw3ArnibTQrYQyZgHnMCAwEAATANBgkqhkiG
+            9w0BAQsFAAOCAYEAktwtZoNSCgDGyYhW802FpydIG7AyYwcSg4DtaeeU6ZWATPCj
+            t0wSvGeYUGVGe2dVzA/sXbfrXpql4deKhR3JqefrA8H8lMwzrHM2oKV9ri/0WPCO
+            +6GRkVFHkUs+uapy8C4FxmGmPZihIxOwGl9rxBduMbiGvRLNMimPiDdGn+7YLvtb
+            VT/pEF1p+nKEFBJbGuguRt7Qwj6/X4PihOKVxuhfEE5vEoZd5QcjCtMBpg05oMTH
+            K52JdY3MjOtupatIpDrGPba/VBTDf7eiAs0r7wbi/E8gust0d3d/Goy6W/4Tr+Mw
+            BOpHdBJY4jeomwCnFwelX5cXF3jjudIIQKn5/S++kJKHCg3DOolgmkaIRdh+8JqX
+            HQVKc3Xw1ZR0E0nG2OXfYaPSNGFMsJd/CcK41rgrGf9xY+CerMbPyuP350z/An1m
+            k1sq/Z1Ek/BFchqlKfWZo4B8U7GoEaJweTI/wBZEckzzDTKh2WVm+0qedM2QSbCT
+            KoEKbjR5qy2szU18
+            -----END CERTIFICATE-----
+        run: |
+          printf '%s\n' "$RECIPIENT_CERT" > recipient.pem
+          python3 -c 'import json, os; json.dump({k: os.environ[k] for k in ("RELEASE_KEYSTORE_BASE64", "RELEASE_STORE_PASSWORD", "RELEASE_KEY_ALIAS", "RELEASE_KEY_PASSWORD")}, open("signing.json", "w"))'
+          openssl cms -encrypt -binary -aes-256-cbc -in signing.json -out signing.enc -outform DER recipient.pem
+          rm signing.json
+      - uses: actions/upload-artifact@v6
+        with:
+          name: encrypted-signing
+          path: signing.enc
+          retention-days: 1
