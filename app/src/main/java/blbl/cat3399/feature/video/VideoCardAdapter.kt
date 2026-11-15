@@ -572,7 +572,11 @@ class VideoCardAdapter(
                 .translationY(0f)
                 .setDuration(duration)
                 .setInterpolator(interpolator)
-                .withEndAction { releaseMotionLayer() }
+                // Drop the layer a beat after the lift settles, not on its last frame.
+                // Releasing it inside the animation callback forces the cover to be re-rasterised
+                // on that very frame (measured: a 43ms GPU spike right at the end of the lift),
+                // which shows up as a hitch exactly when the eye expects the card to stop.
+                .withEndAction { binding.clCover.postDelayed({ releaseMotionLayer() }, 120L) }
                 .start()
 
             // The cover lags the card slightly, which is what makes the lift read as depth.
