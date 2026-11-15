@@ -22,13 +22,16 @@ object MotionTokens {
 
     /**
      * Grid navigation: focus moves one row and the content follows.
-     * cubic-bezier(0.40, 0.00, 0.20, 1.00) — slow off the mark, fast through the middle, soft stop,
-     * which is what Apple's list scrolling feels like at TV viewing distance.
+     *
+     * cubic-bezier(0.45, 0.00, 0.50, 1.30) — gentle start, fast middle, and the end point overshoots
+     * by ~4.5% before settling back to 1.0. That last sliver is the "elastic" part: the content
+     * slightly overtakes the row it settles on and springs back, which is how tvOS stops a scroll.
+     * The y control point above 1.0 is deliberate; PathInterpolator only constrains x to [0, 1].
      */
-    val gridScroll: PathInterpolator = PathInterpolator(0.4f, 0f, 0.2f, 1f)
+    val gridScroll: PathInterpolator = PathInterpolator(0.45f, 0f, 0.50f, 1.30f)
 
-    /** One row of travel reads as a real scroll rather than a jump: ~0.3s, Apple's list timing. */
-    const val GRID_SCROLL_MS = 280L
+    /** ~0.3s for one row of travel; the settle needs the extra 20ms over a plain ease-in-out. */
+    const val GRID_SCROLL_MS = 300L
 
     /** Cover appearance: a single layer fades in and rises, no cross-dissolve. */
     const val CONTENT_APPEAR_MS = 320L
