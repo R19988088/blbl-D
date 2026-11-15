@@ -73,10 +73,17 @@ class AppPrefs(context: Context) {
         }
 
     var startupPage: String
-        get() = prefs.getString(KEY_STARTUP_PAGE, STARTUP_PAGE_HOME)?.trim()?.takeIf { it.isNotBlank() } ?: STARTUP_PAGE_HOME
+        get() {
+            val raw =
+                prefs.getString(KEY_STARTUP_PAGE, STARTUP_PAGE_CATEGORY)?.trim()?.takeIf { it.isNotBlank() }
+                    ?: STARTUP_PAGE_CATEGORY
+            // Home tab was merged into the category page, so the legacy "home" key now resolves to the category page.
+            return if (raw == STARTUP_PAGE_HOME) STARTUP_PAGE_CATEGORY else raw
+        }
         set(value) {
-            val v = value.trim().takeIf { it.isNotBlank() } ?: STARTUP_PAGE_HOME
-            prefs.edit().putString(KEY_STARTUP_PAGE, v).apply()
+            val v = value.trim().takeIf { it.isNotBlank() } ?: STARTUP_PAGE_CATEGORY
+            val normalized = if (v == STARTUP_PAGE_HOME) STARTUP_PAGE_CATEGORY else v
+            prefs.edit().putString(KEY_STARTUP_PAGE, normalized).apply()
         }
 
     var customPageConfig: CustomPageConfig

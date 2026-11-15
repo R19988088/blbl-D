@@ -848,8 +848,8 @@ class SettingsInteractionHandler(
 
             SettingId.StartupPage -> {
                 val options =
-                    MainRootNavRegistry.startupSpecs().map { spec ->
-                        (spec.startupPageKey ?: AppPrefs.STARTUP_PAGE_HOME) to activity.getString(spec.titleRes)
+                    MainRootNavRegistry.enabledStartupSpecs().map { spec ->
+                        (spec.startupPageKey ?: AppPrefs.STARTUP_PAGE_CATEGORY) to activity.getString(spec.titleRes)
                     }
                 showChoiceDialog(
                     title = "启动默认页",
@@ -858,7 +858,7 @@ class SettingsInteractionHandler(
                 ) { selected ->
                     val key =
                         options.firstOrNull { it.second == selected }?.first
-                            ?: blbl.cat3399.core.prefs.AppPrefs.STARTUP_PAGE_HOME
+                            ?: blbl.cat3399.core.prefs.AppPrefs.STARTUP_PAGE_CATEGORY
                     prefs.startupPage = key
                     AppToast.show(activity, "启动默认页：$selected（下次启动生效）")
                     renderer.refreshSection(entry.id)

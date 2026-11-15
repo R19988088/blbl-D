@@ -148,9 +148,13 @@ object MainRootNavRegistry {
     }
 
     fun startupTitle(context: Context, startupPageKey: String): String {
-        return startupSpecs().firstOrNull { it.startupPageKey == startupPageKey }
-            ?.let { context.getString(it.titleRes) }
-            ?: context.getString(R.string.tab_recommend)
+        val normalizedKey =
+            if (startupPageKey.trim() == AppPrefs.STARTUP_PAGE_HOME) AppPrefs.STARTUP_PAGE_CATEGORY else startupPageKey.trim()
+        enabledStartupSpecs().firstOrNull { it.startupPageKey == normalizedKey }
+            ?.let { return context.getString(it.titleRes) }
+        enabledSpecForNavId(resolveLaunchNavId(normalizedKey))
+            ?.let { return context.getString(it.titleRes) }
+        return context.getString(R.string.tab_recommend)
     }
 
     fun specForNavId(navId: Int): RootNavSpec? = specs.firstOrNull { it.navId == navId }
