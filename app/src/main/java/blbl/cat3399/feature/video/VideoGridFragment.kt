@@ -161,7 +161,10 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     val total = adapter.itemCount
                     if (total <= 0) return
 
-                    if (total - lastVisible - 1 <= 8) {
+                    // Start the request ~1 row earlier than the old threshold (was 8): the page then
+                    // usually lands before the user reaches the bottom, so the load-more key
+                    // consumption window barely shows up as "remote does nothing".
+                    if (total - lastVisible - 1 <= 12) {
                         val nextKey = paging.snapshot().nextKey
                         if (nearEndLoggedKey != nextKey) {
                             nearEndLoggedKey = nextKey
@@ -366,6 +369,10 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     adapter.submit(applied.items)
                 } else if (applied.items.isNotEmpty()) {
                     adapter.append(applied.items)
+                    // Warm the appended covers right away: they sit 2-3 rows below the viewport,
+                    // so decoding them now keeps the decode/texture upload out of the moment the
+                    // user actually scrolls onto them.
+                    preloadCoversFor(applied.items)
                 }
                 _binding?.let { b ->
                     b.recycler.postIfAlive(isAlive = { _binding === b && isResumed }) {
@@ -408,6 +415,18 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                 )
             }
         }
+    }
+
+    private fun preloadCoversFor(items: List<VideoCard>) {
+        if (items.isEmpty()) return
+        val b = _binding ?: return
+        val coverSize = measuredCoverSize(b.recycler) ?: return
+        ImageLoader.preloadCovers(
+            context = requireContext(),
+            urls = items.map { it.coverUrl },
+            targetWidthPx = coverSize.first,
+            targetHeightPx = coverSize.second,
+        )
     }
 
     private fun scheduleNextCoverPreload(recyclerView: RecyclerView) {
