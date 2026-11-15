@@ -910,8 +910,8 @@ internal class DpadGridController(
         runCatching {
             android.provider.Settings.Global
                 .getString(recyclerView.context.contentResolver, "blbl_scroll_spring_freq")
-                ?.toFloat() ?: 3.6f
-        }.getOrDefault(3.6f)
+                ?.toFloat() ?: 2.6f
+        }.getOrDefault(2.6f)
 
     private fun runAfterScrollSettled(action: () -> Unit) {
         var delivered = false
