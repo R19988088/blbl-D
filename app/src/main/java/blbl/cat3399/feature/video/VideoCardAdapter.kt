@@ -588,7 +588,7 @@ class VideoCardAdapter(
                 .start()
         }
 
-        private fun liftScale(refined: Boolean): Float = if (refined) 1.06f else 1.045f
+        private fun liftScale(refined: Boolean): Float = if (refined) 1.07f else 1.06f
 
         private fun coverParallaxScale(refined: Boolean): Float = if (refined) 1.02f else 1f
 

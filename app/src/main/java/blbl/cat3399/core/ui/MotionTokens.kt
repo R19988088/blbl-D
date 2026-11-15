@@ -32,8 +32,8 @@ object MotionTokens {
      */
     val gridScroll: Interpolator = ElasticSettleInterpolator()
 
-    /** ~0.32s for one row: 190ms of travel plus 130ms of settle. */
-    const val GRID_SCROLL_MS = 320L
+    /** ~0.27s for one row: 160ms of travel plus 110ms of settle. */
+    const val GRID_SCROLL_MS = 270L
 
     /** Cover appearance: a single layer fades in and rises, no cross-dissolve. */
     const val CONTENT_APPEAR_MS = 320L
