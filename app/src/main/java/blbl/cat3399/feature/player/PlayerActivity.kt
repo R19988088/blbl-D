@@ -850,7 +850,12 @@ class PlayerActivity : BaseActivity() {
             preferAudioId = prefs.playerPreferredAudioId,
             preferredQn = prefs.playerPreferredQn,
             targetQn = 0,
-            playbackModeOverride = null,
+            playbackModeOverride =
+                if (isWatchLaterPlaybackSource() && pageListItems.size > 1) {
+                    AppPrefs.PLAYER_PLAYBACK_MODE_PAGE_LIST
+                } else {
+                    null
+                },
             subtitleEnabled = prefs.subtitleEnabledDefault,
             subtitleLangOverride = null,
             subtitleTextSizeSp = prefs.subtitleTextSizeSp,

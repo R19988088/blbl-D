@@ -26,6 +26,13 @@ private const val BOTTOM_PANEL_LOAD_MORE_REMAINING_THRESHOLD = 2
 
 internal fun PlayerActivity.isBottomCardPanelVisible(): Boolean = binding.recommendPanel.visibility == View.VISIBLE
 
+/**
+ * Videos opened from the watch-later (MyToView) entry: the cover strip and the list panel should
+ * default to that entry's page list, and the session continues with the next watch-later video.
+ */
+internal fun PlayerActivity.isWatchLaterPlaybackSource(): Boolean =
+    pageListSource?.trim() == "MyToView" && pageListItems.isNotEmpty()
+
 internal fun PlayerActivity.initBottomCardPanel() {
     binding.recommendScrim.setOnClickListener { hideBottomCardPanel(restoreFocus = true) }
     binding.recommendPanel.setOnClickListener { hideBottomCardPanel(restoreFocus = true) }
@@ -236,6 +243,10 @@ private fun PlayerActivity.selectBottomPanelKind(kind: PlayerVideoListKind, requ
 }
 
 private fun PlayerActivity.syncBottomPanelTabUi(kind: PlayerVideoListKind) {
+    // From the watch-later entry the page tab shows that entry's list, so label it accordingly.
+    binding.tabPageList.setText(
+        if (isWatchLaterPlaybackSource()) R.string.my_tab_toview else R.string.player_list_tab_page,
+    )
     binding.tabPageList.isSelected = kind == PlayerVideoListKind.PAGE
     binding.tabPartsList.isSelected = kind == PlayerVideoListKind.PARTS
     binding.tabRecommendList.isSelected = kind == PlayerVideoListKind.RECOMMEND
@@ -473,7 +484,12 @@ private fun PlayerActivity.resolvePlaylistUiCards(items: List<PlayerPlaylistItem
 
 internal fun PlayerActivity.refreshCollectionThumbsStrip(show: Boolean = osdMode != PlayerActivity.OsdMode.Hidden) {
     if (binding.recyclerCollectionThumbs.adapter == null) return
-    val kind = collectionThumbsListKind(collectionThumbsShowRecommend, partsListItems.isNotEmpty())
+    val kind =
+        collectionThumbsListKind(
+            showRecommend = collectionThumbsShowRecommend,
+            hasParts = partsListItems.isNotEmpty(),
+            preferEntryPage = isWatchLaterPlaybackSource(),
+        )
     binding.btnCollectionMode.setText(if (collectionThumbsShowRecommend) R.string.player_list_tab_recommend else R.string.player_collection_mode_list)
     binding.btnCollectionMode.contentDescription = getString(
         if (collectionThumbsShowRecommend) R.string.player_collection_switch_list else R.string.player_collection_switch_recommend,

@@ -6,9 +6,14 @@ internal enum class PlayerVideoListKind {
     RECOMMEND,
 }
 
-internal fun collectionThumbsListKind(showRecommend: Boolean, hasParts: Boolean): PlayerVideoListKind =
+internal fun collectionThumbsListKind(
+    showRecommend: Boolean,
+    hasParts: Boolean,
+    preferEntryPage: Boolean = false,
+): PlayerVideoListKind =
     when {
         showRecommend -> PlayerVideoListKind.RECOMMEND
+        preferEntryPage -> PlayerVideoListKind.PAGE
         hasParts -> PlayerVideoListKind.PARTS
         else -> PlayerVideoListKind.PAGE
     }

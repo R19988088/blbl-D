@@ -11,4 +11,11 @@ class PlayerCollectionThumbsTest {
         assertEquals(PlayerVideoListKind.RECOMMEND, collectionThumbsListKind(true, true))
         assertEquals(PlayerVideoListKind.RECOMMEND, collectionThumbsListKind(true, false))
     }
+
+    @Test
+    fun watchLaterEntryPrefersItsOwnPageList() {
+        assertEquals(PlayerVideoListKind.PAGE, collectionThumbsListKind(false, true, preferEntryPage = true))
+        assertEquals(PlayerVideoListKind.PAGE, collectionThumbsListKind(false, false, preferEntryPage = true))
+        assertEquals(PlayerVideoListKind.RECOMMEND, collectionThumbsListKind(true, true, preferEntryPage = true))
+    }
 }
