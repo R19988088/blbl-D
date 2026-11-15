@@ -32,8 +32,8 @@ object MotionTokens {
      */
     val gridScroll: Interpolator = ElasticSettleInterpolator()
 
-    /** ~0.27s for one row: 160ms of travel plus 110ms of settle. */
-    const val GRID_SCROLL_MS = 270L
+    /** ~0.33s for one row: 200ms of travel plus 130ms of settle. */
+    const val GRID_SCROLL_MS = 330L
 
     /** Cover appearance: a single layer fades in and rises, no cross-dissolve. */
     const val CONTENT_APPEAR_MS = 320L
@@ -58,8 +58,10 @@ class ElasticSettleInterpolator(
     override fun getInterpolation(input: Float): Float {
         val t = input.coerceIn(0f, 1f)
         if (t <= peakAt) return (1f + overshoot) * ease.getInterpolation(t / peakAt)
+        // smootherstep, not smoothstep: 6r^5 - 15r^4 + 10r^3 has zero first AND second derivative
+        // at both ends, so the settle leaves the peak and arrives at rest without a visible kink.
         val r = (t - peakAt) / (1f - peakAt)
-        val s = r * r * (3f - 2f * r)
+        val s = r * r * r * (r * (r * 6f - 15f) + 10f)
         return (1f + overshoot) - overshoot * s
     }
 }
