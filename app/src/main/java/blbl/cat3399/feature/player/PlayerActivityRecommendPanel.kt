@@ -482,6 +482,13 @@ private fun PlayerActivity.resolvePlaylistUiCards(items: List<PlayerPlaylistItem
     }
 }
 
+internal fun collectionThumbsStripShouldShow(
+    osdVisible: Boolean,
+    requested: Boolean,
+    hasCards: Boolean,
+    bottomPanelVisible: Boolean,
+): Boolean = osdVisible && requested && hasCards && !bottomPanelVisible
+
 internal fun PlayerActivity.refreshCollectionThumbsStrip(show: Boolean = osdMode != PlayerActivity.OsdMode.Hidden) {
     if (binding.recyclerCollectionThumbs.adapter == null) return
     val kind =
@@ -494,7 +501,7 @@ internal fun PlayerActivity.refreshCollectionThumbsStrip(show: Boolean = osdMode
     binding.btnCollectionMode.contentDescription = getString(
         if (collectionThumbsShowRecommend) R.string.player_collection_switch_list else R.string.player_collection_switch_recommend,
     )
-    if (show && kind == PlayerVideoListKind.RECOMMEND) ensureRecommendCardsLoaded()
+    if (show && collectionThumbsStripRequested && kind == PlayerVideoListKind.RECOMMEND) ensureRecommendCardsLoaded()
     val selectedIndex =
         when (kind) {
             PlayerVideoListKind.PAGE -> pageListIndex
@@ -502,7 +509,13 @@ internal fun PlayerActivity.refreshCollectionThumbsStrip(show: Boolean = osdMode
             else -> -1
         }
     val cards = cardsForBottomPanel(kind)
-    val shouldShow = show && cards.isNotEmpty() && !isBottomCardPanelVisible()
+    val shouldShow =
+        collectionThumbsStripShouldShow(
+            osdVisible = show,
+            requested = collectionThumbsStripRequested,
+            hasCards = cards.isNotEmpty(),
+            bottomPanelVisible = isBottomCardPanelVisible(),
+        )
     binding.recyclerCollectionThumbs.visibility = if (shouldShow) View.VISIBLE else View.GONE
     if (!shouldShow) return
     val selectionChanged = collectionThumbsKind != kind || collectionThumbsSelectedIndex != selectedIndex

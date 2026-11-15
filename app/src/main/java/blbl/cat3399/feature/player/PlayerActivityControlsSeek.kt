@@ -53,6 +53,8 @@ internal fun PlayerActivity.toggleControls() {
 
 internal fun PlayerActivity.setControlsVisible(visible: Boolean) {
     val show = (visible || isSidePanelVisible() || isSponsorSubmitPanelVisible()) && !isTouchLocked()
+    // 控件因用户操作（暂停、拖动等）出现时不带出缩略图条；只有按“上”才展开列表。
+    if (!show) collectionThumbsStripRequested = false
     seekOsdHideJob?.cancel()
     seekOsdHideJob = null
     seekOsdToken = 0L

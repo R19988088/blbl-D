@@ -307,6 +307,12 @@ class PlayerActivity : BaseActivity() {
     internal var collectionThumbsShowRecommend = false
     internal var collectionThumbsSelectedIndex: Int = -1
     internal var collectionThumbsFocusRequestToken: Int = 0
+
+    /**
+     * 缩略图条只在用户按“上”时展开；暂停、左右拖动等操作只显示播放控件。
+     * 每次 OSD 隐藏时复位，避免列表跟着控件一起冒出来。
+     */
+    internal var collectionThumbsStripRequested: Boolean = false
     internal lateinit var session: PlayerSessionSettings
     internal var settingsPanelMenu: PlayerSettingsMenu = PlayerSettingsMenu.ROOT
     internal var bottomCardPanelKind: PlayerVideoListKind = PlayerVideoListKind.PAGE
@@ -1713,6 +1719,8 @@ class PlayerActivity : BaseActivity() {
                 if (isSidePanelVisible()) return super.dispatchKeyEvent(event)
                 val wasOsdHidden = osdMode == OsdMode.Hidden
                 val currentRegion = currentPlayerVerticalFocusRegion()
+                // 按“上”是展开缩略图列表的唯一入口：先标记，再让控件可见，列表随之出现并可直接切换。
+                collectionThumbsStripRequested = true
                 setControlsVisible(true)
                 val targetRegion =
                     resolvePlayerVerticalFocusTarget(
