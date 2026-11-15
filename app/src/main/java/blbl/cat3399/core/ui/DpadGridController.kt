@@ -7,7 +7,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
-import android.view.animation.DecelerateInterpolator
+import android.view.animation.Interpolator
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -129,8 +129,8 @@ internal class DpadGridController(
     private var pendingFocusAfterLoadMoreTargetPos: Int = RecyclerView.NO_POSITION
     private val focusRetryDelayMillis: Long = 16L
     private val focusRetryMaxAttempts: Int = 30
-    private val edgeScrollSettleDelayMillis: Long = 180L
-    private val edgeScrollInterpolator = DecelerateInterpolator(1.5f)
+    private val edgeScrollSettleDelayMillis: Long = MotionTokens.GRID_SCROLL_MS
+    private val edgeScrollInterpolator: Interpolator = MotionTokens.gridScroll
     private var focusParkedDescendantFocusability: Int? = null
     private val focusProtectWindowMs: Long = 500L
     private var lastVerticalNavAtMs: Long = 0L
