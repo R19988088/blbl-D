@@ -1722,16 +1722,29 @@ class PlayerActivity : BaseActivity() {
                 // 按“上”是展开缩略图列表的唯一入口：先标记，再让控件可见，列表随之出现并可直接切换。
                 collectionThumbsStripRequested = true
                 setControlsVisible(true)
+                val hasThumbs = canFocusCollectionThumbs()
                 val targetRegion =
-                    resolvePlayerVerticalFocusTarget(
-                        current = currentRegion,
-                        direction = PlayerVerticalDirection.UP,
-                        hasCollectionThumbs = canFocusCollectionThumbs(),
-                        hasVideoShotPreview = canFocusVideoShotPreview(),
-                        hasUpQuick = binding.cardUpQuick.visibility == View.VISIBLE,
-                        isOsdHidden = wasOsdHidden,
-                    )
+                    if (
+                        hasThumbs &&
+                        currentRegion != PlayerVerticalFocusRegion.UP_QUICK &&
+                        currentRegion != PlayerVerticalFocusRegion.COLLECTION_THUMBS &&
+                        currentRegion != PlayerVerticalFocusRegion.VIDEO_SHOT_PREVIEW
+                    ) {
+                        // 控件区按“上”：直接把焦点送进列表，进入后左右即可切换视频
+                        PlayerVerticalFocusRegion.COLLECTION_THUMBS
+                    } else {
+                        resolvePlayerVerticalFocusTarget(
+                            current = currentRegion,
+                            direction = PlayerVerticalDirection.UP,
+                            hasCollectionThumbs = hasThumbs,
+                            hasVideoShotPreview = canFocusVideoShotPreview(),
+                            hasUpQuick = binding.cardUpQuick.visibility == View.VISIBLE,
+                            isOsdHidden = wasOsdHidden,
+                        )
+                    }
                 if (focusPlayerVerticalRegion(targetRegion)) return true
+                // 列表聚焦是异步的：已发起就到此为止，别再把焦点抢回进度条
+                if (targetRegion == PlayerVerticalFocusRegion.COLLECTION_THUMBS) return true
                 if (
                     currentRegion == PlayerVerticalFocusRegion.UP_QUICK ||
                     currentRegion == PlayerVerticalFocusRegion.COLLECTION_THUMBS ||

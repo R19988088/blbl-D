@@ -412,7 +412,14 @@ internal fun PlayerActivity.focusCollectionThumbs(): Boolean {
                 !isFinishing &&
                 !isDestroyed &&
                 recycler.visibility == View.VISIBLE &&
-                (binding.seekProgress.isFocused || binding.cardUpQuick.hasFocus() || recycler.hasFocus())
+                (
+                    binding.seekProgress.isFocused ||
+                        binding.cardUpQuick.hasFocus() ||
+                        recycler.hasFocus() ||
+                        // 从控件区按“上”也能把焦点送进列表
+                        binding.bottomBar.hasFocus() ||
+                        currentFocus == null
+                )
         },
         onFocused = {},
     )
