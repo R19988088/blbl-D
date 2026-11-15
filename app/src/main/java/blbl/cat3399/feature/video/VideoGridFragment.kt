@@ -164,10 +164,11 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     val total = adapter.itemCount
                     if (total <= 0) return
 
-                    // Start the request ~1 row earlier than the old threshold (was 8): the page then
-                    // usually lands before the user reaches the bottom, so the load-more key
-                    // consumption window barely shows up as "remote does nothing".
-                    if (total - lastVisible - 1 <= 12) {
+                    // Start the request up to 4 rows before the user reaches the bottom. A page
+                    // takes 450-550ms on the wire, which is ~1 press of head-room per 4 items
+                    // (one press moves a full row of `spanCount`), so this hides the wait
+                    // behind the previous rows instead of stalling at the end of the list.
+                    if (total - lastVisible - 1 <= spanCount * 4) {
                         val nextKey = paging.snapshot().nextKey
                         if (nearEndLoggedKey != nextKey) {
                             nearEndLoggedKey = nextKey
