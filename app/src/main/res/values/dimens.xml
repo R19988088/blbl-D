@@ -35,6 +35,8 @@
 
     <!-- Video card -->
     <dimen name="video_card_margin">8dp</dimen>
+    <dimen name="video_card_corner_radius">10dp</dimen>
+    <dimen name="video_card_focus_shadow_spread">9dp</dimen>
     <dimen name="video_card_text_margin">10dp</dimen>
     <dimen name="video_card_duration_text_size">14sp</dimen>
     <dimen name="video_card_duration_padding_h">8dp</dimen>

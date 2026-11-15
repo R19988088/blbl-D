@@ -24,9 +24,11 @@ import blbl.cat3399.core.paging.appliedOrNull
 import blbl.cat3399.core.ui.AppToast
 import blbl.cat3399.core.ui.RefreshDebugOverlay
 import blbl.cat3399.core.ui.DpadGridController
+import blbl.cat3399.core.ui.FocusShadowDecoration
 import blbl.cat3399.core.ui.FocusTreeUtils
 import blbl.cat3399.core.ui.GridViewportFillMonitor
 import blbl.cat3399.core.ui.GridSpanPolicy
+import blbl.cat3399.core.ui.SuppressAddItemAnimator
 import blbl.cat3399.core.ui.TabContentSwitchFocusHost
 import blbl.cat3399.core.ui.TabSwitchFocusTarget
 import blbl.cat3399.core.ui.postIfAlive
@@ -79,6 +81,8 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
     private var lastScrollDy: Int = 0
     private val coverPreloadHandler = Handler(Looper.getMainLooper())
     private var coverPreloadRunnable: Runnable? = null
+    private var focusShadowDecoration: FocusShadowDecoration? = null
+    private var nearEndLoggedKey: PagingKey? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVideoGridBinding.inflate(inflater, container, false)
@@ -122,8 +126,16 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         binding.recycler.setHasFixedSize(true)
         val spanCount = spanCountForWidth()
         binding.recycler.layoutManager = GridLayoutManager(requireContext(), spanCount)
-        binding.recycler.setItemViewCacheSize(spanCount * 3)
-        (binding.recycler.itemAnimator as? androidx.recyclerview.widget.SimpleItemAnimator)?.supportsChangeAnimations = false
+        // Keep a few screens of holders around: fast paging then recycles instead of inflating.
+        binding.recycler.setItemViewCacheSize(spanCount * 5)
+        binding.recycler.recycledViewPool.setMaxRecycledViews(0, spanCount * 2)
+        binding.recycler.itemAnimator = SuppressAddItemAnimator()
+        focusShadowDecoration?.release()
+        focusShadowDecoration =
+            FocusShadowDecoration(
+                cornerRadiusPx = resources.getDimension(R.dimen.video_card_corner_radius),
+                spreadPx = resources.getDimension(R.dimen.video_card_focus_shadow_spread),
+            ).also { binding.recycler.addItemDecoration(it) }
         binding.recycler.clearOnScrollListeners()
         binding.recycler.addOnScrollListener(
             object : RecyclerView.OnScrollListener() {
@@ -150,7 +162,11 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     if (total <= 0) return
 
                     if (total - lastVisible - 1 <= 8) {
-                        AppLog.d("VideoGrid", "near end source=$source rid=$rid t=${SystemClock.uptimeMillis()}")
+                        val nextKey = paging.snapshot().nextKey
+                        if (nearEndLoggedKey != nextKey) {
+                            nearEndLoggedKey = nextKey
+                            AppLog.d("VideoGrid", "near end source=$source rid=$rid t=${SystemClock.uptimeMillis()}")
+                        }
                         loadNextPage()
                     }
                 }
@@ -410,9 +426,25 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                         .take(8)
                         .map { it.coverUrl }
                         .toList()
-                ImageLoader.preloadCovers(requireContext(), covers)
+                // Preload at the size covers are actually drawn, so the warmed entry is the one
+                // the next bind hits instead of a source-sized decode that gets thrown away.
+                val coverSize = measuredCoverSize(recyclerView)
+                ImageLoader.preloadCovers(
+                    context = requireContext(),
+                    urls = covers,
+                    targetWidthPx = coverSize?.first ?: 0,
+                    targetHeightPx = coverSize?.second ?: 0,
+                )
             }
         coverPreloadHandler.postDelayed(coverPreloadRunnable!!, 120L)
+    }
+
+    private fun measuredCoverSize(recyclerView: RecyclerView): Pair<Int, Int>? {
+        for (index in 0 until recyclerView.childCount) {
+            val cover = recyclerView.getChildAt(index)?.findViewById<android.widget.ImageView>(R.id.iv_cover) ?: continue
+            if (cover.width > 0 && cover.height > 0) return cover.width to cover.height
+        }
+        return null
     }
 
     private fun spanCountForWidth(): Int {
@@ -589,6 +621,9 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         dpadGridController = null
         viewportFillMonitor?.release()
         viewportFillMonitor = null
+        focusShadowDecoration?.release()
+        focusShadowDecoration = null
+        nearEndLoggedKey = null
         coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
         coverPreloadRunnable = null
         _binding = null

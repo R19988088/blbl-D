@@ -6,8 +6,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
-import android.view.animation.DecelerateInterpolator
-import android.view.animation.OvershootInterpolator
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -18,6 +16,7 @@ import blbl.cat3399.core.model.VideoCard
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.prefs.AppPrefs
 import blbl.cat3399.core.ui.DpadItemKeyHandler
+import blbl.cat3399.core.ui.MotionTokens
 import blbl.cat3399.core.ui.cloneInUserScale
 import blbl.cat3399.core.ui.setDpadItemKeyHandler
 import blbl.cat3399.core.util.Format
@@ -109,10 +108,21 @@ class VideoCardAdapter(
         return key.hashCode().toLong()
     }
 
+    private var scaledInflaterContext: android.content.Context? = null
+    private var scaledInflater: LayoutInflater? = null
+
+    private fun inflaterFor(context: android.content.Context): LayoutInflater {
+        if (scaledInflaterContext !== context) {
+            scaledInflater = LayoutInflater.from(context).cloneInUserScale(context)
+            scaledInflaterContext = context
+        }
+        return scaledInflater ?: LayoutInflater.from(context).cloneInUserScale(context)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Vh {
         val binding =
             ItemVideoCardBinding.inflate(
-                LayoutInflater.from(parent.context).cloneInUserScale(parent.context),
+                inflaterFor(parent.context),
                 parent,
                 false,
             )
@@ -316,15 +326,26 @@ class VideoCardAdapter(
         fun resetTransientState() {
             binding.root.animate().cancel()
             binding.ivCover.animate().cancel()
+            binding.clCover.animate().cancel()
+            releaseMotionLayer()
             binding.root.scaleX = 1f
             binding.root.scaleY = 1f
             binding.root.translationX = 0f
             binding.root.translationY = 0f
+            binding.clCover.scaleX = 1f
+            binding.clCover.scaleY = 1f
             binding.ivCover.scaleX = 1f
             binding.ivCover.scaleY = 1f
             binding.ivCover.translationX = 0f
             binding.ivCover.translationY = 0f
+            binding.ivCover.alpha = 1f
             lastFocusMotionState = null
+        }
+
+        private fun releaseMotionLayer() {
+            if (binding.root.layerType != View.LAYER_TYPE_NONE) {
+                binding.root.setLayerType(View.LAYER_TYPE_NONE, null)
+            }
         }
 
         fun bind(
@@ -438,12 +459,19 @@ class VideoCardAdapter(
 
 
         private fun syncFocusMotionState(hasFocus: Boolean) {
+            val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
             lastFocusMotionState = hasFocus
             binding.root.animate().cancel()
-            binding.root.scaleX = if (hasFocus) 1.035f else 1f
-            binding.root.scaleY = if (hasFocus) 1.035f else 1f
+            binding.clCover.animate().cancel()
+            releaseMotionLayer()
+            val rootScale = if (hasFocus) liftScale(refined) else 1f
+            val coverScale = if (hasFocus) coverParallaxScale(refined) else 1f
+            binding.root.scaleX = rootScale
+            binding.root.scaleY = rootScale
             binding.root.translationX = 0f
             binding.root.translationY = 0f
+            binding.clCover.scaleX = coverScale
+            binding.clCover.scaleY = coverScale
             binding.ivCover.animate().cancel()
             binding.ivCover.scaleX = 1f
             binding.ivCover.scaleY = 1f
@@ -455,33 +483,36 @@ class VideoCardAdapter(
             if (lastFocusMotionState == hasFocus) return
             lastFocusMotionState = hasFocus
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
-            val duration = if (refined) 235L else 155L
-            val rootScale = if (hasFocus) 1.035f else 1f
+            val duration = if (hasFocus) MotionTokens.FOCUS_LIFT_IN_MS else MotionTokens.FOCUS_LIFT_OUT_MS
+            val interpolator = if (hasFocus) MotionTokens.springOut else MotionTokens.easeIn
+            val rootScale = if (hasFocus) liftScale(refined) else 1f
+            val coverScale = if (hasFocus) coverParallaxScale(refined) else 1f
 
+            // A hardware layer keeps the card from being re-rasterised on every frame of the lift;
+            // it is dropped again as soon as the motion settles.
+            binding.root.setLayerType(View.LAYER_TYPE_HARDWARE, null)
             binding.root.animate()
                 .scaleX(rootScale)
                 .scaleY(rootScale)
                 .translationX(0f)
                 .translationY(0f)
                 .setDuration(duration)
-                .setInterpolator(
-                    if (refined) {
-                        OvershootInterpolator(0.85f)
-                    } else {
-                        DecelerateInterpolator(1.45f)
-                    },
-                )
+                .setInterpolator(interpolator)
+                .withEndAction { releaseMotionLayer() }
                 .start()
 
-            binding.ivCover.animate()
-                .scaleX(1f)
-                .scaleY(1f)
-                .translationX(0f)
-                .translationY(0f)
+            // The cover lags the card slightly, which is what makes the lift read as depth.
+            binding.clCover.animate()
+                .scaleX(coverScale)
+                .scaleY(coverScale)
                 .setDuration(duration)
-                .setInterpolator(DecelerateInterpolator(1.45f))
+                .setInterpolator(interpolator)
                 .start()
         }
+
+        private fun liftScale(refined: Boolean): Float = if (refined) 1.06f else 1.045f
+
+        private fun coverParallaxScale(refined: Boolean): Float = if (refined) 1.02f else 1f
 
         private fun nudgeFocusedCard(directionX: Float, directionY: Float) {
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
@@ -489,7 +520,7 @@ class VideoCardAdapter(
             val heightShift = binding.root.height * if (refined) 0.04f else 0.022f
             if (widthShift <= 0f || heightShift <= 0f) return
             val token = ++motionResetToken
-            val focusedScale = if (binding.root.hasFocus()) 1.035f else 1f
+            val focusedScale = if (binding.root.hasFocus()) liftScale(refined) else 1f
 
             binding.root.animate().cancel()
             binding.root.animate()
@@ -498,7 +529,7 @@ class VideoCardAdapter(
                 .scaleX(focusedScale * 0.985f)
                 .scaleY(focusedScale * 0.985f)
                 .setDuration(105L)
-                .setInterpolator(DecelerateInterpolator(1.35f))
+                .setInterpolator(MotionTokens.easeIn)
                 .withEndAction {
                     binding.root.postDelayed(
                         {
@@ -509,7 +540,8 @@ class VideoCardAdapter(
                                 .scaleX(focusedScale)
                                 .scaleY(focusedScale)
                                 .setDuration(if (refined) 250L else 195L)
-                                .setInterpolator(OvershootInterpolator(if (refined) 0.95f else 0.65f))
+                                .setInterpolator(MotionTokens.springOut)
+                                .withEndAction { releaseMotionLayer() }
                                 .start()
                         },
                         12L,
