@@ -1,5 +1,6 @@
 package blbl.cat3399.core.ui
 
+import android.view.animation.Interpolator
 import android.view.animation.PathInterpolator
 
 /**
@@ -21,21 +22,44 @@ object MotionTokens {
     val easeIn: PathInterpolator = PathInterpolator(0.32f, 0f, 0.67f, 0f)
 
     /**
-     * Grid navigation: focus moves one row and the content follows.
+     * Grid navigation: focus moves one row and the content follows, then floats into place.
      *
-     * cubic-bezier(0.45, 0.00, 0.50, 1.30) — gentle start, fast middle, and the end point overshoots
-     * by ~4.5% before settling back to 1.0. That last sliver is the "elastic" part: the content
-     * slightly overtakes the row it settles on and springs back, which is how tvOS stops a scroll.
-     * The y control point above 1.0 is deliberate; PathInterpolator only constrains x to [0, 1].
+     * Two stages instead of one cubic-bezier. A bezier overshoot is pinned to 1.0 at the end, so
+     * its whole bump gets squeezed into the last ~10% of the timeline (4.5% of the travel in
+     * 30ms) — that reads as a snap, not a spring. Here the content eases out of the row and
+     * overshoots at [ElasticSettleInterpolator.peakAt] (60%), then spends the remaining 40%
+     * drifting back to rest, which is how a tvOS scroll stops.
      */
-    val gridScroll: PathInterpolator = PathInterpolator(0.45f, 0f, 0.50f, 1.30f)
+    val gridScroll: Interpolator = ElasticSettleInterpolator()
 
-    /** ~0.3s for one row of travel; the settle needs the extra 20ms over a plain ease-in-out. */
-    const val GRID_SCROLL_MS = 300L
+    /** ~0.32s for one row: 190ms of travel plus 130ms of settle. */
+    const val GRID_SCROLL_MS = 320L
 
     /** Cover appearance: a single layer fades in and rises, no cross-dissolve. */
     const val CONTENT_APPEAR_MS = 320L
 
     const val FOCUS_LIFT_IN_MS = 260L
     const val FOCUS_LIFT_OUT_MS = 220L
+}
+
+/**
+ * Eases out of the target row, overshoots by [overshoot] at [peakAt], then settles back.
+ *
+ * The peak is a smooth turning point (velocity reaches zero there, like anything thrown), and the
+ * return is a smoothstep over the remaining [1 - peakAt], so the whole stop is one continuous
+ * deceleration: no snap at the peak, no dead stop at the end.
+ */
+class ElasticSettleInterpolator(
+    private val overshoot: Float = 0.028f,
+    private val peakAt: Float = 0.60f,
+) : Interpolator {
+    private val ease: Interpolator = PathInterpolator(0.42f, 0f, 0.58f, 1f)
+
+    override fun getInterpolation(input: Float): Float {
+        val t = input.coerceIn(0f, 1f)
+        if (t <= peakAt) return (1f + overshoot) * ease.getInterpolation(t / peakAt)
+        val r = (t - peakAt) / (1f - peakAt)
+        val s = r * r * (3f - 2f * r)
+        return (1f + overshoot) - overshoot * s
+    }
 }
