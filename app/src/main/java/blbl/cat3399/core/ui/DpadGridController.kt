@@ -131,6 +131,7 @@ internal class DpadGridController(
     private val focusRetryMaxAttempts: Int = 30
     private val edgeScrollSettleDelayMillis: Long = MotionTokens.GRID_SCROLL_MS
     private val edgeScrollInterpolator: Interpolator = MotionTokens.gridScroll
+    private val springScroller by lazy { SpringRowScroller(recyclerView) }
     private var focusParkedDescendantFocusability: Int? = null
     private val focusProtectWindowMs: Long = 500L
     private var lastVerticalNavAtMs: Long = 0L
@@ -876,6 +877,11 @@ internal class DpadGridController(
             return
         }
 
+        if (springEnabled()) {
+            springScroller.scrollBy(dy, springDamping(), springFrequencyHz(), afterSettled)
+            return
+        }
+
         recyclerView.stopScroll()
         recyclerView.smoothScrollBy(
             0,
@@ -885,6 +891,27 @@ internal class DpadGridController(
         )
         runAfterScrollSettled(afterSettled)
     }
+
+    private fun springEnabled(): Boolean =
+        runCatching {
+            android.provider.Settings.Global
+                .getString(recyclerView.context.contentResolver, "blbl_scroll_spring")
+                ?.let { it == "1" } ?: true
+        }.getOrDefault(true)
+
+    private fun springDamping(): Float =
+        runCatching {
+            android.provider.Settings.Global
+                .getString(recyclerView.context.contentResolver, "blbl_scroll_spring_damping")
+                ?.toFloat() ?: 0.72f
+        }.getOrDefault(0.72f)
+
+    private fun springFrequencyHz(): Float =
+        runCatching {
+            android.provider.Settings.Global
+                .getString(recyclerView.context.contentResolver, "blbl_scroll_spring_freq")
+                ?.toFloat() ?: 3.6f
+        }.getOrDefault(3.6f)
 
     private fun runAfterScrollSettled(action: () -> Unit) {
         var delivered = false
