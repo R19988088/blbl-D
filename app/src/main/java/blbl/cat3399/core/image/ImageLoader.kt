@@ -45,11 +45,31 @@ object ImageLoader {
         }
     }
 
+    /** Last cover slot size actually laid out; used as the override for not-yet-measured views. */
+    private var knownCoverSize: Pair<Int, Int>? = null
+
     // Glide owns request reuse, cancellation, memory cache, and disk cache for cover thumbnails.
+    //
+    // NOTE: this used to carry `.dontTransform()`, which in Glide also turns downsampling off
+    // (DownsampleStrategy.NONE). Every cover was decoded at its source size (~1280x720) and
+    // uploaded as a full-size texture while being drawn into a ~450x250 slot: that is ~8x the
+    // GPU memory and bandwidth the card actually needs, and it was the whole reason the grid
+    // GPU-bound on a box that plays games fine. Sizing is now the ImageView's measured size,
+    // which is what Glide does by default - identical pixels on screen, far smaller textures.
     private val requestOptions =
         RequestOptions()
             .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .dontTransform()
+
+    /**
+     * Cover slot size in pixels: the view's own size once it is laid out, otherwise the last
+     * size seen (a freshly inflated holder is bound before it is measured).
+     */
+    private fun coverTargetSize(view: ImageView): Pair<Int, Int>? {
+        if (view.width > 0 && view.height > 0) {
+            knownCoverSize = view.width to view.height
+        }
+        return knownCoverSize
+    }
 
     fun loadInto(view: ImageView, url: String?) {
         val normalized = normalizeImageUrl(url)
@@ -102,6 +122,7 @@ object ImageLoader {
 
     @Suppress("DEPRECATION")
     private fun startLoad(view: ImageView, normalized: String) {
+        val targetSize = coverTargetSize(view)
         val builder =
             Glide.with(view)
                 .load(glideUrl(normalized))
@@ -111,6 +132,7 @@ object ImageLoader {
                 .error(placeholder)
                 .thumbnail(THUMBNAIL_SIZE_MULTIPLIER)
                 .dontAnimate()
+        if (targetSize != null) builder.override(targetSize.first, targetSize.second)
 
         if (appearedUrls.add(normalized)) {
             builder.listener(
@@ -188,6 +210,7 @@ object ImageLoader {
                         .signature(ObjectKey(normalized))
                 runCatching {
                     if (hasKnownSize) {
+                        knownCoverSize = targetWidthPx to targetHeightPx
                         builder.preload(targetWidthPx, targetHeightPx)
                     } else {
                         builder.preload()

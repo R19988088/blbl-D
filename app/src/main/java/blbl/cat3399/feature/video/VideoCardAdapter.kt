@@ -348,6 +348,19 @@ class VideoCardAdapter(
             }
         }
 
+        /** Stroke width declared in the layout; paid only while the card is lifted. */
+        private val restingStrokePx: Int = binding.root.strokeWidth
+
+        /**
+         * A MaterialCardView stroke is rasterised as "fill the whole rounded rect, then erase the
+         * inside", so an outline that is invisible at rest still costs two card-sized fills per
+         * card, every frame. It is only ever visible while focused, so width goes to zero the rest
+         * of the time - same pixels on screen, a lot less fill.
+         */
+        private fun applyStrokeForFocus(hasFocus: Boolean) {
+            binding.root.strokeWidth = if (hasFocus) restingStrokePx else 0
+        }
+
         fun bind(
             item: VideoCard,
             position: Int,
@@ -356,6 +369,7 @@ class VideoCardAdapter(
             actionDelegate: VideoCardActionDelegate?,
         ) {
             applyFixedSizing()
+            applyStrokeForFocus(binding.root.hasFocus())
 
             binding.root.isEnabled = true
             binding.root.isFocusable = true
@@ -461,6 +475,7 @@ class VideoCardAdapter(
         private fun syncFocusMotionState(hasFocus: Boolean) {
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
             lastFocusMotionState = hasFocus
+            applyStrokeForFocus(hasFocus)
             binding.root.animate().cancel()
             binding.clCover.animate().cancel()
             releaseMotionLayer()
@@ -482,6 +497,7 @@ class VideoCardAdapter(
         private fun applyFocusMotion(hasFocus: Boolean) {
             if (lastFocusMotionState == hasFocus) return
             lastFocusMotionState = hasFocus
+            applyStrokeForFocus(hasFocus)
             val refined = BiliClient.prefs.motionEffectStyle == AppPrefs.MOTION_EFFECT_STYLE_REFINED
             val duration = if (hasFocus) MotionTokens.FOCUS_LIFT_IN_MS else MotionTokens.FOCUS_LIFT_OUT_MS
             val interpolator = if (hasFocus) MotionTokens.springOut else MotionTokens.easeIn
