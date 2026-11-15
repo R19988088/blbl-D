@@ -10,8 +10,10 @@ class PlayerAutoNextTitleTest {
     }
 
     @Test
-    fun truncatesTitlesToTwelveCharactersBeforeEllipsis() {
-        assertEquals("123456789012...", formatAutoNextHintTitle("12345678901234567890", fallbackTitle = "推荐视频"))
+    fun truncatesTitlesToMaxCharsBeforeEllipsis() {
+        val maxChars = PlayerActivity.AUTO_NEXT_TITLE_MAX_CHARS
+        val longTitle = "123456789012345678901234567890"
+        assertEquals(longTitle.take(maxChars) + "...", formatAutoNextHintTitle(longTitle, fallbackTitle = "推荐视频"))
     }
 
     @Test
