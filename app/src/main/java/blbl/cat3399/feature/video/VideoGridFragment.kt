@@ -126,9 +126,11 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         binding.recycler.setHasFixedSize(true)
         val spanCount = spanCountForWidth()
         binding.recycler.layoutManager = GridLayoutManager(requireContext(), spanCount)
-        // Keep a few screens of holders around: fast paging then recycles instead of inflating.
-        binding.recycler.setItemViewCacheSize(spanCount * 5)
-        binding.recycler.recycledViewPool.setMaxRecycledViews(0, spanCount * 2)
+        // A detached view only lands in the position-keyed view cache, which can never fill a
+        // *different* position; keeping that cache small lets the position-agnostic pool do the
+        // reuse instead of holding a screenful of heavy card views alive.
+        binding.recycler.setItemViewCacheSize(spanCount)
+        binding.recycler.recycledViewPool.setMaxRecycledViews(0, spanCount * 4)
         binding.recycler.itemAnimator = SuppressAddItemAnimator()
         focusShadowDecoration?.release()
         focusShadowDecoration =
@@ -146,6 +148,7 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                         coverPreloadRunnable?.let(coverPreloadHandler::removeCallbacks)
                         coverPreloadRunnable = null
                     } else if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        adapter.prefetchHolders(recyclerView, spanCount * 2)
                         scheduleNextCoverPreload(recyclerView)
                     }
                 }
@@ -174,6 +177,10 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                     }
                 }
             },
+        )
+        binding.recycler.postDelayed(
+            { _binding?.let { b -> adapter.prefetchHolders(b.recycler, spanCount * 3) } },
+            900L,
         )
         dpadGridController?.release()
         dpadGridController =
@@ -367,12 +374,14 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
                 applied.items.forEach { loadedStableKeys.add(it.stableKey()) }
                 if (applied.isRefresh) {
                     adapter.submit(applied.items)
+                    _binding?.let { b -> adapter.prefetchHolders(b.recycler, spanCountForWidth() * 3) }
                 } else if (applied.items.isNotEmpty()) {
                     adapter.append(applied.items)
                     // Warm the appended covers right away: they sit 2-3 rows below the viewport,
                     // so decoding them now keeps the decode/texture upload out of the moment the
                     // user actually scrolls onto them.
                     preloadCoversFor(applied.items)
+                    _binding?.let { b -> adapter.prefetchHolders(b.recycler, spanCountForWidth() * 2) }
                 }
                 _binding?.let { b ->
                     b.recycler.postIfAlive(isAlive = { _binding === b && isResumed }) {
@@ -421,12 +430,25 @@ class VideoGridFragment : Fragment(), RefreshKeyHandler, TabSwitchFocusTarget {
         if (items.isEmpty()) return
         val b = _binding ?: return
         val coverSize = measuredCoverSize(b.recycler) ?: return
-        ImageLoader.preloadCovers(
-            context = requireContext(),
-            urls = items.map { it.coverUrl },
-            targetWidthPx = coverSize.first,
-            targetHeightPx = coverSize.second,
-        )
+        val urls = items.map { it.coverUrl }
+        // Never run a batch of Glide preloads inside the frame that appends the page: it measured
+        // 34-76ms on the main thread. Spread it over idle slices of 5 requests instead.
+        urls.chunked(5).forEachIndexed { index, chunk ->
+            coverPreloadHandler.postDelayed(
+                {
+                    if (_binding !== b || !isResumed) return@postDelayed
+                    runCatching {
+                        ImageLoader.preloadCovers(
+                            context = b.root.context.applicationContext,
+                            urls = chunk,
+                            targetWidthPx = coverSize.first,
+                            targetHeightPx = coverSize.second,
+                        )
+                    }
+                },
+                48L + index * 48L,
+            )
+        }
     }
 
     private fun scheduleNextCoverPreload(recyclerView: RecyclerView) {

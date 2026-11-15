@@ -119,13 +119,65 @@ class VideoCardAdapter(
         return scaledInflater ?: LayoutInflater.from(context).cloneInUserScale(context)
     }
 
+    private val prefabLock = Any()
+    private val prefabInFlight = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val prefabCap = 12
+    private val prefabBindings = ArrayDeque<ItemVideoCardBinding>()
+    private val prefabExecutor =
+        java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+            Thread(r, "card-prefab-inflater").apply {
+                isDaemon = true
+                priority = Thread.MIN_PRIORITY
+            }
+        }
+
+    /**
+     * Inflates card views ahead of time on a worker thread.
+     *
+     * A single card costs 45-90ms to inflate on this hardware, and RecyclerView asks for a whole
+     * row (4 of them) at once, so the frame where a new row appears ate 200-300ms of main thread.
+     * The work is pure LayoutInflater/View construction - no window, no drawing - so it can run
+     * off the main thread and the main thread then only has to bind the result.
+     */
+    fun prefetchHolders(parent: ViewGroup, count: Int) {
+        if (count <= 0) return
+        // One batch at a time: inflating is CPU heavy on this box and a queued backlog would
+        // starve the render thread instead of helping it.
+        if (!prefabInFlight.compareAndSet(false, true)) return
+        val context = parent.context
+        prefabExecutor.execute {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
+            try {
+            val inflater = runCatching { inflaterFor(context).cloneInContext(context) }.getOrNull()
+                ?: LayoutInflater.from(context)
+            val room = (prefabCap - prefabCount()).coerceAtLeast(0)
+            val made = ArrayList<ItemVideoCardBinding>(minOf(count, room))
+            repeat(minOf(count, room)) {
+                runCatching { ItemVideoCardBinding.inflate(inflater, parent, false) }
+                    .onSuccess { binding -> made.add(binding) }
+            }
+            if (made.isNotEmpty()) {
+                synchronized(prefabLock) { prefabBindings.addAll(made) }
+            }
+            } finally {
+                prefabInFlight.set(false)
+            }
+        }
+    }
+
+    private fun takePrefab(): ItemVideoCardBinding? = synchronized(prefabLock) { prefabBindings.removeFirstOrNull() }
+
+    fun prefabCount(): Int = synchronized(prefabLock) { prefabBindings.size }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Vh {
+        val prefab = takePrefab()
         val binding =
-            ItemVideoCardBinding.inflate(
-                inflaterFor(parent.context),
-                parent,
-                false,
-            )
+            prefab
+                ?: ItemVideoCardBinding.inflate(
+                    inflaterFor(parent.context),
+                    parent,
+                    false,
+                )
         return Vh(
             binding = binding,
             fixedItemWidthDimenRes = fixedItemWidthDimenRes,
