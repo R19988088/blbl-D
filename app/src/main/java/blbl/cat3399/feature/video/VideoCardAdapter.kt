@@ -395,8 +395,8 @@ class VideoCardAdapter(
         }
 
         private fun releaseMotionLayer() {
-            if (binding.root.layerType != View.LAYER_TYPE_NONE) {
-                binding.root.setLayerType(View.LAYER_TYPE_NONE, null)
+            if (binding.clCover.layerType != View.LAYER_TYPE_NONE) {
+                binding.clCover.setLayerType(View.LAYER_TYPE_NONE, null)
             }
         }
 
@@ -556,9 +556,15 @@ class VideoCardAdapter(
             val rootScale = if (hasFocus) liftScale(refined) else 1f
             val coverScale = if (hasFocus) coverParallaxScale(refined) else 1f
 
-            // A hardware layer keeps the card from being re-rasterised on every frame of the lift;
-            // it is dropped again as soon as the motion settles.
-            binding.root.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+            // Cache the cover — and only the cover — in a hardware layer.
+            //
+            // A layer on the card root is cheaper (it avoids re-rasterising the whole card on every
+            // frame of the lift) but it is rasterised at 1x, so the title/UP/date text gets sampled
+            // from a stretched texture and goes soft while the card grows. Putting the layer on the
+            // cover keeps that saving for the expensive part (a full-bleed bitmap, where re-sampling
+            // costs nothing visually) and leaves the text drawing through the glyph rasteriser,
+            // which stays crisp at any scale.
+            binding.clCover.setLayerType(View.LAYER_TYPE_HARDWARE, null)
             binding.root.animate()
                 .scaleX(rootScale)
                 .scaleY(rootScale)
