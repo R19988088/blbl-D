@@ -45,6 +45,12 @@ internal fun PlayerActivity.updateProgressUi() {
     val pos = exo.currentPosition.coerceAtLeast(0L)
     val uiPos = resolvePlayerUiPositionMs(pos, holdScrubPreviewPosMs, keySeekPreviewPosMs)
     val bufPos = resolveSeekUiBufferedPositionMs(exo.bufferedPosition, uiPos)
+    maybeTrackWatchLaterProgress(
+        positionMs = pos,
+        durationMs = duration,
+        isPlaying = exo.isPlaying,
+        playbackSpeed = exo.playbackSpeed,
+    )
 
     val uiScrubbing = scrubbing || holdScrubPreviewPosMs != null || keySeekPreviewPosMs != null
     if (!uiScrubbing) {

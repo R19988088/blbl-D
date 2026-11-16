@@ -350,6 +350,12 @@ class SettingsRenderer(
                         prefs.playerAutoSkipServerBaseUrl,
                         null,
                     ),
+                    SettingEntry(
+                        SettingId.PlayerWatchLaterAutoRemoveEnabled,
+                        "看完自动移出稍后再看",
+                        if (prefs.playerWatchLaterAutoRemoveEnabled) "开" else "关",
+                        "自然播放进度超过 90% 自动移除，快进不计",
+                    ),
                     SettingEntry(SettingId.PlayerOpenDetailBeforePlay, "播放前打开详情页", if (prefs.playerOpenDetailBeforePlay) "开" else "关", null),
                     SettingEntry(SettingId.PlayerPlaybackMode, "播放模式", SettingsText.playbackModeText(prefs.playerPlaybackMode), null),
                     SettingEntry(

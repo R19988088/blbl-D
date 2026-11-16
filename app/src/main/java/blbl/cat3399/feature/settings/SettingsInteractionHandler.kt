@@ -1346,6 +1346,11 @@ class SettingsInteractionHandler(
                 showPlayerAutoSkipServerBaseUrlDialog(state.currentSectionIndex, entry.id)
             }
 
+            SettingId.PlayerWatchLaterAutoRemoveEnabled -> {
+                prefs.playerWatchLaterAutoRemoveEnabled = !prefs.playerWatchLaterAutoRemoveEnabled
+                renderer.refreshSection(entry.id)
+            }
+
             SettingId.PlayerOpenDetailBeforePlay -> {
                 prefs.playerOpenDetailBeforePlay = !prefs.playerOpenDetailBeforePlay
                 renderer.refreshSection(entry.id)

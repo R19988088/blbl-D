@@ -555,6 +555,10 @@ class AppPrefs(context: Context) {
         get() = prefs.getBoolean(KEY_PLAYER_AUTO_SKIP_SEGMENTS_ENABLED, true)
         set(value) = prefs.edit().putBoolean(KEY_PLAYER_AUTO_SKIP_SEGMENTS_ENABLED, value).apply()
 
+    var playerWatchLaterAutoRemoveEnabled: Boolean
+        get() = prefs.getBoolean(KEY_PLAYER_WATCH_LATER_AUTO_REMOVE_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_PLAYER_WATCH_LATER_AUTO_REMOVE_ENABLED, value).apply()
+
     var playerAutoSkipServerBaseUrl: String
         get() =
             normalizePlayerAutoSkipServerBaseUrl(prefs.getString(KEY_PLAYER_AUTO_SKIP_SERVER_BASE_URL, null))
@@ -1109,6 +1113,7 @@ class AppPrefs(context: Context) {
         private const val KEY_PLAYER_AUTO_RESUME_ENABLED = "player_auto_resume_enabled"
         private const val KEY_PLAYER_AUTO_SKIP_SEGMENTS_ENABLED = "player_auto_skip_segments_enabled"
         private const val KEY_PLAYER_AUTO_SKIP_SERVER_BASE_URL = "player_auto_skip_server_base_url"
+        private const val KEY_PLAYER_WATCH_LATER_AUTO_REMOVE_ENABLED = "player_watch_later_auto_remove_enabled"
         private const val KEY_SPONSOR_BLOCK_PRIVATE_USER_ID = "sponsor_block_private_user_id"
         private const val KEY_PLAYER_OPEN_DETAIL_BEFORE_PLAY = "player_open_detail_before_play"
         private const val KEY_FULLSCREEN = "fullscreen_enabled"

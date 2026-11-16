@@ -359,6 +359,7 @@ class PlayerActivity : BaseActivity() {
     internal var reportToken: Int = 0
     internal var lastReportAtMs: Long = 0L
     internal var lastReportedProgressSec: Long = -1L
+    internal var watchLaterProgress: NaturalProgressTracker = NaturalProgressTracker()
     internal var currentViewDurationMs: Long? = null
     private var exitCleanupRequested: Boolean = false
     private var exitCleanupReason: String? = null
@@ -1046,6 +1047,8 @@ class PlayerActivity : BaseActivity() {
                 }
 
                 override fun onPositionDiscontinuity(newPositionMs: Long) {
+                    // 跳变（拖动/快进/换片）不算自然播放进度，重新对齐采样锚点。
+                    watchLaterProgress.invalidateAnchor()
                     // Rely on player discontinuity callbacks to re-sync danmaku.
                     // Avoid doing "big jump" heuristics inside DanmakuView (which can be triggered by UI jank).
                     binding.danmakuView.notifySeek(newPositionMs)

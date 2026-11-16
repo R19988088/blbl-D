@@ -59,6 +59,7 @@ enum class SettingId(
     PlayerAutoResumeEnabled("player_auto_resume_enabled"),
     PlayerAutoSkipSegmentsEnabled("player_auto_skip_segments_enabled"),
     PlayerAutoSkipServerBaseUrl("player_auto_skip_server_base_url"),
+    PlayerWatchLaterAutoRemoveEnabled("player_watch_later_auto_remove_enabled"),
     PlayerOpenDetailBeforePlay("player_open_detail_before_play"),
     PlayerPlaybackMode("player_playback_mode"),
     PlayerSettingsApplyToGlobal("player_settings_apply_to_global"),
