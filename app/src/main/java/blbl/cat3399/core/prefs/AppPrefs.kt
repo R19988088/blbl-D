@@ -371,6 +371,14 @@ class AppPrefs(context: Context) {
             prefs.edit().putString(KEY_PLAYER_RENDER_VIEW, normalized).apply()
         }
 
+    /**
+     * Renders player video through the GL pipeline so the paused/controls backdrop can be blurred
+     * in real time. Requires reopening the player to take effect.
+     */
+    var playerGlBlurBackdropEnabled: Boolean
+        get() = prefs.getBoolean(KEY_PLAYER_GL_BLUR_BACKDROP, true)
+        set(value) = prefs.edit().putBoolean(KEY_PLAYER_GL_BLUR_BACKDROP, value).apply()
+
     var playerEngineKind: String
         get() {
             val raw = prefs.getString(KEY_PLAYER_ENGINE_KIND, PLAYER_ENGINE_EXO) ?: PLAYER_ENGINE_EXO
@@ -1094,6 +1102,7 @@ class AppPrefs(context: Context) {
         private const val KEY_PLAYER_PREFERRED_QN_PORTRAIT = "player_preferred_qn_portrait"
         private const val KEY_PLAYER_CODEC = "player_codec"
         private const val KEY_PLAYER_RENDER_VIEW = "player_render_view"
+        private const val KEY_PLAYER_GL_BLUR_BACKDROP = "player_gl_blur_backdrop"
         private const val KEY_PLAYER_ENGINE_KIND = "player_engine_kind"
         private const val KEY_PLAYER_STYLE = "player_style"
         private const val KEY_PLAYER_AUDIO_ID = "player_audio_id"

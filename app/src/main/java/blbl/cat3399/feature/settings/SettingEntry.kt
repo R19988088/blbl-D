@@ -72,6 +72,7 @@ enum class SettingId(
     SubtitleEnabledDefault("subtitle_enabled_default"),
     PlayerPreferredCodec("player_preferred_codec"),
     PlayerRenderView("player_render_view"),
+    PlayerGlBlurBackdropEnabled("player_gl_blur_backdrop_enabled"),
     PlayerEngineKind("player_engine_kind"),
     PlayerAudioBalance("player_audio_balance"),
     PlayerOsdButtons("player_osd_buttons"),

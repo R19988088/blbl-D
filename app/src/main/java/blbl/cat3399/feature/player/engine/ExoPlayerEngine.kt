@@ -112,7 +112,7 @@ internal class ExoPlayerEngine(
         get() = exoPlayer.bufferedPosition
 
     override fun setVideoSurface(surface: Surface?) {
-        // No-op: ExoPlayer renders through PlayerView.
+        exoPlayer.setVideoSurface(surface)
     }
 
     override fun seekTo(positionMs: Long) {

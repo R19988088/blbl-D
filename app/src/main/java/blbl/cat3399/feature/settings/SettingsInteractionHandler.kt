@@ -1429,6 +1429,12 @@ class SettingsInteractionHandler(
                 }
             }
 
+            SettingId.PlayerGlBlurBackdropEnabled -> {
+                prefs.playerGlBlurBackdropEnabled = !prefs.playerGlBlurBackdropEnabled
+                AppToast.show(activity, "控件背景实时模糊：${if (prefs.playerGlBlurBackdropEnabled) "开" else "关"}（下次进入播放器生效）")
+                renderer.refreshSection(entry.id)
+            }
+
             SettingId.PlayerEngineKind -> {
                 val options = listOf("ExoPlayer", "IjkPlayer")
                 showChoiceDialog(

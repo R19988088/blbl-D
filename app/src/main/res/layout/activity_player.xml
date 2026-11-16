@@ -19,6 +19,53 @@
         app:use_controller="false" />
 
     <androidx.media3.ui.AspectRatioFrameLayout
+        android:id="@+id/video_texture_aspect"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/player_view"
+        app:layout_constraintEnd_toEndOf="@id/player_view"
+        app:layout_constraintStart_toStartOf="@id/player_view"
+        app:layout_constraintTop_toTopOf="@id/player_view"
+        app:resize_mode="fit">
+
+        <TextureView
+            android:id="@+id/video_texture_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clickable="false"
+            android:focusable="false"
+            android:importantForAccessibility="no" />
+    </androidx.media3.ui.AspectRatioFrameLayout>
+
+    <blbl.cat3399.feature.player.gl.GlBlurVideoView
+        android:id="@+id/gl_video_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/player_view"
+        app:layout_constraintEnd_toEndOf="@id/player_view"
+        app:layout_constraintStart_toStartOf="@id/player_view"
+        app:layout_constraintTop_toTopOf="@id/player_view" />
+
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/subtitle_player_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clickable="false"
+        android:focusable="false"
+        android:importantForAccessibility="no"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/player_view"
+        app:layout_constraintEnd_toEndOf="@id/player_view"
+        app:layout_constraintStart_toStartOf="@id/player_view"
+        app:layout_constraintTop_toTopOf="@id/player_view"
+        app:shutter_background_color="@android:color/transparent"
+        app:surface_type="none"
+        app:use_controller="false" />
+
+
+    <androidx.media3.ui.AspectRatioFrameLayout
         android:id="@+id/ijk_aspect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -270,6 +317,17 @@
             app:layout_constraintTop_toTopOf="@id/btn_back" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <ImageView
+        android:id="@+id/video_blur_up_card"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="fitXY"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/card_up_quick"
+        app:layout_constraintEnd_toEndOf="@id/card_up_quick"
+        app:layout_constraintStart_toStartOf="@id/card_up_quick"
+        app:layout_constraintTop_toTopOf="@id/card_up_quick" />
+
     <LinearLayout
         android:id="@+id/card_up_quick"
         android:layout_width="wrap_content"
@@ -332,6 +390,7 @@
         <TextView
             android:id="@+id/btn_up_quick_follow"
             android:layout_width="wrap_content"
+            android:visibility="gone"
             android:layout_height="@dimen/player_up_quick_follow_height"
             android:layout_marginStart="@dimen/player_up_quick_card_gap"
             android:background="@drawable/bg_player_up_quick_follow"
@@ -351,6 +410,20 @@
             android:textSize="@dimen/player_up_quick_follow_text_size" />
     </LinearLayout>
 
+    <ImageView
+        android:id="@+id/video_blur_backdrop"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clickable="false"
+        android:focusable="false"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/player_view"
+        app:layout_constraintEnd_toEndOf="@id/player_view"
+        app:layout_constraintStart_toStartOf="@id/player_view"
+        app:layout_constraintTop_toTopOf="@id/player_view" />
+
     <View
         android:id="@+id/collection_controls_backdrop"
         android:layout_width="0dp"
@@ -364,6 +437,7 @@
         app:layout_constraintEnd_toEndOf="@id/player_view"
         app:layout_constraintStart_toStartOf="@id/player_view"
         app:layout_constraintTop_toTopOf="@id/recycler_collection_thumbs" />
+
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/bottom_bar"
@@ -700,12 +774,15 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_collection_thumbs"
         android:layout_width="0dp"
+        android:paddingTop="15dp"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/player_collection_list_lift"
         android:clipToPadding="false"
         android:focusable="true"
         android:nextFocusDown="@id/seek_progress"
         android:nextFocusUp="@id/btn_up_quick_profile"
         android:overScrollMode="never"
+        android:paddingBottom="12px"
         android:paddingStart="@dimen/player_controls_row_margin_start"
         android:paddingEnd="@dimen/player_controls_row_margin_end"
         android:visibility="gone"

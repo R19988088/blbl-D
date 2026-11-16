@@ -424,6 +424,12 @@ class SettingsRenderer(
             "其他设置" ->
                 listOf(
                     SettingEntry(SettingId.PlayerRenderView, "渲染视图", SettingsText.renderViewText(prefs.playerRenderViewType), null),
+                    SettingEntry(
+                        SettingId.PlayerGlBlurBackdropEnabled,
+                        "控件背景实时模糊",
+                        if (prefs.playerGlBlurBackdropEnabled) "开" else "关",
+                        "用 GL 渲染视频，播放/暂停控件与上弹封面列表下方实时高斯模糊；切换后需重新进入播放器",
+                    ),
                     SettingEntry(SettingId.PlayerEngineKind, "播放器内核", SettingsText.playerEngineText(prefs.playerEngineKind), null),
                     SettingEntry(
                         SettingId.PlayerCustomShortcuts,

@@ -89,6 +89,7 @@ internal fun PlayerActivity.setControlsVisible(visible: Boolean) {
                     if (osdMode == PlayerActivity.OsdMode.Hidden) {
                         binding.bottomBar.visibility = View.GONE
                         binding.collectionControlsBackdrop.visibility = View.GONE
+                        scheduleGlBlurRegionUpdate()
                     }
                     binding.bottomBar.translationY = 0f
                     controlsVisibilityAnimator = null
@@ -98,6 +99,7 @@ internal fun PlayerActivity.setControlsVisible(visible: Boolean) {
         binding.bottomBar.alpha = 0f
         binding.bottomBar.translationY = 0f
         binding.collectionControlsBackdrop.visibility = View.GONE
+        scheduleGlBlurRegionUpdate()
     }
 
     binding.controlsRow.visibility = if (show) View.VISIBLE else View.GONE
@@ -115,6 +117,8 @@ internal fun PlayerActivity.setControlsVisible(visible: Boolean) {
     syncPlayerInfoPanelVisibility()
     updatePersistentBottomProgressBarVisibility()
     onTouchOverlayStateChanged()
+    scheduleGlBlurRegionUpdate()
+    if (!show) setGlBlurActive(false)
     if (visible) noteUserInteraction() else autoHideJob?.cancel()
 }
 

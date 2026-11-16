@@ -949,13 +949,13 @@ internal fun PlayerActivity.showSubtitleBackgroundOpacityDialog() {
 }
 
 internal fun PlayerActivity.configureSubtitleView() {
-    val subtitleView = binding.playerView.findViewById<SubtitleView>(androidx.media3.ui.R.id.exo_subtitles) ?: return
+    val subtitleView = subtitleHostView().findViewById<SubtitleView>(androidx.media3.ui.R.id.exo_subtitles) ?: return
     applySubtitleStyle(subtitleView)
     applySubtitleTextSize()
 }
 
 internal fun PlayerActivity.applySubtitleStyle() {
-    val subtitleView = binding.playerView.findViewById<SubtitleView>(androidx.media3.ui.R.id.exo_subtitles) ?: return
+    val subtitleView = subtitleHostView().findViewById<SubtitleView>(androidx.media3.ui.R.id.exo_subtitles) ?: return
     applySubtitleStyle(subtitleView)
 }
 
@@ -1000,7 +1000,7 @@ private fun PlayerActivity.applySubtitlePaddingFraction(subtitleView: SubtitleVi
                 subtitleView.paddingBottom,
             ).also { subtitleView.setTag(blbl.cat3399.R.id.tag_player_subtitle_base_padding, it) }
 
-    val h = binding.playerView.height.takeIf { it > 0 } ?: subtitleView.height
+    val h = subtitleHostView().height.takeIf { it > 0 } ?: subtitleView.height
     if (h <= 0) {
         subtitleView.post { applySubtitlePaddingFraction(subtitleView, fraction) }
         return
@@ -1015,7 +1015,7 @@ private fun PlayerActivity.applySubtitlePaddingFraction(subtitleView: SubtitleVi
 }
 
 internal fun PlayerActivity.applySubtitleTextSize() {
-    val subtitleView = binding.playerView.findViewById<SubtitleView>(androidx.media3.ui.R.id.exo_subtitles) ?: return
+    val subtitleView = subtitleHostView().findViewById<SubtitleView>(androidx.media3.ui.R.id.exo_subtitles) ?: return
     val sizeSp =
         session.subtitleTextSizeSp
             .let { if (it.isFinite()) it else 26f }

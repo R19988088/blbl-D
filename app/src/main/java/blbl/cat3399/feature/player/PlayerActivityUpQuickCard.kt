@@ -197,27 +197,8 @@ internal class PlayerUpQuickCardController(
 
             val selfMid = BiliClient.cookies.getCookieValue("DedeUserID")?.trim()?.toLongOrNull()?.takeIf { it > 0L }
             val isSelf = selfMid != null && selfMid == owner.mid
-            binding.btnUpQuickFollow.visibility = if (isSelf) View.GONE else View.VISIBLE
-            if (!isSelf) {
-                val isFollowed = followed == true
-                binding.btnUpQuickFollow.isEnabled = !actionInFlight
-                binding.btnUpQuickFollow.text =
-                    if (actionInFlight) {
-                        activity.getString(R.string.player_loading)
-                    } else if (isFollowed) {
-                        activity.getString(R.string.player_up_quick_followed)
-                    } else {
-                        activity.getString(R.string.player_up_quick_follow)
-                    }
-
-                val fg =
-                    if (isFollowed) {
-                        ThemeColor.resolve(activity, android.R.attr.textColorSecondary, R.color.blbl_text_secondary)
-                    } else {
-                        ThemeColor.resolve(activity, android.R.attr.textColorPrimary, R.color.blbl_text)
-                    }
-                binding.btnUpQuickFollow.setTextColor(fg)
-            }
+            // The follow chip has been removed from the player card.
+            binding.btnUpQuickFollow.visibility = View.GONE
         }
         onUiUpdated()
     }

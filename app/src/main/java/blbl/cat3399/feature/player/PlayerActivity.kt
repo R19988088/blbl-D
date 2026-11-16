@@ -401,6 +401,11 @@ class PlayerActivity : BaseActivity() {
     internal var currentVideoContentWidth: Int? = null
     internal var currentVideoContentHeight: Int? = null
 
+    internal var glBlurEnabled: Boolean = false
+    internal var glBlurActive: Boolean = false
+    internal val blurBackdrop by lazy { PlayerBlurBackdrop(this) }
+    internal var glVideoSurface: Surface? = null
+
     private fun isPlayerTeardownInProgress(): Boolean {
         return exitCleanupRequested || isFinishing || isDestroyed || decoderReleaseRequestedOnStop || resumeAfterDecoderRelease
     }
@@ -619,7 +624,8 @@ class PlayerActivity : BaseActivity() {
 
         // Detach the surface early so codecs can be released immediately.
         if (::binding.isInitialized) {
-            binding.playerView.player = null
+            detachPlayerFromViews()
+            if (glBlurEnabled) engine.setVideoSurface(null)
         }
         engine.playWhenReady = false
         engine.stop()
@@ -755,6 +761,7 @@ class PlayerActivity : BaseActivity() {
         binding.audioOnlyDimOverlay.bringToFront()
         Immersive.apply(this, prefs.fullscreenEnabled)
         PlayerUiMode.applyVideo(this, binding)
+        setupGlVideoRenderingIfNeeded()
         ensureBottomBarConstraintSets()
         refreshPlayerControlsFocusOrder()
 
@@ -1006,6 +1013,9 @@ class PlayerActivity : BaseActivity() {
                     restartAutoHideTimer()
                     // DanmakuView stops its own vsync loop when playback is paused; kick it on state changes.
                     binding.danmakuView.invalidate()
+                    if (glBlurEnabled) {
+                        if (isPlaying) setGlBlurActive(false) else scheduleGlBlurRegionUpdate()
+                    }
                     if (isPlaying) {
                         startReportProgressLoop()
                     } else {
@@ -1061,6 +1071,10 @@ class PlayerActivity : BaseActivity() {
                     currentVideoContentHeight = height
                     debug.videoInputWidth = width
                     debug.videoInputHeight = height
+                    if (glBlurEnabled) {
+                        binding.glVideoView.setVideoSize(width, height)
+                        binding.videoTextureAspect.setAspectRatio(width.toFloat() / height.toFloat())
+                    }
                     binding.videoShotPreview.setContentAspectRatio(width, height)
                     if (engine.kind != PlayerEngineKind.IjkPlayer) return
                     binding.ijkAspect.setAspectRatio(width.toFloat() / height.toFloat())
@@ -1470,6 +1484,10 @@ class PlayerActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (glBlurEnabled) {
+            binding.glVideoView.onResume()
+            scheduleGlBlurRegionUpdate()
+        }
         PlayerOsdSizing.applyTheme(this)
         PlayerUiMode.applyVideo(this, binding)
         applyOsdButtonsVisibility()
@@ -1985,8 +2003,9 @@ class PlayerActivity : BaseActivity() {
         player?.pause()
         if ((exitCleanupRequested || isFinishing) && !isChangingConfigurations) {
             val tDetach = SystemClock.elapsedRealtime()
-            if (::binding.isInitialized && binding.playerView.player != null) {
-                binding.playerView.player = null
+            if (::binding.isInitialized && hasAttachedPlayerView()) {
+                detachPlayerFromViews()
+                if (glBlurEnabled) player?.setVideoSurface(null)
             }
             val detachCostMs = SystemClock.elapsedRealtime() - tDetach
             if (exitTraceStartAtMs > 0L) {
@@ -2015,9 +2034,10 @@ class PlayerActivity : BaseActivity() {
         resumeAfterDecoderReleasePlayWhenReady = true
         trace?.log("exo:releaseOnStop:resume", "pos=${pos}ms")
 
-        if (exo != null && ::binding.isInitialized && binding.playerView.player == null) {
-            binding.playerView.player = exo
+        if (exo != null && ::binding.isInitialized && !hasAttachedPlayerView()) {
+            attachExoPlayerToActiveView(exo)
         }
+        if (glBlurEnabled && glBlurActive) glVideoSurface?.let { engine.setVideoSurface(it) }
         resumeExpiredUrlReloadArmed = true
         resumeExpiredUrlReloadAttempted = false
         engine.playWhenReady = playWhenReadyAfterReturn
@@ -2050,6 +2070,7 @@ class PlayerActivity : BaseActivity() {
         // Pause as early as possible when leaving foreground (e.g. Home key).
         // Some TV boxes have vendor bugs with SurfaceView + codec when the surface is being torn down.
         player?.pause()
+        if (glBlurEnabled) binding.glVideoView.onPause()
         super.onPause()
         if (exitTraceStartAtMs > 0L) {
             exitTraceLog("lifecycle:onPause:afterSuper")
@@ -2148,8 +2169,11 @@ class PlayerActivity : BaseActivity() {
         dismissAutoResumeHint()
         stopReportProgressLoop(flush = false, reason = "destroy")
         trace?.log("exo:detachView")
-        binding.playerView.player = null
+        blurBackdrop.release()
+        detachPlayerFromViews()
         player?.setVideoSurface(null)
+        glVideoSurface = null
+        if (glBlurEnabled) binding.glVideoView.releaseGl()
         ijkTextureSurface?.release()
         ijkTextureSurface = null
         val preReleaseCostMs = SystemClock.elapsedRealtime() - t0
@@ -2595,6 +2619,7 @@ class PlayerActivity : BaseActivity() {
                     }
                 },
                 isSelected = { _, pos -> pos == collectionThumbsSelectedIndex },
+                coverTopInsetDp = 5,
             )
         binding.recyclerCollectionThumbs.addOnScrollListener(
             object : RecyclerView.OnScrollListener() {
@@ -4008,9 +4033,22 @@ class PlayerActivity : BaseActivity() {
         ijkTextureSurface = null
         engine.setVideoSurface(null)
 
+        if (glBlurEnabled) {
+            if (engine is ExoPlayerEngine) {
+                binding.playerView.player = null
+                binding.subtitlePlayerView.player = engine.exoPlayer
+            } else {
+                binding.subtitlePlayerView.player = null
+                binding.playerView.player = null
+            }
+            if (glBlurActive) glVideoSurface?.let { engine.setVideoSurface(it) }
+            binding.glVideoView.setVideoSize(currentVideoContentWidth ?: 0, currentVideoContentHeight ?: 0)
+            return
+        }
+
         val exo = (engine as? ExoPlayerEngine)?.exoPlayer
         if (engine.kind == PlayerEngineKind.ExoPlayer) {
-            binding.playerView.player = exo
+            attachExoPlayerToActiveView(exo ?: return)
             return
         }
 

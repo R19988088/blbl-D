@@ -31,6 +31,7 @@ class VideoCardAdapter(
     private val fixedItemMarginDimenRes: Int? = null,
     private val stableIdKey: ((VideoCard) -> String)? = null,
     private val isSelected: ((VideoCard, Int) -> Boolean)? = null,
+    private val coverTopInsetDp: Int = 0,
 ) : RecyclerView.Adapter<VideoCardAdapter.Vh>() {
     private val items = ArrayList<VideoCard>()
     private var expandedCardStableKey: String? = null
@@ -189,6 +190,7 @@ class VideoCardAdapter(
             onItemFocusLost = ::handleItemFocusLost,
             onOverlayActionSelect = ::updateSelectedActionIndex,
             isOverlayExpanded = ::isOverlayExpanded,
+            coverTopInsetDp = coverTopInsetDp,
         )
     }
 
@@ -365,6 +367,7 @@ class VideoCardAdapter(
         private val onItemFocusLost: (VideoCard) -> Unit,
         private val onOverlayActionSelect: (Int) -> Unit,
         private val isOverlayExpanded: (VideoCard) -> Boolean,
+        coverTopInsetDp: Int,
     ) : RecyclerView.ViewHolder(binding.root) {
         private var pointerDownForLongClick: Boolean = false
         private var motionResetToken: Int = 0
@@ -372,6 +375,10 @@ class VideoCardAdapter(
 
         init {
             binding.root.stateListAnimator = null
+            if (coverTopInsetDp > 0) {
+                val px = (coverTopInsetDp * binding.root.resources.displayMetrics.density).toInt()
+                binding.root.setPadding(0, px, 0, 0)
+            }
             applyFixedSizing()
         }
 
