@@ -4,6 +4,7 @@ import android.graphics.SurfaceTexture
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
+import android.view.WindowManager
 import androidx.media3.exoplayer.ExoPlayer
 import blbl.cat3399.core.net.BiliClient
 
@@ -20,6 +21,7 @@ internal fun PlayerActivity.setupGlVideoRenderingIfNeeded() {
         binding.subtitlePlayerView.visibility = View.GONE
         binding.playerView.visibility = View.VISIBLE
         binding.videoBlurBackdrop.visibility = View.GONE
+        applyPlayerKeepScreenOn(glBlurEnabled = false)
         return
     }
 
@@ -27,6 +29,7 @@ internal fun PlayerActivity.setupGlVideoRenderingIfNeeded() {
     binding.videoTextureAspect.visibility = View.VISIBLE
     binding.subtitlePlayerView.visibility = View.VISIBLE
     binding.videoBlurBackdrop.visibility = View.GONE
+    applyPlayerKeepScreenOn(glBlurEnabled = true)
 
     binding.videoTextureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
         override fun onSurfaceTextureAvailable(st: SurfaceTexture, width: Int, height: Int) {
@@ -131,3 +134,19 @@ internal fun PlayerActivity.hasAttachedPlayerView(): Boolean =
 
 internal fun PlayerActivity.subtitleHostView(): View =
     if (glBlurEnabled) binding.subtitlePlayerView else binding.playerView
+
+/**
+ * The GL/TextureView path makes the PlayerView that carries `android:keepScreenOn` invisible, and a
+ * keep-screen-on flag on an invisible view never reaches the window. MiTV's vendor power manager
+ * (MitvPowerManagerService) then decides nothing is playing ("not PlayingWithSurface" +
+ * "mKeepScreenOnEnable false") and starts its screensaver after its idle timeout; closing that
+ * screensaver lands on the launcher instead of the player. Hold the flag on the window itself so
+ * the screen stays on no matter which view renders the video.
+ */
+internal fun PlayerActivity.applyPlayerKeepScreenOn(glBlurEnabled: Boolean) {
+    if (glBlurEnabled) {
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    } else {
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+}

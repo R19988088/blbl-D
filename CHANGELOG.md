@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.1.135
+
+1. 修复长时间播放（约 4~8 分钟无按键操作）后自动回到桌面/屏保的问题：实时模糊模式下视频改由 TextureView 承载，原先带 `keepScreenOn` 的 PlayerView 被设为 INVISIBLE，常亮标志传不到窗口，小米电视的电源管理因此判定“未在播放”并拉起屏保
+2. `activity_player` / `activity_player_texture` 的根布局直接声明 `keepScreenOn`，同时在实时模糊模式下给播放器窗口加 `FLAG_KEEP_SCREEN_ON`，两条渲染路径都能常亮
+
 ## 0.1.134
 
 1. 播放控件与上弹封面列表恢复实时动态高斯模糊：用自定义 TextureView 承载视频并定时抓帧，避开了 GL SurfaceTexture 占满解码 buffer 导致长视频只播第一帧的问题
