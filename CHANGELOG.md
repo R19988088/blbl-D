@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.1.136
+
+1. 自动检查更新改为读取本仓库的 GitHub Releases 列表，只认正式版：跳过草稿、跳过 prerelease、跳过 tag 带后缀（如 `-beta1`）的版本，并跳过没有可安装 APK 的 release
+2. 版本比较取所有正式版里数值最高的那个，不再依赖仓库的 “Latest” 标记；更新说明直接取该 release 的正文，弹窗里的“上一版/下一版”可在多个正式版之间切换
+3. 下载改为使用该 release 内实际的 APK 资源地址（优先 `Blbl-latest.apk`，其次排除 api19/kitkat 的包），不再写死 `releases/latest/download` 链接，避免资源改名或缺失时下载失败
+4. 自动检查仍在启动进入首页时触发，命中新正式版才弹窗，并新增一行日志 `Update: auto check ...` 便于排查
+5. CI 发布改用 `gradle.properties` 里的 versionName/versionCode：release tag 与 APK 内版本号一致，修复此前 tag 按 run_number 生成、客户端永远比不出更新的问题
+
 ## 0.1.135
 
 1. 修复长时间播放（约 4~8 分钟无按键操作）后自动回到桌面/屏保的问题：实时模糊模式下视频改由 TextureView 承载，原先带 `keepScreenOn` 的 PlayerView 被设为 INVISIBLE，常亮标志传不到窗口，小米电视的电源管理因此判定“未在播放”并拉起屏保

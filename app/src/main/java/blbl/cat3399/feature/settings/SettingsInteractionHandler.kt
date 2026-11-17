@@ -1614,7 +1614,7 @@ class SettingsInteractionHandler(
 
                     is TestUpdateCheckState.UpdateAvailable -> {
                         ApkUpdateFlow.showUpdatePrompt(activity, checkState.update) { selectedUpdate ->
-                            startTestUpdateDownload(selectedUpdate.versionName)
+                            startTestUpdateDownload(selectedUpdate)
                         }
                     }
 
@@ -2937,7 +2937,7 @@ class SettingsInteractionHandler(
                     state.testUpdateCheckedAtMs = System.currentTimeMillis()
                     if (promptIfUpdate && state.testUpdateCheckState is TestUpdateCheckState.UpdateAvailable) {
                         ApkUpdateFlow.showUpdatePrompt(activity, update) { selectedUpdate ->
-                            startTestUpdateDownload(selectedUpdate.versionName)
+                            startTestUpdateDownload(selectedUpdate)
                         }
                     }
                 } catch (_: CancellationException) {
@@ -2950,7 +2950,7 @@ class SettingsInteractionHandler(
             }
     }
 
-    private fun startTestUpdateDownload(latestVersionHint: String? = null) {
+    private fun startTestUpdateDownload(update: ApkUpdater.RemoteUpdate? = null) {
         if (testUpdateJob?.isActive == true) {
             AppToast.show(activity, "正在下载更新…")
             return
@@ -2959,10 +2959,10 @@ class SettingsInteractionHandler(
         testUpdateJob =
             ApkUpdateFlow.startDownloadAndInstall(
                 activity = activity,
-                latestVersionHint = latestVersionHint,
-                apkUrl = latestVersionHint?.let(ApkUpdater::apkUrlFor),
+                latestVersionHint = update?.versionName,
+                apkUrl = update?.apkUrl ?: update?.let { ApkUpdater.apkUrlFor(it.versionName) },
             ) { latestVersion, isNewer ->
-                if (!isNewer && latestVersionHint == null) state.testUpdateCheckState = TestUpdateCheckState.Latest(latestVersion)
+                if (!isNewer && update == null) state.testUpdateCheckState = TestUpdateCheckState.Latest(latestVersion)
                 state.testUpdateCheckedAtMs = System.currentTimeMillis()
                 renderer.refreshAboutSectionKeepPosition()
             }

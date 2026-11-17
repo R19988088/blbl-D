@@ -27,9 +27,10 @@ import kotlin.math.roundToInt
 
 object ApkUpdater {
     private const val GITHUB_REPO = "R19988088/blbl-D"
+    private const val RELEASES_LIST_URL = "https://api.github.com/repos/$GITHUB_REPO/releases?per_page=60"
     private const val RELEASES_LATEST_URL = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
     private const val RELEASE_APK_URL = "https://github.com/$GITHUB_REPO/releases/latest/download/Blbl-latest.apk"
-    private const val CHANGELOG_URL = RELEASES_LATEST_URL
+    private const val CHANGELOG_URL = RELEASES_LIST_URL
     val TEST_APK_URL: String
         get() = RELEASE_APK_URL
     val TEST_CHANGELOG_URL: String
@@ -86,6 +87,8 @@ object ApkUpdater {
         val versionName: String,
         val changelog: String,
         val versions: List<RemoteUpdate> = emptyList(),
+        /** Direct download url of the APK asset published in this GitHub release. */
+        val apkUrl: String? = null,
     ) {
         val displayChangelog: String
             get() = changelog.ifBlank { "暂无更新日志" }
@@ -135,13 +138,15 @@ object ApkUpdater {
         val call = okHttp.newCall(req)
         val res = call.execute()
         res.use { r ->
+            if (r.code == 403) error("GitHub 接口访问受限（HTTP 403），请稍后再试")
             check(r.isSuccessful) { "HTTP ${r.code} ${r.message}" }
             val body = r.body ?: error("empty body")
             val raw = body.string()
-            return if (url.contains("api.github.com/repos/") && url.endsWith("/releases/latest")) {
-                parseGitHubReleaseUpdate(raw)
-            } else {
-                parseChangelog(raw)
+            return when {
+                url.contains("api.github.com/repos/") && url.endsWith("/releases/latest") ->
+                    parseGitHubReleaseUpdate(raw)
+                url.contains("api.github.com/repos/") -> parseGitHubStableReleases(raw)
+                else -> parseChangelog(raw)
             }
         }
     }
@@ -153,6 +158,118 @@ object ApkUpdater {
         check(versionName.isNotBlank()) { "missing GitHub release version" }
         val changelog = obj.optString("body").trim().ifBlank { "No changelog." }
         return RemoteUpdate(versionName = versionName, changelog = changelog)
+    }
+
+    /**
+     * GitHub release list -> the newest *stable* (正式版) release of our own repository.
+     *
+     * A release only qualifies when it is neither a draft nor a pre-release and its tag is a plain
+     * dotted version such as `v0.1.135`; tags like `v0.1.135-beta1` are skipped. Releases without an
+     * installable APK asset are skipped as well, because the download must target the exact asset
+     * of that release instead of a mutable "latest" URL.
+     */
+    internal fun parseGitHubStableReleases(raw: String): RemoteUpdate {
+        val arr = org.json.JSONArray(raw)
+        val releases = ArrayList<GitHubRelease>(arr.length())
+        for (i in 0 until arr.length()) {
+            val obj = arr.optJSONObject(i) ?: continue
+            val assets = obj.optJSONArray("assets")
+            val assetList = ArrayList<GitHubReleaseAsset>(assets?.length() ?: 0)
+            if (assets != null) {
+                for (j in 0 until assets.length()) {
+                    val asset = assets.optJSONObject(j) ?: continue
+                    assetList.add(
+                        GitHubReleaseAsset(
+                            name = asset.optString("name").trim(),
+                            url = asset.optString("browser_download_url").trim(),
+                        ),
+                    )
+                }
+            }
+            releases.add(
+                GitHubRelease(
+                    tagName = obj.optString("tag_name"),
+                    draft = obj.optBoolean("draft"),
+                    prerelease = obj.optBoolean("prerelease"),
+                    body = obj.optString("body"),
+                    assets = assetList,
+                    publishedAt = obj.optString("published_at"),
+                ),
+            )
+        }
+        return selectLatestStableRelease(releases)
+    }
+
+    internal data class GitHubReleaseAsset(val name: String, val url: String)
+
+    internal data class GitHubRelease(
+        val tagName: String,
+        val draft: Boolean = false,
+        val prerelease: Boolean = false,
+        val body: String = "",
+        val assets: List<GitHubReleaseAsset> = emptyList(),
+        val publishedAt: String = "",
+    )
+
+    /**
+     * Picks the newest *stable* (正式版) release of our own repository.
+     *
+     * A release only qualifies when it is neither a draft nor a pre-release, its tag is a plain dotted
+     * version such as `v0.1.135` (so `v0.1.135-beta1` is skipped) and it ships an installable APK,
+     * because the download targets that exact release asset instead of a mutable "latest" URL.
+     */
+    internal fun selectLatestStableRelease(releases: List<GitHubRelease>): RemoteUpdate {
+        data class Candidate(val release: GitHubRelease, val versionName: String, val apkUrl: String)
+
+        val stable = ArrayList<Candidate>()
+        for (release in releases) {
+            if (release.draft || release.prerelease) continue
+            val versionName = release.tagName.trim().removePrefix("v").removePrefix("V").trim()
+            if (!isStableVersionName(versionName)) continue
+            val apkUrl = pickApkAsset(release.assets) ?: continue
+            stable.add(Candidate(release = release, versionName = versionName, apkUrl = apkUrl))
+        }
+        check(stable.isNotEmpty()) { "未找到正式版" }
+
+        // Newest *published* stable release wins: tag numbering was reset over time (legacy v0.5.x
+        // tags sort above today's 0.1.x numerically), so publication time is the reliable order.
+        val sorted =
+            stable.sortedWith { a, b ->
+                val byTime = b.release.publishedAt.compareTo(a.release.publishedAt)
+                if (byTime != 0) {
+                    byTime
+                } else {
+                    val av = parseVersion(a.versionName) ?: emptyList()
+                    val bv = parseVersion(b.versionName) ?: emptyList()
+                    -compareVersion(av, bv)
+                }
+            }
+        val mapped =
+            sorted.map { candidate ->
+                RemoteUpdate(
+                    versionName = candidate.versionName,
+                    changelog = candidate.release.body.trim().ifBlank { "暂无更新日志" },
+                    apkUrl = candidate.apkUrl,
+                )
+            }
+        return mapped.first().copy(versions = mapped)
+    }
+
+    private fun isStableVersionName(versionName: String): Boolean =
+        Regex("""^[0-9]+(\.[0-9]+)*$""").matches(versionName)
+
+    /** Prefers the stable "Blbl-latest.apk" alias, then any non API19/KITKAT release APK asset. */
+    private fun pickApkAsset(assets: List<GitHubReleaseAsset>): String? {
+        val apks =
+            assets.filter {
+                it.name.isNotBlank() && it.url.isNotBlank() && it.name.endsWith(".apk", ignoreCase = true)
+            }
+        apks.firstOrNull { it.name.equals("Blbl-latest.apk", ignoreCase = true) }?.let { return it.url }
+        apks.firstOrNull {
+            val lower = it.name.lowercase()
+            !lower.contains("api19") && !lower.contains("kitkat")
+        }?.let { return it.url }
+        return null
     }
 
     internal fun parseChangelog(raw: String): RemoteUpdate {

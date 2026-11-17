@@ -28,6 +28,27 @@ jobs:
           cache: "gradle"
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
+      - name: Resolve version
+        id: version
+        run: |
+          set -euo pipefail
+          NAME="${{ inputs.version_name }}"
+          if [ -z "$NAME" ]; then
+            NAME=$(grep -m1 -E '^versionName=' gradle.properties | cut -d= -f2- | tr -d '[:space:]')
+          fi
+          NAME="${NAME#v}"
+          if [ -z "$NAME" ]; then
+            echo "versionName missing in gradle.properties" >&2
+            exit 1
+          fi
+          CODE=$(grep -m1 -E '^versionCode=' gradle.properties | cut -d= -f2- | tr -d '[:space:]')
+          if [ -z "$CODE" ]; then
+            CODE=$(echo "$NAME" | awk -F. '{printf "%d%02d%02d", $1, $2, $3}')
+          fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NAME" >> "$GITHUB_OUTPUT"
+          echo "Resolved release version: $NAME ($CODE)"
       - name: Decode keystore
         run: |
           mkdir -p keystore
@@ -37,10 +58,10 @@ jobs:
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-          VERSION_NAME: ${{ inputs.version_name || format('0.1.{0}', github.run_number) }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
         run: |
           CLEAN_VERSION="${VERSION_NAME#v}"
-          ./gradlew assembleRelease -PversionName="${CLEAN_VERSION}" -PversionCode=${{ github.run_number }}
+          ./gradlew assembleRelease -PversionName="${CLEAN_VERSION}" -PversionCode=${{ steps.version.outputs.code }}
       - name: Upload release APK to R2 (optional)
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -48,7 +69,7 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
           R2_BUCKET: ${{ secrets.R2_BUCKET || vars.R2_BUCKET }}
           R2_PREFIX: ${{ vars.R2_PREFIX || secrets.R2_PREFIX }}
-          VERSION_NAME: ${{ inputs.version_name || format('0.1.{0}', github.run_number) }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
         run: |
           set -euo pipefail
           if [ -z "${R2_ACCESS_KEY_ID:-}" ] || [ -z "${R2_SECRET_ACCESS_KEY:-}" ] || [ -z "${R2_ACCOUNT_ID:-}" ] || [ -z "${R2_BUCKET:-}" ]; then
@@ -87,8 +108,8 @@ jobs:
       - name: Publish release APK to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION_NAME: ${{ inputs.version_name || format('0.1.{0}', github.run_number) }}
-          RELEASE_TAG: ${{ startsWith(inputs.version_name || format('0.1.{0}', github.run_number), 'v') && (inputs.version_name || format('0.1.{0}', github.run_number)) || format('v{0}', inputs.version_name || format('0.1.{0}', github.run_number)) }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
           CHANGELOG: ${{ inputs.changelog }}
         run: |
           CLEAN_VERSION="${VERSION_NAME#v}"
