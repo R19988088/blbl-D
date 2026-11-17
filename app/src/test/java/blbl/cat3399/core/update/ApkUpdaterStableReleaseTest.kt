@@ -143,6 +143,21 @@ class ApkUpdaterStableReleaseTest {
     }
 
     @Test
+    fun parses_tag_from_release_redirect_url() {
+        assertEquals(
+            "v0.1.136",
+            ApkUpdater.parseTagFromReleaseUrl("https://github.com/R19988088/blbl-D/releases/tag/v0.1.136"),
+        )
+        assertEquals(
+            "v0.1.136",
+            ApkUpdater.parseTagFromReleaseUrl(
+                "https://github.com/R19988088/blbl-D/releases/tag/v0.1.136?foo=bar#assets",
+            ),
+        )
+        assertEquals(null, ApkUpdater.parseTagFromReleaseUrl("https://github.com/R19988088/blbl-D/releases"))
+    }
+
+    @Test
     fun newer_comparison_uses_numeric_version() {
         assertTrue(ApkUpdater.isRemoteNewer("0.1.12", "0.1.11"))
         assertFalse(ApkUpdater.isRemoteNewer("0.1.12", "0.1.12"))

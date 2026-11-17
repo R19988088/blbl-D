@@ -30,6 +30,7 @@ object ApkUpdater {
     private const val RELEASES_LIST_URL = "https://api.github.com/repos/$GITHUB_REPO/releases?per_page=60"
     private const val RELEASES_LATEST_URL = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
     private const val RELEASE_APK_URL = "https://github.com/$GITHUB_REPO/releases/latest/download/Blbl-latest.apk"
+    private const val RELEASES_LATEST_WEB_URL = "https://github.com/$GITHUB_REPO/releases/latest"
     private const val CHANGELOG_URL = RELEASES_LIST_URL
     val TEST_APK_URL: String
         get() = RELEASE_APK_URL
@@ -108,6 +109,13 @@ object ApkUpdater {
         url: String = TEST_CHANGELOG_URL,
     ): RemoteUpdate {
         return withContext(Dispatchers.IO) {
+            val fromApi = runCatching { fetchLatestUpdateWithRetry(url) }.getOrNull()
+            fromApi ?: fetchLatestStableViaRedirect()
+        }
+    }
+
+    private suspend fun fetchLatestUpdateWithRetry(url: String): RemoteUpdate =
+        withContext(Dispatchers.IO) {
             var lastError: Throwable? = null
             val maxAttempts = 3
             for (attempt in 1..maxAttempts) {
@@ -126,6 +134,38 @@ object ApkUpdater {
             }
             throw lastError ?: IllegalStateException("fetch latest version failed")
         }
+
+    /**
+     * Rate-limit proof fallback: `github.com/<repo>/releases/latest` redirects to the newest stable
+     * release tag, which costs no API quota. GitHub already excludes drafts and pre-releases from
+     * that redirect, and the changelog is filled in by the API path whenever it is available.
+     */
+    private fun fetchLatestStableViaRedirect(): RemoteUpdate {
+        val req =
+            Request.Builder()
+                .url(RELEASES_LATEST_WEB_URL)
+                .header("Cache-Control", "no-cache")
+                .head()
+                .build()
+        okHttp.newCall(req).execute().use { r ->
+            check(r.isSuccessful) { "HTTP ${r.code} ${r.message}" }
+            val tag = parseTagFromReleaseUrl(r.request.url.toString()) ?: error("未找到正式版 tag")
+            val versionName = tag.removePrefix("v").removePrefix("V").trim()
+            check(isStableVersionName(versionName)) { "最新 Release 不是正式版：$tag" }
+            return RemoteUpdate(
+                versionName = versionName,
+                changelog = "暂无更新日志",
+                apkUrl = "https://github.com/$GITHUB_REPO/releases/download/$tag/Blbl-latest.apk",
+            )
+        }
+    }
+
+    internal fun parseTagFromReleaseUrl(url: String): String? {
+        val marker = "/releases/tag/"
+        val index = url.indexOf(marker)
+        if (index < 0) return null
+        val tag = url.substring(index + marker.length).substringBefore('/').substringBefore('?').trim()
+        return tag.takeIf { it.isNotBlank() }
     }
 
     private fun fetchLatestUpdateOnce(url: String): RemoteUpdate {

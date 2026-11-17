@@ -1,12 +1,13 @@
 # CHANGELOG
 
-## 0.1.136
+## 0.1.138
 
 1. 自动检查更新改为读取本仓库的 GitHub Releases 列表，只认正式版：跳过草稿、跳过 prerelease、跳过 tag 带后缀（如 `-beta1`）的版本，并跳过没有可安装 APK 的 release
 2. 版本比较取所有正式版里数值最高的那个，不再依赖仓库的 “Latest” 标记；更新说明直接取该 release 的正文，弹窗里的“上一版/下一版”可在多个正式版之间切换
 3. 下载改为使用该 release 内实际的 APK 资源地址（优先 `Blbl-latest.apk`，其次排除 api19/kitkat 的包），不再写死 `releases/latest/download` 链接，避免资源改名或缺失时下载失败
 4. 自动检查仍在启动进入首页时触发，命中新正式版才弹窗，并新增一行日志 `Update: auto check ...` 便于排查
 5. CI 发布改用 `gradle.properties` 里的 versionName/versionCode：release tag 与 APK 内版本号一致，修复此前 tag 按 run_number 生成、客户端永远比不出更新的问题
+6. GitHub API 被限流（HTTP 403）时自动改走 `releases/latest` 的跳转地址取 tag，不再直接报“检查失败”
 
 ## 0.1.135
 
